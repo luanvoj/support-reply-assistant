@@ -19,8 +19,13 @@ All API routes are same-origin Next.js routes. Except for `GET /api/health` and 
 | `GET` | `/api/profile` | Read the current user's immutable profile fields and MFA state. |
 | `PATCH` | `/api/profile` | Change the current user's password after validating the current password, policy, and confirmation. |
 | `POST` | `/api/profile/mfa` | Set up, verify, or disable the current user's TOTP factor. |
+| `GET` | `/api/profile/avatar` | Read the current user's private avatar; returns `404` when none exists. |
+| `POST` | `/api/profile/avatar` | Upload the current user's avatar as multipart field `file`. |
+| `DELETE` | `/api/profile/avatar` | Remove the current user's avatar. |
 
 `POST /api/profile/mfa` uses an `action` body: `setup` returns an enrollment URI and QR data URL; `verify` requires a six-digit `code`; `disable` requires `currentPassword`. A TOTP factor becomes active only after a successful verification. A verification code cannot be reused.
+
+`POST /api/profile/avatar` accepts JPEG, PNG or WebP only. The raw upload must not exceed 5 MB. The server validates the decoded image, normalizes it to WebP and stores it under the authenticated user's server-owned path; clients never choose a storage key.
 
 ## Assistant and conversations
 
@@ -87,6 +92,7 @@ All API routes are same-origin Next.js routes. Except for `GET /api/health` and 
 - Provider API keys are encrypted on the server and are not returned in list responses.
 - Passwords are stored as password hashes. Changing a password or disabling an account increments its session version so existing sessions are no longer valid.
 - TOTP secrets are encrypted at rest. The API returns a QR enrollment value only during setup and never exposes a saved secret.
+- Avatar reads are owner-only and served with private, no-store caching. Uploaded images are content-validated, normalized, and stored outside the web root.
 - The API does not accept files or images as knowledge article content; only text is indexed.
 - Error responses shown to end users use safe messages/codes. Detailed server context must not include provider secrets.
 

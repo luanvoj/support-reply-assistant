@@ -9,4 +9,4 @@ coverage/
 *.tsbuildinfo
 stitch.md
 .run/
-storage/
+/storage/

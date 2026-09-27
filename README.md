@@ -15,7 +15,7 @@ Local implementation is ready for operational testing:
 - Retrieval settings, assistant persona, source citations and merge-review controls for administrators
 - Backend provider adapters, permissions, retrieval, knowledge loop and dashboard APIs
 - User administration with role-based access, safe disable/ownership transfer, and controlled data purge
-- Self-service password change with password-policy feedback and optional TOTP two-factor authentication
+- Self-service profile: password change with policy feedback, optional TOTP two-factor authentication, and avatar upload normalized to WebP in per-user storage
 - Stitch-derived responsive UI routes
 - Local E2E smoke and security/deployment readiness documents
 
@@ -51,9 +51,10 @@ Use the application manager script to start all local components and print the b
 - Administrators can create, edit, filter and paginate user accounts. Before disabling an account, they must assign its knowledge articles to another active user and assign open expert requests to an eligible active user.
 - A disabled account is retained for 30 days before it can be purged by the user-retention task. Purging anonymizes the account and removes its avatar and TOTP factor; it is skipped while the account still has open expert requests.
 - Users can view their own profile and change their own password from **Thông tin người dùng**. Passwords must have at least 8 characters, uppercase and lowercase letters, and a special character; only medium or strong passwords are accepted.
+- Users can update or remove their own avatar. Uploads accept JPEG, PNG or WebP up to 5 MB, are validated and normalized to WebP, then stored by user under `USER_STORAGE_DIR` (default: `storage/users`). Use persistent storage for that directory in production.
 - TOTP two-factor authentication is optional in the current rollout. Enabling it requires a verified six-digit authenticator code; disabling it requires the current password.
 
-See [API contract](docs/API.md), [deployment readiness](docs/DEPLOYMENT.md), and the [security report](docs/SECURITY-REPORT-2026-09-22.md).
+See [API contract](docs/API.md), [deployment readiness](docs/DEPLOYMENT.md), and the latest [security report](docs/SECURITY-REPORT-2026-09-27.md).
 
 ## Tạo hoặc đặt lại tài khoản quản trị
 
