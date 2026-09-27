@@ -1,0 +1,49 @@
+{
+  "name": "support-reply-assistant",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "db:up": "docker compose up -d db",
+    "db:down": "docker compose down",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "retrieval:smoke": "tsx scripts/retrieval-smoke.ts",
+    "retrieval:db-smoke": "tsx scripts/retrieval-db-smoke.ts",
+    "retrieval:import-corpus": "tsx scripts/import-evaluation-corpus.ts",
+    "retrieval:evaluate": "tsx scripts/evaluate-corpus.ts",
+    "retrieval:explain": "tsx scripts/retrieval-explain.ts",
+    "knowledge:import-demo": "tsx scripts/import-knowledge-demo.ts",
+    "knowledge:import-smoke": "tsx scripts/knowledge-import-smoke.ts",
+    "db:seed": "tsx scripts/seed.ts",
+    "db:seed-admin": "tsx scripts/seed-admin.ts",
+    "conversations:retention": "tsx scripts/retention.ts",
+    "users:retention": "tsx scripts/user-retention.ts"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^0.10.4",
+    "@types/pg": "^8.11.11",
+    "bcryptjs": "^2.4.3",
+    "jose": "^6.1.0",
+    "next": "^15.5.4",
+    "otpauth": "^9.4.1",
+    "pg": "^8.16.3",
+    "qrcode": "^1.5.4",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "sharp": "^0.35.4",
+    "xlsx": "^0.18.5",
+    "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.30",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  }
+}

@@ -1,0 +1,4 @@
+import { NextResponse } from "next/server";
+import { requirePermission } from "@/lib/auth/guard";
+import { query } from "@/lib/db";
+export async function GET(_:Request,{params}:{params:Promise<{id:string}>}){await requirePermission('knowledge:read');const {id}=await params;const run=await query("SELECT mr.id,mr.status,mr.score,mr.analysis,a.id article_id,a.title,a.content_markdown,a.status article_status FROM knowledge_merge_runs mr JOIN knowledge_articles a ON a.id=mr.merged_article_id WHERE mr.id=$1",[id]);if(!run.rows[0])return NextResponse.json({error:'Không tìm thấy bản gộp.'},{status:404});const sources=await query("SELECT a.id,a.title,a.content_markdown,a.status,a.replaced_by FROM knowledge_merge_sources ms JOIN knowledge_articles a ON a.id=ms.article_id WHERE ms.merge_run_id=$1",[id]);return NextResponse.json({run:run.rows[0],sources:sources.rows});}

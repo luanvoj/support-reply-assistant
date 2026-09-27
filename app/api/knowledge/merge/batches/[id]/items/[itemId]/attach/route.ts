@@ -1,0 +1,6 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { requirePermission } from "@/lib/auth/guard";
+import { query } from "@/lib/db";
+const schema=z.object({mergeRunId:z.string().uuid()});
+export async function POST(request:Request,{params}:{params:Promise<{id:string;itemId:string}>}){await requirePermission('knowledge:write');const {id,itemId}=await params;const body=schema.safeParse(await request.json().catch(()=>null));if(!body.success)return NextResponse.json({error:'Thông tin bản nháp không hợp lệ.'},{status:400});const run=await query<{analysis:unknown}>("SELECT analysis FROM knowledge_merge_runs WHERE id=$1",[body.data.mergeRunId]);const analysis=run.rows[0]?.analysis??{};const decision=typeof analysis==='object'&&analysis&&'decision' in analysis?String((analysis as {decision:unknown}).decision):null;const r=await query("UPDATE knowledge_merge_batch_items SET status='drafted',merge_run_id=$3,decision=$4,analysis=$5,updated_at=now() WHERE id=$2 AND batch_id=$1 RETURNING id",[id,itemId,body.data.mergeRunId,decision,JSON.stringify(analysis)]);return r.rows[0]?NextResponse.json({status:'drafted'}):NextResponse.json({error:'Không tìm thấy nhóm gộp.'},{status:404});}

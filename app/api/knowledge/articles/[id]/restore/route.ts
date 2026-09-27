@@ -1,0 +1,4 @@
+import { NextResponse } from "next/server";
+import { requirePermission } from "@/lib/auth/guard";
+import { query } from "@/lib/db";
+export async function POST(_: Request,{params}:{params:Promise<{id:string}>}) { const session=await requirePermission("knowledge:write"); const {id}=await params; const result=await query("UPDATE knowledge_articles SET status='draft',replaced_at=NULL,replaced_by=NULL,updated_at=now() WHERE id=$1 AND status='archived' RETURNING id",[id]); if(result.rows[0]) await query("INSERT INTO knowledge_article_audits(article_id,actor_id,action,version) VALUES($1,$2,'restored',(SELECT version FROM knowledge_articles WHERE id=$1))",[id,session.userId]); return result.rows[0]?NextResponse.json({status:'restored'}):NextResponse.json({error:'Không thể khôi phục bài viết.'},{status:404}); }
