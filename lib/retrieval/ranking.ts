@@ -5,7 +5,7 @@ export type RetrievalCandidate = {
   sourceTitle: string;
   keywordScore: number;
   semanticScore?: number;
-  responsePolicy?: "grounded" | "partial" | "escalate";
+  responsePolicy?: "grounded" | "escalate";
 };
 
 function similarity(left: string, right: string) {

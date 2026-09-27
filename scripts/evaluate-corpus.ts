@@ -10,8 +10,9 @@ async function main() {
   for (const item of cases.rows) {
     const sources = await searchPublishedChunks(item.question, settings);
     const evidence = assessEvidence(sources, settings);
-    const actual = evidence.state === "grounded" ? "grounded" : evidence.state === "partial" ? "partial" : "fallback";
-    if (actual === item.expected_decision) decisionCorrect++;
+    const actual = evidence.state === "grounded" ? "grounded" : "fallback";
+    const expected = item.expected_decision === "partial" ? "fallback" : item.expected_decision;
+    if (actual === expected) decisionCorrect++;
     if (item.expected_source_title) {
       const rank = sources.findIndex((source) => source.sourceTitle.toLocaleLowerCase("vi-VN") === item.expected_source_title!.toLocaleLowerCase("vi-VN"));
       if (rank >= 0) { sourceCorrect++; reciprocalRank += 1 / (rank + 1); }

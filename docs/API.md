@@ -31,7 +31,7 @@ All API routes are same-origin Next.js routes. Except for `GET /api/health` and 
 
 | Method | Route | Purpose |
 |---|---|---|
-| `POST` | `/api/assistant/answer` | Save a user question and generate a grounded, partial, or escalation response. Returns the active assistant name and escalation state. |
+| `POST` | `/api/assistant/answer` | Save a user question and generate either a grounded response or an automatic expert-request escalation. Returns the active assistant name and escalation state. |
 | `GET` | `/api/conversations` | List conversations available to the current user. |
 | `GET` / `DELETE` | `/api/conversations/:id` | Read one conversation in its persisted message order, or permanently delete it with permission. |
 | `GET` / `PUT` | `/api/assistant/profile` | Read/update the active assistant persona (admin). |
@@ -72,12 +72,11 @@ All API routes are same-origin Next.js routes. Except for `GET /api/health` and 
 | `GET` / `PUT` | `/api/retrieval/settings` | Read/update active retrieval and merge settings (admin). |
 | `GET` / `POST` | `/api/users` | List filtered, paginated user accounts or create an account (admin). |
 | `PATCH` / `DELETE` | `/api/users/:id` | Update an account, or disable it after ownership transfer (admin). |
-| `GET` / `POST` | `/api/providers` | List safe provider metadata or save provider configuration (admin). |
+| `GET` / `POST` / `PATCH` | `/api/providers` | List safe provider metadata, save provider configuration, or activate/deactivate one saved Agent (admin). |
 | `POST` | `/api/providers/test` | Test saved provider connectivity (admin). |
 | `POST` | `/api/providers/gemini/validate` | Validate Gemini credentials and retrieve usable models. |
 | `POST` | `/api/providers/azure/validate` | Validate Azure endpoint/key and retrieve available configuration. |
-| `GET` | `/api/unanswered` | List unanswered questions for review. |
-| `POST` | `/api/unanswered/request` | Create, or return the existing, expert request for a partial assistant response. |
+| `GET` | `/api/unanswered` | List expert requests for review, with server-side search and pagination. |
 | `POST` | `/api/unanswered/:id/review` | Publish or resolve an unanswered-question review. |
 | `GET` | `/api/dashboard/summary` | Read dashboard metrics permitted to current user. |
 
@@ -86,6 +85,10 @@ All API routes are same-origin Next.js routes. Except for `GET /api/health` and 
 `POST /api/users` requires `fullName`, `username`, `email`, `password`, `passwordConfirmation`, and `role`. Usernames are 3–50 characters and limited to letters, digits, `.`, `_`, and `-`. Passwords must be 8–128 characters and contain uppercase and lowercase letters plus a special character; the confirmation must match.
 
 `DELETE /api/users/:id` does not immediately erase the account. It requires `transferToUserId` and optionally `ticketAssigneeId`; the API transfers knowledge ownership and open expert requests, disables sessions and MFA, then marks the account for a 30-day retention period. The last active administrator cannot be disabled.
+
+`GET /api/unanswered` accepts `page`, `pageSize` (10-100), optional `search` (question or creator, limited to 100 characters), optional `status` (`new`, `in_review`, `answered`, `published`, `rejected`), and optional `id` (UUID). Its response contains `questions`, `pagination`, and `selected`; `selected` supports a deep link even when that request is outside the requested page.
+
+`PATCH /api/providers` requires `{ providerId, isEnabled }`. Enabling a provider disables every other active provider; disabling the active provider leaves the system in verified-knowledge suggestion mode. The endpoint resets runtime-health cooldown state for that selected provider.
 
 ## Security notes
 
@@ -101,7 +104,6 @@ All API routes are same-origin Next.js routes. Except for `GET /api/health` and 
 POST /api/assistant/answer returns an escalation object for each completed response:
 
 - `none`: the response does not need expert action.
-- `available`: the assistant answered only the verified portion; the user may create an expert request with POST /api/unanswered/request and a sourceMessageId.
 - `created`: an expert request was created automatically because evidence was insufficient or a cited source requires expert confirmation. The response includes ticketId; clients should open that request rather than create another one.
 
-POST /api/unanswered/request requires ticket:write, accepts only an assistant message owned by the current user in review mode, and is idempotent per source message.
+When evidence is sufficient but no Agent is available, the same endpoint returns `decision: knowledge_suggestions` and verified source suggestions instead of a generated answer. Provider outage alone does not create an expert request.

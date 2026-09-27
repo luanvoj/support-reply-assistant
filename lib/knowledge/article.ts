@@ -14,7 +14,7 @@ export const articleSchema = z.object({
   reviewDueAt: z.string().datetime().nullable().optional(),
   sourcePriority: z.number().int().min(0).max(100).optional(),
   serviceGroup: z.string().trim().max(80).nullable().optional(),
-  responsePolicy: z.enum(["grounded", "partial", "escalate"]).default("grounded"),
+  responsePolicy: z.enum(["grounded", "escalate"]).default("grounded"),
 });
 
 export function containsUnsupportedMedia(content: string) {

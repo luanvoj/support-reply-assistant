@@ -17,6 +17,7 @@ const providerSchema = z.object({
   isDefault: z.boolean().default(false),
   fallbackPriority: z.number().int().min(0).max(100).optional(),
 });
+const providerActivationSchema = z.object({ providerId: z.string().uuid(), isEnabled: z.boolean() });
 
 function isUnsafeEndpoint(value: string | undefined) {
   if (!value) return false;
@@ -41,9 +42,12 @@ function isUnsafeEndpoint(value: string | undefined) {
 export async function GET() {
   await requireRole("admin");
   const result = await query(
-    `SELECT id, provider_type, display_name, endpoint, deployment, model,
-            api_version, is_enabled, is_default, fallback_priority, updated_at
-     FROM ai_provider_settings ORDER BY is_enabled DESC, is_default DESC, updated_at DESC, fallback_priority NULLS LAST, display_name`,
+    `SELECT p.id, p.provider_type, p.display_name, p.endpoint, p.deployment, p.model,
+            p.api_version, p.is_enabled, p.is_default, p.fallback_priority, p.updated_at,
+            COALESCE(h.state, 'closed') AS runtime_state, h.opened_until, h.last_failure_code, h.last_success_at
+     FROM ai_provider_settings p
+     LEFT JOIN ai_provider_runtime_health h ON h.provider_id = p.id
+     ORDER BY p.is_enabled DESC, p.is_default DESC, p.updated_at DESC, p.fallback_priority NULLS LAST, p.display_name`,
   );
   return NextResponse.json({ providers: result.rows });
 }
@@ -129,4 +133,33 @@ export async function POST(request: Request) {
     return result.rows[0];
   });
   return NextResponse.json({ provider: savedProvider });
+}
+
+export async function PATCH(request: Request) {
+  const session = await requireRole("admin");
+  const parsed = providerActivationSchema.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  const result = await withTransaction(async (client) => {
+    const selected = await client.query<{ id: string; display_name: string }>(
+      "SELECT id, display_name FROM ai_provider_settings WHERE id = $1 FOR UPDATE",
+      [parsed.data.providerId],
+    );
+    if (!selected.rows[0]) throw new Error("PROVIDER_NOT_FOUND");
+    if (parsed.data.isEnabled) {
+      await client.query("UPDATE ai_provider_settings SET is_enabled=false, is_default=false, updated_at=now(), updated_by=$1 WHERE is_enabled=true", [session.userId]);
+    }
+    await client.query(
+      "UPDATE ai_provider_settings SET is_enabled=$1, is_default=$1, updated_at=now(), updated_by=$2 WHERE id=$3",
+      [parsed.data.isEnabled, session.userId, parsed.data.providerId],
+    );
+    await client.query(
+      `INSERT INTO ai_provider_runtime_health (provider_id, state, consecutive_failures, opened_until, half_open_until, last_failure_code, updated_at)
+       VALUES ($1, 'closed', 0, NULL, NULL, NULL, now())
+       ON CONFLICT (provider_id) DO UPDATE SET state='closed', consecutive_failures=0, opened_until=NULL, half_open_until=NULL, last_failure_code=NULL, updated_at=now()`,
+      [parsed.data.providerId],
+    );
+    return selected.rows[0];
+  }).catch((error) => error instanceof Error && error.message === "PROVIDER_NOT_FOUND" ? null : Promise.reject(error));
+  if (!result) return NextResponse.json({ error: "Provider not found" }, { status: 404 });
+  return NextResponse.json({ provider: result, isEnabled: parsed.data.isEnabled });
 }

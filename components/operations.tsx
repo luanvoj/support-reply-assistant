@@ -30,7 +30,7 @@ type Article = {
   source_priority?: number;
   review_due_at?: string | null;
   service_group?: string | null;
-  response_policy?: "grounded" | "partial" | "escalate";
+  response_policy?: "grounded" | "escalate";
   source_file?: string | null;
   version?: number;
   merge_run_id?: string | null;
@@ -41,7 +41,7 @@ type ChatMessage = {
   sender: "user" | "assistant";
   content: string;
   state: "complete" | "pending" | "error";
-  mode?: "grounded" | "social" | "review" | "provider_error";
+  mode?: "grounded" | "social" | "review" | "provider_error" | "knowledge_suggestions";
   confidence?: number | null;
   sources?: Array<{
     id?: string;
@@ -53,7 +53,7 @@ type ChatMessage = {
   requestId?: string;
   question?: string;
   escalation?: {
-    state: "none" | "available" | "created";
+    state: "none" | "created";
     ticketId?: string;
     status?: string;
   };
@@ -200,6 +200,8 @@ function CitationSources({
   const label =
     mode === "review"
       ? "Nguồn cần chuyên gia rà soát"
+      : mode === "knowledge_suggestions"
+        ? "Gợi ý từ Kho kiến thức"
       : mode === "provider_error"
         ? "Nguồn đã tìm thấy"
         : "Căn cứ đã dùng";
@@ -278,9 +280,7 @@ function AssistantScreen() {
               sources: item.retrieval_summary ?? [],
               escalation: item.escalation_ticket_id
                 ? { state: "created" as const, ticketId: item.escalation_ticket_id, status: item.escalation_ticket_status ?? undefined }
-                : item.message_mode === "review"
-                  ? { state: "available" as const }
-                  : { state: "none" as const },
+                : { state: "none" as const },
             }),
           ),
         );
@@ -542,42 +542,10 @@ function AssistantScreen() {
                         <div className="chat-escalation">
                           <span className="warning-pill">Đã chuyển chuyên gia</span>
                           <span>Yêu cầu đang chờ được xác nhận.</span>
-                          <button
-                            className="ops-button primary"
-                            onClick={() => router.push(`/review?id=${message.escalation?.ticketId}`)}
-                          >
-                            Xem yêu cầu đã chuyển
-                          </button>
                         </div>
                       )}
-                    {message.escalation?.state === "available" &&
-                      message.state === "complete" && (
-                        <button
-                          className="ops-button"
-                          onClick={async () => {
-                            const response = await fetch("/api/unanswered/request", {
-                              method: "POST",
-                              headers: { "content-type": "application/json" },
-                              body: JSON.stringify({ sourceMessageId: message.id }),
-                            });
-                            const body = await response.json().catch(() => ({}));
-                            if (!response.ok) {
-                              notify(readableApiError(body.error, "Không thể chuyển yêu cầu. Hãy thử lại."), "error");
-                              return;
-                            }
-                            setMessages((current) => current.map((item) =>
-                              item.id === message.id
-                                ? { ...item, escalation: { state: "created", ticketId: body.ticketId, status: body.status } }
-                                : item,
-                            ));
-                            notify(body.created ? "Đã chuyển yêu cầu để chuyên gia hỗ trợ." : "Yêu cầu này đã được chuyển trước đó.", "success");
-                          }}
-                        >
-                          Yêu cầu chuyên gia hỗ trợ
-                        </button>
-                      )}
                     {!!message.sources?.length &&
-                      (message.mode === "grounded" || message.mode === "review" || message.mode === "provider_error") && (
+                      (message.mode === "grounded" || message.mode === "review" || message.mode === "provider_error" || message.mode === "knowledge_suggestions") && (
                         <CitationSources
                           sources={message.sources}
                           mode={message.mode}
@@ -808,7 +776,7 @@ function KnowledgeScreen() {
   const [sourcePriority, setSourcePriority] = useState(50);
   const [reviewDueAt, setReviewDueAt] = useState("");
   const [serviceGroup, setServiceGroup] = useState("");
-  const [responsePolicy, setResponsePolicy] = useState<"grounded" | "partial" | "escalate">("grounded");
+  const [responsePolicy, setResponsePolicy] = useState<"grounded" | "escalate">("grounded");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editSnapshot, setEditSnapshot] = useState<string | null>(null);
   const [articleFilter, setArticleFilter] = useState("");
@@ -1075,7 +1043,6 @@ function KnowledgeScreen() {
               Cách Agent phản hồi
               <select value={responsePolicy} onChange={(e) => setResponsePolicy(e.target.value as typeof responsePolicy)}>
                 <option value="grounded">Trả lời có căn cứ</option>
-                <option value="partial">Trả lời một phần</option>
                 <option value="escalate">Chuyển chuyên gia</option>
               </select>
             </label>
@@ -1131,7 +1098,7 @@ function KnowledgeScreen() {
                   </small>
                 </span>
                 <span>{item.chunk_count} đoạn</span>
-                <span className="info-pill">{item.response_policy === "escalate" ? "Chuyển chuyên gia" : item.response_policy === "partial" ? "Trả lời một phần" : "Có căn cứ"}</span>
+                <span className="info-pill">{item.response_policy === "escalate" ? "Chuyển chuyên gia" : "Có căn cứ"}</span>
                 <span
                   className={
                     item.status === "published"
@@ -1160,10 +1127,14 @@ function KnowledgeScreen() {
   );
 }
 
-function QueueScreen() {
+function LegacyQueueScreen() {
   const router = useRouter();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [query, setQuery] = useState("");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [title, setTitle] = useState("");
+  const [answer, setAnswer] = useState("");
+  const [message, setMessage] = useState("");
   const load = async () => {
     const response = await fetch("/api/unanswered");
     const body = await response.json().catch(() => ({}));
@@ -1171,16 +1142,26 @@ function QueueScreen() {
   };
   useEffect(() => {
     void load();
+    setSelectedId(new URLSearchParams(window.location.search).get("id"));
   }, []);
   const visible = tickets.filter((item) =>
     item.original_question.toLowerCase().includes(query.toLowerCase()),
   );
+  const selected = tickets.find((item) => item.id === selectedId) ?? null;
+  const open = (id: string) => { setSelectedId(id); setTitle(""); setAnswer(""); setMessage(""); router.replace(`/unanswered?id=${id}`); };
+  const publish = async () => {
+    if (!selected || title.trim().length < 3 || answer.trim().length < 20) return;
+    const slug = title.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    const response = await fetch(`/api/unanswered/${selected.id}/review`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ draftAnswer: answer, finalAnswer: answer, publish: true, title, slug }) });
+    if (!response.ok) { setMessage("Không thể xuất bản. Hãy kiểm tra quyền và nội dung."); return; }
+    setMessage("Đã bổ sung tri thức đã xác minh và đóng yêu cầu."); await load();
+  };
   return (
     <Shell screen="queue">
       <Header
         screen="queue"
-        title="Hàng đợi chưa trả lời"
-        description="Các câu hỏi thiếu tài liệu hoặc chưa đạt mức độ tin cậy yêu cầu."
+        title="Yêu cầu chuyên gia"
+        description="Tiếp nhận các câu hỏi Trợ lý chưa thể phản hồi an toàn và biến kiến thức đã xác nhận thành tài sản dùng lại."
         action={
           <button className="ops-button" onClick={() => void load()}>
             ↻ Làm mới
@@ -1238,9 +1219,9 @@ function QueueScreen() {
                     <td>
                       <button
                         className="link-button"
-                        onClick={() => router.push(`/review?id=${item.id}`)}
+                        onClick={() => open(item.id)}
                       >
-                        Rà soát →
+                        Xử lý →
                       </button>
                     </td>
                   </tr>
@@ -1253,9 +1234,102 @@ function QueueScreen() {
             </tbody>
           </table>
         </div>
+        {selected && (
+          <section className="review-form expert-request-detail">
+            <div className="panel-heading"><div><small>YÊU CẦU ĐANG CHỌN</small><h2>{selected.original_question}</h2><p>{selected.reason_code === "missing_knowledge" ? "Không tìm thấy tài liệu phù hợp trong Kho kiến thức." : selected.reason_code === "expert_required" ? "Nội dung cần chuyên gia xác nhận trước khi tư vấn." : `Độ tin cậy ${Math.round((selected.retrieval_score ?? 0) * 100)}% chưa đạt ngưỡng trả lời an toàn.`}</p></div><button className="ops-button" onClick={() => { setSelectedId(null); router.replace("/unanswered"); }}>Đóng chi tiết</button></div>
+            <label>Tiêu đề tri thức mới<input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Dùng khi nội dung có thể tái sử dụng" /></label>
+            <label>Câu trả lời đã được chuyên gia xác nhận<textarea className="large-textarea" value={answer} onChange={(event) => setAnswer(event.target.value)} placeholder="Viết câu trả lời để Trợ lý có thể dùng lại…" /></label>
+            <div className="review-actions"><button className="ops-button primary" disabled={title.trim().length < 3 || answer.trim().length < 20} onClick={() => void publish()}>Bổ sung tri thức & đóng yêu cầu</button></div>
+            {message && <Message value={message} />}
+          </section>
+        )}
       </div>
     </Shell>
   );
+}
+
+function QueueScreen() {
+  const router = useRouter();
+  const { notify } = useFeedback();
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({ page: 1, pageSize: 20, total: 0 });
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [title, setTitle] = useState("");
+  const [answer, setAnswer] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [initialized, setInitialized] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    const params = new URLSearchParams({ page: String(page), pageSize: "20" });
+    if (query.trim()) params.set("search", query.trim());
+    if (selectedId) params.set("id", selectedId);
+    const response = await fetch(`/api/unanswered?${params.toString()}`).catch(() => null);
+    const body = await response?.json().catch(() => ({}));
+    setLoading(false);
+    if (!response?.ok) { notify("Không thể tải danh sách yêu cầu chuyên gia.", "error"); return; }
+    const questions = body.questions ?? [];
+    setTickets(questions);
+    setPagination(body.pagination ?? { page: 1, pageSize: 20, total: 0 });
+    setSelectedTicket(body.selected ?? questions.find((item: Ticket) => item.id === selectedId) ?? null);
+  };
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const requestedPage = Number(params.get("page") ?? 1);
+    setPage(Number.isFinite(requestedPage) ? Math.max(1, Math.floor(requestedPage)) : 1);
+    setSelectedId(params.get("id"));
+    setInitialized(true);
+  }, []);
+  useEffect(() => { if (initialized) void load(); }, [initialized, page, query, selectedId]);
+
+  const reasonText = (ticket: Ticket) => ticket.reason_code === "missing_knowledge"
+    ? "Không tìm thấy tài liệu phù hợp trong Kho kiến thức."
+    : ticket.reason_code === "expert_required"
+      ? "Nội dung cần chuyên gia xác nhận trước khi tư vấn."
+      : ticket.reason_code === "expert_requested"
+        ? "Người dùng cần chuyên gia hỗ trợ thêm cho câu trả lời này."
+        : `Độ tin cậy ${Math.round((ticket.retrieval_score ?? 0) * 100)}% chưa đạt ngưỡng trả lời an toàn.`;
+  const reasonLabel = (ticket: Ticket) => ticket.reason_code === "missing_knowledge" ? "Thiếu tài liệu" : ticket.reason_code === "expert_required" ? "Cần chuyên gia xác nhận" : ticket.reason_code === "expert_requested" ? "Yêu cầu hỗ trợ thêm" : "Độ tin cậy thấp";
+  const open = (ticket: Ticket) => {
+    setSelectedId(ticket.id); setSelectedTicket(ticket); setTitle(""); setAnswer("");
+    router.replace(`/unanswered?id=${ticket.id}&page=${page}`);
+  };
+  const close = () => {
+    setSelectedId(null); setSelectedTicket(null); setTitle(""); setAnswer("");
+    router.replace(`/unanswered?page=${page}`);
+  };
+  const publish = async () => {
+    if (!selectedTicket || title.trim().length < 3 || answer.trim().length < 20) return;
+    const slug = title.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    const response = await fetch(`/api/unanswered/${selectedTicket.id}/review`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ draftAnswer: answer, finalAnswer: answer, publish: true, title, slug }) });
+    if (!response.ok) { notify("Không thể xuất bản. Hãy kiểm tra quyền và nội dung.", "error"); return; }
+    notify("Đã bổ sung tri thức đã xác minh và đóng yêu cầu.", "success");
+    close();
+  };
+  const totalPages = Math.max(1, Math.ceil(pagination.total / pagination.pageSize));
+
+  return <Shell screen="queue">
+    <Header screen="queue" title="Yêu cầu chuyên gia" description="Tiếp nhận các câu hỏi Trợ lý chưa thể phản hồi an toàn và biến kiến thức đã xác nhận thành tài sản dùng lại." action={<button className="ops-button" disabled={loading} onClick={() => void load()}>↻ Làm mới</button>} />
+    <div className={`expert-request-workspace${selectedTicket ? " has-selection" : ""}`}>
+      <section className="ops-panel expert-request-list">
+        <div className="panel-heading expert-request-list-heading"><div><h2>Danh sách yêu cầu</h2><p>{loading ? "Đang tải…" : `${pagination.total} yêu cầu phù hợp.`}</p></div></div>
+        <div className="ops-toolbar"><input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder="Tìm câu hỏi hoặc người tạo…" aria-label="Tìm yêu cầu chuyên gia" /></div>
+        <div className="ops-table"><table><thead><tr><th>Câu hỏi</th><th>Độ tin cậy</th><th>Nguyên nhân</th><th>Người tạo</th><th>Trạng thái</th><th /></tr></thead><tbody>{tickets.length ? tickets.map((item) => <tr className={item.id === selectedId ? "is-selected" : ""} key={item.id}><td><b>{item.original_question}</b><small>{new Date(item.created_at).toLocaleString("vi-VN")}</small></td><td className="warning-text">{Math.round((item.retrieval_score ?? 0) * 100)}%</td><td>{reasonLabel(item)}</td><td>{item.creator}</td><td><span className="warning-pill">{item.status === "new" ? "Mới" : item.status}</span></td><td><button className="link-button" onClick={() => open(item)}>{item.id === selectedId ? "Đang xem" : "Xử lý →"}</button></td></tr>) : <tr><td colSpan={6}>{loading ? "Đang tải yêu cầu…" : "Không có câu hỏi cần xử lý."}</td></tr>}</tbody></table></div>
+        {pagination.total > pagination.pageSize && <div className="pagination"><button className="ops-button" disabled={page === 1 || loading} onClick={() => setPage((value) => value - 1)}>← Trước</button><span>Trang {page} / {totalPages}</span><button className="ops-button" disabled={page >= totalPages || loading} onClick={() => setPage((value) => value + 1)}>Sau →</button></div>}
+      </section>
+      {selectedTicket ? <section className="ops-panel review-form expert-request-detail">
+        <header className="expert-request-detail-header"><div><small>YÊU CẦU ĐANG XỬ LÝ</small><h2>{selectedTicket.original_question}</h2><p>{reasonText(selectedTicket)}</p></div><button className="ops-button" onClick={close}>Đóng</button></header>
+        <div className="expert-request-meta" aria-label="Thông tin yêu cầu"><div><small>Trạng thái</small><span className="warning-pill">{selectedTicket.status === "new" ? "Mới" : selectedTicket.status}</span></div><div><small>Độ tin cậy</small><strong>{Math.round((selectedTicket.retrieval_score ?? 0) * 100)}%</strong></div><div><small>Người tạo</small><strong>{selectedTicket.creator}</strong></div><div><small>Thời điểm tạo</small><strong>{new Date(selectedTicket.created_at).toLocaleString("vi-VN")}</strong></div></div>
+        <div className="expert-request-context"><small>LÝ DO CẦN XỬ LÝ</small><p>{reasonText(selectedTicket)}</p></div>
+        <div className="expert-request-form"><div><h3>Bổ sung vào Kho kiến thức</h3><p>Nội dung được xuất bản sẽ là câu trả lời đã xác minh để Trợ lý có thể dùng lại.</p></div><label>Tiêu đề tri thức mới<input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Dùng khi nội dung có thể tái sử dụng" /></label><label>Câu trả lời đã được chuyên gia xác nhận<textarea className="large-textarea" value={answer} onChange={(event) => setAnswer(event.target.value)} placeholder="Viết câu trả lời để Trợ lý có thể dùng lại…" /></label></div>
+        <footer className="review-actions expert-request-actions"><small>Yêu cầu sẽ được đóng sau khi nội dung được xuất bản.</small><button className="ops-button primary" disabled={title.trim().length < 3 || answer.trim().length < 20} onClick={() => void publish()}>Bổ sung tri thức & đóng yêu cầu</button></footer>
+      </section> : <aside className="ops-panel expert-request-empty"><div><small>CHI TIẾT XỬ LÝ</small><h2>Chọn một yêu cầu</h2><p>Chọn “Xử lý” từ danh sách để xem ngữ cảnh và bổ sung tri thức đã xác minh.</p></div></aside>}
+    </div>
+  </Shell>;
 }
 
 function ReviewScreen() {
@@ -1483,6 +1557,17 @@ function SettingsScreen() {
   const [settingsTab, setSettingsTab] = useState<
     "agent" | "retrieval" | "providers" | "users"
   >("retrieval");
+  useEffect(() => {
+    const tab = new URLSearchParams(window.location.search).get("tab");
+    if (tab === "agent" || tab === "retrieval" || tab === "providers" || tab === "users") setSettingsTab(tab);
+  }, []);
+  const [activeRetrievalSection, setActiveRetrievalSection] = useState("retrieval-source");
+  const retrievalSections = [
+    ["retrieval-source", "1", "Chọn nguồn tri thức"],
+    ["retrieval-ranking", "2", "Xếp hạng kết quả"],
+    ["retrieval-decision", "3", "Quyết định phản hồi & chủ đề nhạy cảm"],
+    ["retrieval-merge", "4", "Gộp bài viết tương tự"],
+  ] as const;
   const [retrieval, setRetrieval] = useState({
     topK: 10,
     maxArticles: 3,
@@ -1490,7 +1575,6 @@ function SettingsScreen() {
     semanticWeight: 0.6,
     diversityWeight: 0.3,
     autoAnswerThreshold: 0.8,
-    partialAnswerThreshold: 0.6,
     sensitiveThreshold: 0.9,
     sensitiveTopics: ["Giá & báo giá", "Hợp đồng", "Bảo mật", "SLA"],
     verifiedOnly: true,
@@ -1535,6 +1619,32 @@ function SettingsScreen() {
   const [azureDeploymentVerified, setAzureDeploymentVerified] = useState(false);
   const [azureConfigured, setAzureConfigured] = useState(false);
   const [azureSaving, setAzureSaving] = useState(false);
+  const [savedProviders, setSavedProviders] = useState<Array<{ id: string; display_name: string; provider_type: string; is_enabled: boolean }>>([]);
+  const [selectedProviderId, setSelectedProviderId] = useState("");
+  const [providerToggling, setProviderToggling] = useState(false);
+
+  const scrollToRetrievalSection = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setActiveRetrievalSection(id);
+  };
+
+  useEffect(() => {
+    if (settingsTab !== "retrieval") return;
+    const sections = retrievalSections
+      .map(([id]) => document.getElementById(id))
+      .filter((section): section is HTMLElement => Boolean(section));
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((left, right) => right.intersectionRatio - left.intersectionRatio)[0];
+        if (visible) setActiveRetrievalSection(visible.target.id);
+      },
+      { rootMargin: "-18% 0px -64% 0px", threshold: [0.1, 0.35, 0.6] },
+    );
+    sections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+  }, [settingsTab]);
 
   useEffect(() => {
     let isCurrent = true;
@@ -1543,6 +1653,9 @@ function SettingsScreen() {
       .then((body) => {
         if (!isCurrent) return;
         const providers = body?.providers ?? [];
+        setSavedProviders(providers);
+        const active = providers.find((item: { is_enabled?: boolean }) => item.is_enabled) ?? providers[0];
+        if (active) setSelectedProviderId(active.id);
         const provider = providers.find(
           (item: { provider_type?: string; is_enabled?: boolean }) =>
             item.provider_type === "gemini" && item.is_enabled,
@@ -1569,6 +1682,20 @@ function SettingsScreen() {
       isCurrent = false;
     };
   }, []);
+  const selectedProvider = savedProviders.find((provider) => provider.id === selectedProviderId);
+  const toggleProvider = async () => {
+    if (!selectedProvider) return;
+    setProviderToggling(true);
+    try {
+      const isEnabled = !selectedProvider.is_enabled;
+      const response = await fetch("/api/providers", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ providerId: selectedProvider.id, isEnabled }) });
+      if (!response.ok) throw new Error();
+      setSavedProviders((current) => current.map((provider) => ({ ...provider, is_enabled: isEnabled ? provider.id === selectedProvider.id : false })));
+      setMessage(isEnabled ? `Đã bật Agent ${selectedProvider.display_name}.` : `Đã tắt Agent ${selectedProvider.display_name}. Kho kiến thức vẫn hoạt động ở chế độ gợi ý.`);
+    } catch {
+      setMessage("Không thể thay đổi trạng thái Agent. Hãy thử lại.");
+    } finally { setProviderToggling(false); }
+  };
 
   useEffect(() => {
     void fetch("/api/retrieval/settings")
@@ -1809,6 +1936,11 @@ function SettingsScreen() {
       </section>
       <section className="settings-content">
       {settingsTab === "providers" && (
+        <>
+        <section className="provider-runtime-control" aria-label="Trạng thái Agent">
+          <div><span className={selectedProvider?.is_enabled ? "success-pill" : "info-pill"}>{selectedProvider?.is_enabled ? "Đang hoạt động" : "Đang tắt"}</span><b>{selectedProvider?.is_enabled ? "Agent đang xử lý phản hồi" : "Kho kiến thức đang ở chế độ gợi ý"}</b><small>{selectedProvider?.is_enabled ? `Đang dùng ${selectedProvider.display_name}.` : "Bật một Agent đã lưu để tạo phản hồi tổng hợp từ nguồn xác minh."}</small></div>
+          <div className="provider-runtime-actions">{selectedProvider?.is_enabled ? <span className="active-provider-name">{selectedProvider.display_name}</span> : <select value={selectedProviderId} onChange={(event) => setSelectedProviderId(event.target.value)} disabled={!savedProviders.length || providerToggling}>{savedProviders.map((provider) => <option key={provider.id} value={provider.id}>{provider.display_name}</option>)}</select>}<button className={selectedProvider?.is_enabled ? "ops-button danger" : "ops-button primary"} disabled={!selectedProvider || providerToggling} onClick={() => void toggleProvider()}>{providerToggling ? "Đang cập nhật…" : selectedProvider?.is_enabled ? "Tắt Agent" : "Bật Agent"}</button></div>
+        </section>
         <div className="provider-cards-grid">
           <section className="ops-panel provider-card provider-verification-card">
             <div className="provider-title">
@@ -2030,7 +2162,7 @@ function SettingsScreen() {
               {azureSaving ? "Đang lưu cấu hình…" : "Lưu cấu hình Azure"}
             </button>
           </section>
-        </div>
+        </div></>
       )}
       {settingsTab === "users" && <UserManagementSettings />}
       {settingsTab === "agent" && (
@@ -2137,18 +2269,11 @@ function SettingsScreen() {
         <section className="settings-workspace">
           <aside className="settings-section-nav">
             <b>MỤC CẤU HÌNH TRANG NÀY</b>
-            <button className="active">
-              1 <span>Chọn nguồn tri thức</span>
-            </button>
-            <button>
-              2 <span>Xếp hạng kết quả</span>
-            </button>
-            <button>
-              3 <span>Quyết định phản hồi</span>
-            </button>
-            <button>
-              4 <span>Chủ đề nhạy cảm</span>
-            </button>
+            {retrievalSections.map(([id, order, label]) => (
+              <button className={activeRetrievalSection === id ? "active" : undefined} key={id} onClick={() => scrollToRetrievalSection(id)} type="button">
+                {order} <span>{label}</span>
+              </button>
+            ))}
             <div className="decision-preview">
               <b>MINH HỌA QUYẾT ĐỊNH</b>
               <small>Live preview</small>
@@ -2171,7 +2296,7 @@ function SettingsScreen() {
               </div>
               <span className="success-pill">● Đang dùng cấu hình an toàn</span>
             </div>
-            <section className="ops-panel retrieval-card">
+            <section className="ops-panel retrieval-card" id="retrieval-source">
               <h3>1. Chọn nguồn tri thức</h3>
               <p>
                 Giới hạn các tài liệu đưa vào ngữ cảnh trước khi Agent trả lời.
@@ -2247,7 +2372,7 @@ function SettingsScreen() {
                 </span>
               </label>
             </section>
-            <section className="ops-panel retrieval-card">
+            <section className="ops-panel retrieval-card" id="retrieval-ranking">
               <h3>2. Xếp hạng kết quả</h3>
               <p>Điểm tìm kiếm không phải là độ tin cậy của câu trả lời.</p>
               <div className="settings-control-grid">
@@ -2305,8 +2430,9 @@ function SettingsScreen() {
                 </label>
               </div>
             </section>
-            <section className="ops-panel retrieval-card">
-              <h3>3. Quyết định phản hồi</h3>
+            <section className="ops-panel retrieval-card" id="retrieval-decision">
+              <h3>3. Quyết định phản hồi & chủ đề nhạy cảm</h3>
+              <p>Thiết lập ngưỡng trả lời an toàn và các chủ đề phải dùng ngưỡng nghiêm ngặt hơn.</p>
               <div className="threshold-grid">
                 <label>
                   Tự trả lời
@@ -2325,23 +2451,7 @@ function SettingsScreen() {
                   <small>% đủ căn cứ</small>
                 </label>
                 <label>
-                  Trả lời một phần
-                  <input
-                    type="number"
-                    min="30"
-                    max="95"
-                    value={Math.round(retrieval.partialAnswerThreshold * 100)}
-                    onChange={(e) =>
-                      setRetrieval({
-                        ...retrieval,
-                        partialAnswerThreshold: Number(e.target.value) / 100,
-                      })
-                    }
-                  />
-                  <small>% có nguồn liên quan</small>
-                </label>
-                <label>
-                  Chủ đề nhạy cảm
+                  Ngưỡng chủ đề nhạy cảm
                   <input
                     type="number"
                     min="70"
@@ -2357,28 +2467,25 @@ function SettingsScreen() {
                   <small>% bắt buộc tối thiểu</small>
                 </label>
               </div>
+              <label className="sensitive-topics-field">
+                Chủ đề nhạy cảm
+                <input
+                  value={retrieval.sensitiveTopics.join(", ")}
+                  onChange={(e) =>
+                    setRetrieval({
+                      ...retrieval,
+                      sensitiveTopics: e.target.value
+                        .split(",")
+                        .map((v) => v.trim())
+                        .filter(Boolean),
+                    })
+                  }
+                />
+                <small>Phân tách bằng dấu phẩy, ví dụ: Giá & báo giá, Hợp đồng, Bảo mật, SLA.</small>
+              </label>
             </section>
-            <section className="ops-panel retrieval-card">
-              <h3>4. Chủ đề nhạy cảm</h3>
-              <p>
-                Phân tách bằng dấu phẩy. Các chủ đề này luôn dùng ngưỡng nghiêm
-                ngặt hơn.
-              </p>
-              <input
-                value={retrieval.sensitiveTopics.join(", ")}
-                onChange={(e) =>
-                  setRetrieval({
-                    ...retrieval,
-                    sensitiveTopics: e.target.value
-                      .split(",")
-                      .map((v) => v.trim())
-                      .filter(Boolean),
-                  })
-                }
-              />
-            </section>
-            <section className="ops-panel retrieval-card">
-              <h3>5. Gộp bài viết tương tự</h3>
+            <section className="ops-panel retrieval-card" id="retrieval-merge">
+              <h3>4. Gộp bài viết tương tự</h3>
               <p>
                 Các giá trị này chỉ áp dụng cho đợt gộp mới. Mỗi đợt sẽ lưu lại
                 tiêu chí đã dùng để bạn đối soát kết quả về sau.
@@ -2417,7 +2524,6 @@ function SettingsScreen() {
                     semanticWeight: 0.6,
                     diversityWeight: 0.3,
                     autoAnswerThreshold: 0.8,
-                    partialAnswerThreshold: 0.6,
                     sensitiveThreshold: 0.9,
                     sensitiveTopics: [
                       "Giá & báo giá",

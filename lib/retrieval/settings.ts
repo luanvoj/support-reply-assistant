@@ -7,7 +7,6 @@ export type RetrievalSettings = {
   semanticWeight: number;
   diversityWeight: number;
   autoAnswerThreshold: number;
-  partialAnswerThreshold: number;
   sensitiveThreshold: number;
   sensitiveTopics: string[];
   verifiedOnly: boolean;
@@ -26,7 +25,6 @@ export const defaultRetrievalSettings: RetrievalSettings = {
   semanticWeight: 0.6,
   diversityWeight: 0.3,
   autoAnswerThreshold: 0.8,
-  partialAnswerThreshold: 0.6,
   sensitiveThreshold: 0.9,
   sensitiveTopics: ["Giá & báo giá", "Hợp đồng", "Bảo mật", "SLA"],
   verifiedOnly: true,
@@ -51,7 +49,6 @@ export async function getActiveRetrievalSettings(): Promise<RetrievalSettings> {
     semanticWeight: Number(row.semantic_weight),
     diversityWeight: Number(row.diversity_weight),
     autoAnswerThreshold: Number(row.auto_answer_threshold),
-    partialAnswerThreshold: Number(row.partial_answer_threshold),
     sensitiveThreshold: Number(row.sensitive_threshold),
     sensitiveTopics: Array.isArray(row.sensitive_topics)
       ? row.sensitive_topics.filter(

@@ -6,24 +6,26 @@ import { BrandMark } from "@/components/brand-mark";
 import { NavigationIcon } from "@/components/navigation-icon";
 import { UserAvatar } from "@/components/user-avatar";
 
-export type Screen = "overview" | "assistant" | "conversations" | "knowledge" | "queue" | "review" | "settings" | "profile";
+export type Screen = "overview" | "guide" | "assistant" | "conversations" | "knowledge" | "queue" | "review" | "settings" | "profile";
 
 const navigation = [
   ["Tổng quan", "/", "overview"],
+  ["Hướng dẫn sử dụng", "/guide", "guide"],
   ["Trợ lý", "/assistant", "assistant"],
   ["Hội thoại", "/conversations", "conversations"],
   ["Kho kiến thức", "/knowledge-base", "knowledge"],
-  ["Hàng đợi xử lý", "/unanswered", "queue"],
+  ["Yêu cầu chuyên gia", "/unanswered", "queue"],
   ["Cài đặt", "/settings", "settings"],
 ] as const;
 
 export const screenLabels: Record<Screen, string> = {
   overview: "Tổng quan",
+  guide: "Hướng dẫn sử dụng",
   assistant: "Trợ lý",
   conversations: "Hội thoại",
   knowledge: "Kho kiến thức",
-  queue: "Hàng đợi xử lý",
-  review: "Rà soát kỹ thuật",
+  queue: "Yêu cầu chuyên gia",
+  review: "Yêu cầu chuyên gia",
   settings: "Cài đặt",
   profile: "Thông tin người dùng",
 };
@@ -83,7 +85,7 @@ function ShellContent({ screen, children }: { screen: Screen; children: ReactNod
     if (response.ok) window.location.assign("/login");
     else notify("Không thể đăng xuất. Hãy thử lại.", "error");
   };
-  return <div className="ops-shell"><aside className="ops-sidebar"><a className="ops-brand" href="/"><BrandMark /><b>Trợ lý phản hồi<small>Trung tâm vận hành</small></b></a><a className="new-response" href="/assistant">+ Tạo phản hồi</a><nav className="ops-nav">{navigation.filter(([name]) => viewerRole === null || viewerRole === "admin" || (viewerRole === "technical" ? name !== "Cài đặt" : name === "Tổng quan" || name === "Trợ lý")).map(([name, href, icon]) => <a className={screenLabels[screen] === name || (screen === "review" && name === "Hàng đợi xử lý") ? "active" : ""} href={href} key={href}><NavigationIcon name={icon} />{name}</a>)}</nav><div className="ops-side-bottom"><small className="healthy">● Hệ thống tri thức sẵn sàng</small><small>Nhóm: Tất cả</small><div className="sidebar-account-menu-wrap" ref={accountMenuRef}><button className="sidebar-account" type="button" aria-expanded={accountMenuOpen} aria-controls="sidebar-account-menu" aria-haspopup="menu" aria-label="Mở tác vụ tài khoản" onClick={() => setAccountMenuOpen((open) => !open)}><UserAvatar className="sidebar-account-avatar" fullName={viewer?.fullName} src={viewer?.avatarUrl} alt="Ảnh đại diện tài khoản" /><span><b>{viewer?.fullName ?? "Thông tin người dùng"}</b><small>{viewer?.roleLabel ?? "Tài khoản"}</small></span><span className="sidebar-account-chevron" aria-hidden="true">⌄</span></button>{accountMenuOpen && <div className="sidebar-account-menu" id="sidebar-account-menu" role="menu" aria-label="Tác vụ tài khoản"><a href="/profile" role="menuitem" onClick={() => setAccountMenuOpen(false)}>Thông tin người dùng</a><button type="button" role="menuitem" onClick={() => { setAccountMenuOpen(false); void logout(); }}>Đăng xuất</button></div>}</div></div></aside><main className="ops-main"><header className="ops-topbar app-header"><span>Không gian làm việc <b>/</b> {screenLabels[screen]}</span></header>{children}</main></div>;
+  return <div className="ops-shell"><aside className="ops-sidebar"><a className="ops-brand" href="/"><BrandMark /><b>Trợ lý phản hồi<small>Trung tâm vận hành</small></b></a><a className="new-response" href="/assistant">+ Tạo phản hồi</a><nav className="ops-nav">{navigation.filter(([name]) => viewerRole === null || viewerRole === "admin" || (viewerRole === "technical" ? name !== "Cài đặt" : name === "Tổng quan" || name === "Hướng dẫn sử dụng" || name === "Trợ lý")).map(([name, href, icon]) => <a className={screenLabels[screen] === name || (screen === "review" && name === "Yêu cầu chuyên gia") ? "active" : ""} href={href} key={href}><NavigationIcon name={icon} />{name}</a>)}</nav><div className="ops-side-bottom"><small className="healthy">● Hệ thống tri thức sẵn sàng</small><small>Nhóm: Tất cả</small><div className="sidebar-account-menu-wrap" ref={accountMenuRef}><button className="sidebar-account" type="button" aria-expanded={accountMenuOpen} aria-controls="sidebar-account-menu" aria-haspopup="menu" aria-label="Mở tác vụ tài khoản" onClick={() => setAccountMenuOpen((open) => !open)}><UserAvatar className="sidebar-account-avatar" fullName={viewer?.fullName} src={viewer?.avatarUrl} alt="Ảnh đại diện tài khoản" /><span><b>{viewer?.fullName ?? "Thông tin người dùng"}</b><small>{viewer?.roleLabel ?? "Tài khoản"}</small></span><span className="sidebar-account-chevron" aria-hidden="true">⌄</span></button>{accountMenuOpen && <div className="sidebar-account-menu" id="sidebar-account-menu" role="menu" aria-label="Tác vụ tài khoản"><a href="/profile" role="menuitem" onClick={() => setAccountMenuOpen(false)}>Thông tin người dùng</a><button type="button" role="menuitem" onClick={() => { setAccountMenuOpen(false); void logout(); }}>Đăng xuất</button></div>}</div></div></aside><main className="ops-main"><header className="ops-topbar app-header"><span>Không gian làm việc <b>/</b> {screenLabels[screen]}</span></header>{children}</main></div>;
 }
 
 export function AppShell({ screen, children }: { screen: Screen; children: ReactNode }) {

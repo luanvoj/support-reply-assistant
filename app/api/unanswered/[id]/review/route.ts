@@ -57,8 +57,8 @@ export async function POST(
       if (!input.title || !input.slug)
         throw new Error("title and slug are required when publishing");
       const article = await client.query<{ id: string }>(
-        `INSERT INTO knowledge_articles (title, slug, category_id, status, content_markdown, summary, created_by, reviewed_by, published_at)
-         VALUES ($1,$2,$3,'published',$4,$5,$6,$6,now()) RETURNING id`,
+        `INSERT INTO knowledge_articles (title, slug, category_id, status, is_verified, content_markdown, summary, created_by, reviewed_by, published_at)
+         VALUES ($1,$2,$3,'published',true,$4,$5,$6,$6,now()) RETURNING id`,
         [
           input.title,
           input.slug,

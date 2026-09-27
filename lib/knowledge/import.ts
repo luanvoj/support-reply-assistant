@@ -4,7 +4,7 @@ import type { PoolClient } from "pg";
 import { containsUnsupportedMedia, replaceArticleChunks } from "@/lib/knowledge/article";
 
 export const IMPORT_COLUMNS = ["title", "content_markdown", "summary", "service_group", "response_policy", "source_priority", "review_due_at"] as const;
-export type ImportRow = { rowNumber: number; title: string; contentMarkdown: string; summary?: string; serviceGroup?: string; responsePolicy: "grounded" | "partial" | "escalate"; sourcePriority: number; reviewDueAt?: string; errors: string[]; finalTitle?: string };
+export type ImportRow = { rowNumber: number; title: string; contentMarkdown: string; summary?: string; serviceGroup?: string; responsePolicy: "grounded" | "escalate"; sourcePriority: number; reviewDueAt?: string; errors: string[]; finalTitle?: string };
 
 export function templateWorkbook() {
   const worksheet = XLSX.utils.json_to_sheet([{ title: "Hướng dẫn đổi mật khẩu", content_markdown: "## Điều kiện\nNgười dùng đã xác minh email.\n\n## Các bước\n1. Mở trang đăng nhập.\n2. Chọn Quên mật khẩu.", summary: "Quy trình đổi mật khẩu", service_group: "Tài khoản", response_policy: "grounded", source_priority: 80, review_due_at: "2027-01-01" }], { header: [...IMPORT_COLUMNS] });
@@ -33,11 +33,11 @@ function validateRow(raw: Record<string, unknown>, rowNumber: number): ImportRow
   if (containsUnsupportedMedia(contentMarkdown)) errors.push("Chỉ nhận văn bản; không nhận hình ảnh hoặc nhúng media.");
   if (summary.length > 300) errors.push("Tóm tắt tối đa 300 ký tự.");
   if (serviceGroup.length > 80) errors.push("Nhóm dịch vụ tối đa 80 ký tự.");
-  if (!["grounded", "partial", "escalate"].includes(policy)) errors.push("response_policy chỉ là grounded, partial hoặc escalate.");
+  if (!["grounded", "partial", "escalate"].includes(policy)) errors.push("response_policy chỉ là grounded hoặc escalate.");
   const sourcePriority = Number(priorityText);
   if (!Number.isInteger(sourcePriority) || sourcePriority < 0 || sourcePriority > 100) errors.push("source_priority phải là số nguyên từ 0 đến 100.");
   if (review && Number.isNaN(Date.parse(review))) errors.push("review_due_at phải là ngày hợp lệ YYYY-MM-DD.");
-  return { rowNumber, title, contentMarkdown, summary: summary || undefined, serviceGroup: serviceGroup || undefined, responsePolicy: (policy || "grounded") as ImportRow["responsePolicy"], sourcePriority: Number.isFinite(sourcePriority) ? sourcePriority : 50, reviewDueAt: review || undefined, errors };
+  return { rowNumber, title, contentMarkdown, summary: summary || undefined, serviceGroup: serviceGroup || undefined, responsePolicy: policy === "grounded" ? "grounded" : "escalate", sourcePriority: Number.isFinite(sourcePriority) ? sourcePriority : 50, reviewDueAt: review || undefined, errors };
 }
 
 function slug(value: string) { return value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || `bai-viet-${Date.now()}`; }

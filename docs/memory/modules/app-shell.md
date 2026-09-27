@@ -4,6 +4,7 @@
 
 - Mọi route đã đăng nhập dùng `AppShell` từ `components/app-shell.tsx`.
 - AppShell là nguồn duy nhất cho sidebar, navigation theo role, header/breadcrumb, fetch profile, menu Thông tin người dùng/Đăng xuất, logout và feedback overlay.
+- `/guide` là route protected dùng AppShell; mục **Hướng dẫn sử dụng** đứng ngay sau Tổng quan và có mặt ở cả `sales`, `technical`, `admin`. Nội dung có thể lọc theo vai trò, nhưng quyền thật của CTA vẫn do route/server đích quyết định.
 - Content của screen không tự dựng sidebar/header/account/logout hoặc gọi `/api/profile` chỉ để hiển thị chrome chung.
 - Dashboard chỉ sở hữu KPI, export báo cáo và filter Hàng đợi; không được dùng header để mô phỏng global search hay notification khi chưa có contract tương ứng.
 

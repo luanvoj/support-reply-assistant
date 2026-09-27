@@ -12,7 +12,7 @@ export type ProviderConfig = {
 
 export type GenerateAnswerInput = {
   question: string;
-  context: Array<{ content: string; sourceTitle: string; score: number; responsePolicy?: "grounded" | "partial" | "escalate" }>;
+  context: Array<{ content: string; sourceTitle: string; score: number; responsePolicy?: "grounded" | "escalate" }>;
   history?: Array<{ sender: "user" | "assistant"; content: string }>;
   persona?: string;
 };
@@ -34,5 +34,16 @@ export class ProviderNotConfiguredError extends Error {
   constructor(message = "No AI provider is configured") {
     super(message);
     this.name = "ProviderNotConfiguredError";
+  }
+}
+
+export class ProviderRequestError extends Error {
+  constructor(
+    message: string,
+    readonly status?: number,
+    readonly retryAfterMs?: number,
+  ) {
+    super(message);
+    this.name = "ProviderRequestError";
   }
 }

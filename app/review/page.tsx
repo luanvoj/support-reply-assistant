@@ -1,2 +1,6 @@
-import OperationsScreen from "@/components/operations";
-export default function ReviewPage() { return <OperationsScreen screen="review" />; }
+import { redirect } from "next/navigation";
+
+export default async function ReviewPage({ searchParams }: { searchParams: Promise<{ id?: string }> }) {
+  const { id } = await searchParams;
+  redirect(id ? `/unanswered?id=${encodeURIComponent(id)}` : "/unanswered");
+}

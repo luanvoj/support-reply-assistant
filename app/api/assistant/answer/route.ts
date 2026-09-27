@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { createProvider, providerConfigFromRow } from "@/lib/ai/providers";
+import { generateResilientAnswer, providerAvailableForOptionalWork } from "@/lib/ai/provider-resilience";
 import {
   fallbackFor,
   getActiveAssistantProfile,
@@ -143,13 +144,11 @@ export async function POST(request: Request) {
       confidence: row.confidence,
       mode: row.mode,
       sources: row.sources ?? [],
-      decision: row.mode === "review" && row.escalation_ticket_id ? "fallback" : row.mode === "review" ? "partial" : "answered",
+      decision: row.mode === "review" ? "fallback" : row.mode === "knowledge_suggestions" ? "knowledge_suggestions" : row.mode === "provider_error" ? "provider_error" : "answered",
       assistantName: activeProfile.name,
       escalation: row.escalation_ticket_id
         ? { state: "created", ticketId: row.escalation_ticket_id, status: row.escalation_ticket_status }
-        : row.mode === "review"
-          ? { state: "available" }
-          : { state: "none" },
+        : { state: "none" },
     });
   }
 
@@ -219,7 +218,7 @@ export async function POST(request: Request) {
   const retrievalSettings = await getActiveRetrievalSettings();
   const isFollowUp = isFollowUpQuestion(question);
   const immediateAssistant = historyResult.rows.find(
-    (item) => item.sender_type === "assistant" && item.message_mode === "grounded",
+    (item) => item.sender_type === "assistant" && (item.message_mode === "grounded" || item.message_mode === "knowledge_suggestions"),
   );
   const rewrittenQuestion = isFollowUp
     ? contextualQuery(question, previousQuestions.at(-1))
@@ -252,7 +251,7 @@ export async function POST(request: Request) {
   );
   let retrievalMode: "keyword" | "hybrid" = "keyword";
   let shadowSources: typeof sources | null = null;
-  if (sources.length && providerRows.rows[0]) {
+  if (sources.length && providerRows.rows[0] && await providerAvailableForOptionalWork(providerRows.rows[0])) {
     const reranked = await rerankWithProvider(
       createProvider(providerConfigFromRow(providerRows.rows[0])),
       question,
@@ -274,7 +273,7 @@ export async function POST(request: Request) {
   const continuityFloor =
     isFollowUp &&
     hasRelevantContinuity &&
-    immediateAssistant?.message_mode === "grounded" &&
+    (immediateAssistant?.message_mode === "grounded" || immediateAssistant?.message_mode === "knowledge_suggestions") &&
     Number.isFinite(previousEvidence)
       ? Math.min(0.9, Number((previousEvidence * 0.95).toFixed(3)))
       : 0;
@@ -284,11 +283,7 @@ export async function POST(request: Request) {
       ...evidence,
       score,
       state:
-        score >= retrievalSettings.autoAnswerThreshold
-          ? "grounded"
-          : score >= retrievalSettings.partialAnswerThreshold
-            ? "partial"
-            : "insufficient",
+        score >= retrievalSettings.autoAnswerThreshold ? "grounded" : "needs_expert",
       reasons: [
         ...evidence.reasons,
         "Kế thừa căn cứ từ nguồn đã trích dẫn ở lượt ngay trước; nguồn vẫn còn hiệu lực và cùng chủ đề.",
@@ -297,8 +292,9 @@ export async function POST(request: Request) {
   }
   let answer = fallbackFor(profile, sources.length > 0);
   let providerUsed: string | null = null;
-  let decision: "answered" | "partial" | "fallback" | "provider_error" = "fallback";
-  let providerFailure = false;
+  let decision: "answered" | "fallback" | "provider_error" | "knowledge_suggestions" = "fallback";
+  let providerAvailability: "available" | "not_configured" | "cooldown" | "rate_limited" | "temporarily_unavailable" | "misconfigured" = providerRows.rows.length ? "available" : "not_configured";
+  let retryAfterSeconds: number | undefined;
 
   const sensitive = retrievalSettings.sensitiveTopics.some((topic) =>
     question
@@ -309,50 +305,31 @@ export async function POST(request: Request) {
     ? retrievalSettings.sensitiveThreshold
     : retrievalSettings.autoAnswerThreshold;
   const sourcePolicy = sources.some((source) => source.responsePolicy === "escalate")
-    ? "escalate"
-    : sources.some((source) => source.responsePolicy === "partial")
-      ? "partial"
-      : "grounded";
-  if ((evidence.score >= autoThreshold || sourcePolicy === "escalate") && providerRows.rows.length) {
-    for (const row of providerRows.rows) {
-      try {
-        const result = await createProvider(
-          providerConfigFromRow(row),
-        ).generateAnswer({
-          question,
-          context: sources,
-          history,
-          persona: profilePrompt(profile),
-        });
-        if (result.answer) {
-          answer = result.answer;
-          providerUsed = result.provider;
-          decision = sourcePolicy === "escalate" ? "fallback" : sourcePolicy === "partial" ? "partial" : "answered";
-          break;
-        }
-      } catch (error) {
-        providerFailure = true;
-        console.warn("[assistant.answer] provider generation failed", {
-          providerType: row.provider_type,
-          error: error instanceof Error ? error.message.slice(0, 240) : "unknown",
-        });
-      }
-    }
-  } else if ((evidence.state === "partial" || sourcePolicy === "partial") && providerRows.rows.length) {
-    for (const row of providerRows.rows) {
-      try {
-        const result = await createProvider(providerConfigFromRow(row)).generateAnswer({ question, context: sources, history, persona: `${profilePrompt(profile)}\nNguồn chỉ đủ một phần. Chỉ nêu các ý có căn cứ, nói rõ điều chưa thể xác nhận và không kết luận thay chuyên gia.` });
-        if (result.answer) { answer = result.answer; providerUsed = result.provider; decision = "partial"; break; }
-      } catch (error) {
-        providerFailure = true;
-        console.warn("[assistant.answer] provider generation failed", {
-          providerType: row.provider_type,
-          error: error instanceof Error ? error.message.slice(0, 240) : "unknown",
-        });
-      }
+    ? "expert_required"
+    : "grounded";
+  const canAnswer = evidence.score >= autoThreshold && sourcePolicy === "grounded";
+  if (canAnswer) {
+    const generated = await generateResilientAnswer(providerRows.rows[0], {
+      question,
+      context: sources,
+      history,
+      persona: profilePrompt(profile),
+    });
+    providerAvailability = generated.availability;
+    retryAfterSeconds = generated.retryAfterSeconds;
+    if (generated.result?.answer) {
+      answer = generated.result.answer;
+      providerUsed = generated.result.provider;
+      decision = "answered";
+    } else {
+      answer = "Agent hiện chưa sẵn sàng. Dưới đây là các thông tin đã được xác minh trong Kho kiến thức để bạn tham khảo.";
+      decision = "knowledge_suggestions";
     }
   } else if (isSocialConversation(question) || isAssistantMeta(question)) {
     decision = "answered";
+    answer = isAssistantMeta(question)
+      ? `Tôi là ${profile.name}, ${profile.roleDescription.toLocaleLowerCase("vi-VN")}. Tôi có thể tra cứu thông tin đã được xác minh trong Kho kiến thức.`
+      : `Chào bạn! Tôi là ${profile.name}. Tôi sẵn sàng hỗ trợ tra cứu thông tin cho khách hàng.`;
     for (const row of providerRows.rows) {
       try {
         const result = await createProvider(
@@ -384,20 +361,12 @@ export async function POST(request: Request) {
       "Tôi sẵn sàng hỗ trợ. Bạn có thể cho tôi biết rõ hơn nội dung cần tư vấn hoặc bối cảnh của khách hàng không?";
   }
 
-  if (providerFailure && decision === "fallback" && sources.length > 0) {
-    answer =
-      "Tôi đã tìm thấy nguồn phù hợp, nhưng Agent đang không thể tạo phản hồi. Vui lòng thử lại sau ít phút; câu hỏi này chưa được chuyển thành yêu cầu chuyên gia.";
-    decision = "provider_error";
-  }
-
   const mode =
-    decision === "provider_error"
-      ? "provider_error"
+    decision === "knowledge_suggestions"
+      ? "knowledge_suggestions"
       : decision === "fallback"
       ? "review"
-      : decision === "partial"
-        ? "review"
-        : evidence.score >= autoThreshold
+      : decision === "answered" && canAnswer
         ? "grounded"
         : "social";
   const classification =
@@ -464,8 +433,17 @@ export async function POST(request: Request) {
       "INSERT INTO retrieval_logs (message_id, query_text, retrieval_mode, top_chunks_json, decision) VALUES ($1,$2,$3,$4,$5)",
       [assistant.rows[0].id, question, retrievalMode, JSON.stringify({ sources, evidence, shadowSources, retrievalStrategy, rewrittenQuestion: isFollowUp ? rewrittenQuestion : undefined, continuityApplied: continuityFloor > 0 }), decision],
     );
-    let escalation: { state: "created"; ticketId: string; status: string } | { state: "available" } | { state: "none" } = { state: decision === "partial" ? "available" : "none" };
+    let escalation: { state: "created"; ticketId: string; status: string } | { state: "none" } = { state: "none" };
     if (decision === "fallback") {
+      const reasonCode = sourcePolicy === "expert_required"
+        ? "expert_required"
+        : sources.length === 0 ? "missing_knowledge" : "low_confidence";
+      answer = reasonCode === "missing_knowledge"
+        ? "Mình chưa thể phản hồi an toàn vì không tìm thấy tài liệu phù hợp trong Kho kiến thức. Mình đã tạo yêu cầu để chuyên gia bổ sung thông tin."
+        : reasonCode === "expert_required"
+          ? "Mình chưa thể phản hồi chi tiết vì nội dung này cần chuyên gia xác nhận trước khi tư vấn. Mình đã tạo yêu cầu để chuyên gia xử lý."
+          : `Mình chưa thể phản hồi an toàn vì độ tin cậy ${Math.round(evidence.score * 100)}% thấp hơn ngưỡng ${Math.round(autoThreshold * 100)}%. Mình đã tạo yêu cầu để chuyên gia xử lý.`;
+      await client.query("UPDATE messages SET content = $2 WHERE id = $1", [assistant.rows[0].id, answer]);
       const ticket = await client.query<{ id: string; status: string }>(
         `INSERT INTO unanswered_questions (conversation_id, source_message_id, original_question, reason_code, retrieval_score, created_by)
          VALUES ($1,$2,$3,$4,$5,$6) RETURNING id, status`,
@@ -473,7 +451,7 @@ export async function POST(request: Request) {
           id,
           assistant.rows[0].id,
           question,
-          sourcePolicy === "escalate" ? "expert_required" : sources.length ? "low_confidence" : "missing_knowledge",
+          reasonCode,
           evidence.score,
           session.userId,
         ],
@@ -493,6 +471,8 @@ export async function POST(request: Request) {
     confidence: evidence.score,
     decision,
     mode,
+    providerAvailability,
+    retryAfterSeconds,
     escalation: result.escalation,
     assistantName: profile.name,
     sources: sources.map((source) => ({

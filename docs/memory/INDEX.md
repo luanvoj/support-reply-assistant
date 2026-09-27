@@ -2,10 +2,21 @@
 
 ## Snapshot
 
+- Plan đã triển khai: [landing page Hướng dẫn sử dụng](plans/2026-09-27-user-guide-landing-page.md) — thêm hướng dẫn theo vai trò, sơ đồ Agent/điểm căn cứ/gộp bài và diễn giải Cài đặt theo tác động thực tế; chờ nghiệm thu browser/RBAC.
+
+- Plan đã triển khai: [chuẩn hóa workspace Yêu cầu chuyên gia](plans/2026-09-27-expert-request-master-detail-pagination.md) — tách danh sách/chi tiết thành master–detail độc lập, thêm phân trang và tìm kiếm server-side; chờ nghiệm thu browser/RBAC.
+
+- Plan mới: [chuẩn hóa resilience cho mọi luồng phụ thuộc Agent](plans/2026-09-27-provider-resilience-coverage.md) — đưa re-rank và gộp tri thức về circuit/retry contract chung; chưa triển khai.
+
+- Plan mới: [chế độ tra cứu tri thức khi Agent không sẵn sàng](plans/2026-09-27-provider-degraded-knowledge-mode.md) — tách quyết định tri thức khỏi lỗi Agent, trả gợi ý từ nguồn đã xác minh khi an toàn và dùng retry/circuit breaker có trạng thái; chưa triển khai.
+
 - Cập nhật: 2026-09-27.
 - Ứng dụng local đã build/restart/health-check thành công; Supabase PostgreSQL hoạt động.
 - Luồng Trợ lý đã đồng bộ: tên Agent lấy từ profile đang hoạt động, lịch sử dùng thứ tự message ổn định, và yêu cầu chuyên gia gắn duy nhất với phản hồi.
 - Plan active: [audit và chuẩn hóa design system toàn ứng dụng](plans/application-design-system-audit.md) — baseline đã triển khai, chờ nghiệm thu UI thủ công.
+- Plan đang triển khai: [hợp nhất luồng Yêu cầu chuyên gia](plans/2026-09-27-expert-request-workflow.md) — Agent hai nhánh và workspace một route đã áp dụng; còn nghiệm thu role/browser, assignment và phản hồi riêng.
+- Plan mới: [gộp yêu cầu chuyên gia trùng lặp](plans/2026-09-27-expert-request-deduplication.md) — thiết kế group/occurrence để nhiều người báo cùng vấn đề không tạo phiếu trùng; chưa triển khai.
+- Plan đang nghiệm thu: [rà hồi quy hành vi toàn bộ Cài đặt](plans/2026-09-27-settings-behavior-regression-audit.md) — contract Agent/Tri thức đã chuẩn hóa; còn browser/provider/RBAC end-to-end.
 - Plan mới: [kết nối Vibe Host MCP và triển khai ứng dụng](plans/2026-09-27-vibehost-mcp-and-deployment.md) — chờ rotate token, xác minh schema MCP và chốt exposure trước khi cấu hình/deploy.
 - Plan đã triển khai: [chuẩn hóa màn hình đăng nhập](plans/2026-09-27-login-auth-surface.md) — ẩn SSO/Okta chưa có contract, đồng bộ input và nâng minh họa luồng phản hồi; chờ nghiệm thu browser/viewport.
 - Plan đang triển khai: [quản trị người dùng, hồ sơ cá nhân và 2FA](plans/2026-09-27-user-management-identity-and-2fa.md) — lifecycle, RBAC và avatar local đã có; recovery code/Admin reset 2FA còn mở, avatar chờ nghiệm thu browser.

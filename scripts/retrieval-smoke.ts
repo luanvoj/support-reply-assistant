@@ -11,13 +11,13 @@ const candidates = [
 async function main() {
   const ranked = hybridRank(candidates, 2, .5, .5, 2, .6);
   if (ranked.length !== 2 || ranked[1]?.articleId !== "sso") throw new Error("MMR did not diversify sources");
-  const evidence = assessEvidence(ranked, { autoAnswerThreshold: .8, partialAnswerThreshold: .6 });
+  const evidence = assessEvidence(ranked, { autoAnswerThreshold: .8 });
   if (!Number.isFinite(evidence.score)) throw new Error("Evidence score is invalid");
-  const insufficient = assessEvidence([], { autoAnswerThreshold: .8, partialAnswerThreshold: .6 });
-  if (insufficient.state !== "insufficient") throw new Error("Missing evidence was not rejected");
-  const partial = assessEvidence([{ ...ranked[0]!, score: .7 }], { autoAnswerThreshold: .9, partialAnswerThreshold: .6 });
-  if (partial.state !== "partial") throw new Error("Partial evidence was not classified");
-  const sensitive = assessEvidence(ranked, { autoAnswerThreshold: .9, partialAnswerThreshold: .6 });
+  const insufficient = assessEvidence([], { autoAnswerThreshold: .8 });
+  if (insufficient.state !== "needs_expert") throw new Error("Missing evidence was not escalated");
+  const insufficientEvidence = assessEvidence([{ ...ranked[0]!, score: .7 }], { autoAnswerThreshold: .9 });
+  if (insufficientEvidence.state !== "needs_expert") throw new Error("Insufficient evidence was not escalated");
+  const sensitive = assessEvidence(ranked, { autoAnswerThreshold: .9 });
   if (sensitive.state === "grounded" && evidence.score < .9) throw new Error("Sensitive threshold was bypassed");
   const fallback = await rerankWithProvider({ rerankContext: async () => "invalid" } as never, "DNS CNAME là gì?", ranked, .4);
   if (fallback.mode !== "lexical") throw new Error("LLM fallback is unsafe");

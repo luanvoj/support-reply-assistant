@@ -4,7 +4,7 @@ import path from "node:path";
 import { db, query, withTransaction } from "@/lib/db";
 import { replaceArticleChunks } from "@/lib/knowledge/article";
 
-type ImportedItem = { number: number; group: string; title: string; policy: "grounded" | "partial" | "escalate"; answer: string };
+type ImportedItem = { number: number; group: string; title: string; policy: "grounded" | "escalate"; answer: string };
 const sourceFile = path.resolve(process.cwd(), "nguon_tri_thuc_demo_50_cau_hoi_.md");
 const apply = process.argv.includes("--apply");
 
@@ -16,7 +16,7 @@ function parse(markdown: string): ImportedItem[] {
   for (const match of matches) {
     if (match[1]) { group = match[1].trim(); continue; }
     const status = match[4].trim();
-    items.push({ number: Number(match[2]), group, title: match[3].trim() + "?", policy: status === "Trả lời có căn cứ" ? "grounded" : status === "Trả lời một phần" ? "partial" : "escalate", answer: match[5].trim() });
+    items.push({ number: Number(match[2]), group, title: match[3].trim() + "?", policy: status === "Trả lời có căn cứ" ? "grounded" : "escalate", answer: match[5].trim() });
   }
   return items;
 }

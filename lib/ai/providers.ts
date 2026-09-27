@@ -5,6 +5,7 @@ import type {
   LLMProvider,
   ProviderConfig,
 } from "@/lib/ai/provider";
+import { ProviderRequestError } from "@/lib/ai/provider";
 
 type TextResponse = {
   answer: string;
@@ -31,6 +32,13 @@ export function assertSafeProviderEndpoint(value: string | undefined) {
   }
 }
 
+function retryAfterMs(response: Response) {
+  const milliseconds = Number(response.headers.get("retry-after-ms"));
+  if (Number.isFinite(milliseconds) && milliseconds >= 0) return milliseconds;
+  const seconds = Number(response.headers.get("retry-after"));
+  return Number.isFinite(seconds) && seconds >= 0 ? seconds * 1000 : undefined;
+}
+
 async function readJson(response: Response) {
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {
@@ -43,11 +51,28 @@ async function readJson(response: Response) {
             .replace(/(?:api[-_ ]?key|authorization)\s*[:=]\s*\S+/gi, "[redacted]")
             .slice(0, 240)
         : "";
-    throw new Error(
+    throw new ProviderRequestError(
       `Provider request failed (${response.status})${providerMessage ? `: ${providerMessage}` : ""}`,
+      response.status,
+      retryAfterMs(response),
     );
   }
   return body as Record<string, unknown>;
+}
+
+async function providerFetch(url: string, init: RequestInit) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10_000);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new ProviderRequestError("Provider request timed out");
+    }
+    throw new ProviderRequestError("Provider network request failed");
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function promptFor(input: GenerateAnswerInput) {
@@ -70,7 +95,7 @@ function promptFor(input: GenerateAnswerInput) {
     "Không suy đoán, không bịa quy trình, chính sách, cấu hình hoặc cam kết thay mặt doanh nghiệp.",
     "Nếu không có nguồn, chỉ được đáp các câu xã giao hoặc định hướng chung không mang tính sự thật; không được trả lời nội dung nghiệp vụ.",
     "Khi nguồn chưa đủ cho một câu hỏi nghiệp vụ, hãy nói rõ bạn cần chuyên gia xác nhận, với giọng điệu hỗ trợ và tôn trọng.",
-    "Nếu một nguồn có policy: escalate, không tự hướng dẫn xử lý chi tiết hay hứa hẹn kết quả; xác nhận tiếp nhận và nói sẽ chuyển chuyên gia. Nếu policy: partial, chỉ trả lời phần có căn cứ và nêu rõ giới hạn.",
+    "Nếu một nguồn có policy: escalate, không tự hướng dẫn xử lý chi tiết hay hứa hẹn kết quả. Hệ thống sẽ chuyển yêu cầu cho chuyên gia; không tạo câu trả lời một phần.",
     input.persona ?? "",
     `Lịch sử gần nhất:\n${history || "Chưa có lượt trò chuyện trước."}`,
     `Câu hỏi: ${input.question}`,
@@ -88,7 +113,7 @@ class GeminiProvider implements LLMProvider {
   private async generate(prompt: string) {
     assertSafeProviderEndpoint(this.config.endpoint);
     const model = this.config.model ?? "gemini-1.5-flash";
-    const response = await fetch(
+    const response = await providerFetch(
       `${this.endpoint.replace(/\/$/, "")}/v1beta/models/${model}:generateContent?key=${encodeURIComponent(this.config.apiKey)}`,
       {
         method: "POST",
@@ -154,7 +179,7 @@ class AzureOpenAIProvider implements LLMProvider {
       );
     assertSafeProviderEndpoint(this.config.endpoint);
     const url = `${this.config.endpoint.replace(/\/$/, "")}/openai/deployments/${this.config.deployment}/chat/completions?api-version=${encodeURIComponent(this.config.apiVersion)}`;
-    const response = await fetch(url, {
+    const response = await providerFetch(url, {
       method: "POST",
       headers: {
         "content-type": "application/json",

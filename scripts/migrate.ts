@@ -80,8 +80,22 @@ async function main() {
     ALTER TABLE unanswered_questions ADD COLUMN IF NOT EXISTS source_message_id UUID REFERENCES messages(id) ON DELETE CASCADE;
     CREATE UNIQUE INDEX IF NOT EXISTS unanswered_questions_source_message_idx
       ON unanswered_questions(source_message_id) WHERE source_message_id IS NOT NULL;
+    ALTER TABLE messages DROP CONSTRAINT IF EXISTS messages_message_mode_check;
+    ALTER TABLE messages ADD CONSTRAINT messages_message_mode_check
+      CHECK (message_mode IS NULL OR message_mode IN ('grounded', 'social', 'review', 'provider_error', 'knowledge_suggestions'));
     ALTER TABLE retrieval_logs DROP CONSTRAINT IF EXISTS retrieval_logs_decision_check;
-    ALTER TABLE retrieval_logs ADD CONSTRAINT retrieval_logs_decision_check CHECK (decision IN ('answered', 'partial', 'fallback', 'ticket_created'));
+    ALTER TABLE retrieval_logs ADD CONSTRAINT retrieval_logs_decision_check
+      CHECK (decision IN ('answered', 'partial', 'fallback', 'ticket_created', 'provider_error', 'knowledge_suggestions'));
+    CREATE TABLE IF NOT EXISTS ai_provider_runtime_health (
+      provider_id UUID PRIMARY KEY REFERENCES ai_provider_settings(id) ON DELETE CASCADE,
+      state TEXT NOT NULL DEFAULT 'closed' CHECK (state IN ('closed', 'open', 'half_open')),
+      consecutive_failures INTEGER NOT NULL DEFAULT 0,
+      opened_until TIMESTAMPTZ,
+      half_open_until TIMESTAMPTZ,
+      last_failure_code TEXT,
+      last_success_at TIMESTAMPTZ,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
     DO $$
     DECLARE constraint_name TEXT;
     BEGIN
@@ -157,9 +171,10 @@ async function main() {
     ALTER TABLE knowledge_articles ADD COLUMN IF NOT EXISTS source_file TEXT;
     ALTER TABLE knowledge_articles ADD COLUMN IF NOT EXISTS service_group TEXT;
     ALTER TABLE knowledge_articles ADD COLUMN IF NOT EXISTS response_policy TEXT NOT NULL DEFAULT 'grounded';
+    UPDATE knowledge_articles SET response_policy = 'escalate' WHERE response_policy = 'partial';
     ALTER TABLE knowledge_articles DROP CONSTRAINT IF EXISTS knowledge_articles_response_policy_check;
     ALTER TABLE knowledge_articles ADD CONSTRAINT knowledge_articles_response_policy_check
-      CHECK (response_policy IN ('grounded', 'partial', 'escalate'));
+      CHECK (response_policy IN ('grounded', 'escalate'));
     CREATE UNIQUE INDEX IF NOT EXISTS knowledge_articles_source_key_idx
       ON knowledge_articles(source_key) WHERE source_key IS NOT NULL;
     CREATE INDEX IF NOT EXISTS knowledge_articles_service_policy_idx

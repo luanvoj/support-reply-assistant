@@ -17,6 +17,7 @@ Local implementation is ready for operational testing:
 - User administration with role-based access, safe disable/ownership transfer, and controlled data purge
 - Self-service profile: password change with policy feedback, optional TOTP two-factor authentication, and avatar upload normalized to WebP in per-user storage
 - Stitch-derived responsive UI routes
+- In-app **Hướng dẫn sử dụng** at `/guide`, with role-aware quick links and plain-language explanations of Agent, evidence, knowledge merge, and settings
 - Local E2E smoke and security/deployment readiness documents
 
 ## UI design gate
@@ -44,7 +45,12 @@ Use the application manager script to start all local components and print the b
 - **Gộp bài viết** first creates a review batch and drafts; source articles are archived only after an administrator approves the merged draft.
 - Administrators configure Gemini or Azure OpenAI in **Cài đặt**. Secrets are encrypted server-side and never returned by the API.
 - The assistant keeps conversation history for 90 days by default. A user with access may permanently delete an individual conversation earlier through the application UI.
-- When an answer needs expert confirmation, the system either creates an expert request automatically or lets the user request expert support for a partial answer. Each request is linked to its assistant response, so it cannot be created twice from the same response.
+- When an answer needs expert confirmation, the system creates an expert request automatically. Each request is linked to its assistant response, so it cannot be created twice from the same response.
+- When an Agent is unavailable, the assistant does not invent an answer: it can show verified knowledge suggestions when evidence is safe; article-merge scanning remains unavailable until an Agent is active again.
+
+## In-app guide
+
+Open **Hướng dẫn sử dụng** from the sidebar (immediately below **Tổng quan**) or visit `/guide` after signing in. It explains the answer flow, evidence threshold, expert-request path, knowledge merge workflow, and the operational impact of settings. The page is available to every role; quick links only appear for features available to that role.
 
 ## User administration and account security
 

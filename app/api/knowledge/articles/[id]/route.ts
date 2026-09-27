@@ -11,7 +11,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   await requirePermission("knowledge:read");
   const { id } = await params;
   if (!idSchema.safeParse(id).success) return NextResponse.json({ error: "ID bài viết không hợp lệ." }, { status: 400 });
-  const result = await query("SELECT * FROM knowledge_articles WHERE id = $1", [id]);
+  const result = await query("SELECT a.*, CASE WHEN a.response_policy = 'grounded' THEN 'grounded' ELSE 'escalate' END AS response_policy FROM knowledge_articles a WHERE id = $1", [id]);
   return result.rows[0] ? NextResponse.json({ article: result.rows[0] }) : NextResponse.json({ error: "Không tìm thấy bài viết." }, { status: 404 });
 }
 

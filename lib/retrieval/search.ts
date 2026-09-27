@@ -31,7 +31,7 @@ type SearchRow = {
   content: string;
   title: string;
   lexical_score: number;
-  response_policy?: "grounded" | "partial" | "escalate";
+  response_policy?: "grounded" | "escalate";
 };
 
 function mapRows(rows: SearchRow[]) {
@@ -44,7 +44,7 @@ function mapRows(rows: SearchRow[]) {
       sourceTitle: row.title,
       keywordScore:
         highestScore > 0 ? Math.min(1, row.lexical_score / highestScore) : 0,
-      responsePolicy: row.response_policy,
+      responsePolicy: row.response_policy === "grounded" ? "grounded" : "escalate",
     }),
   );
 }
@@ -160,7 +160,7 @@ export async function loadPublishedChunksByIds(
       content: row.content,
       sourceTitle: row.title,
       keywordScore: 0.9,
-      responsePolicy: row.response_policy,
+      responsePolicy: row.response_policy === "grounded" ? "grounded" : "escalate",
     }),
   );
   return hybridRank(

@@ -101,7 +101,7 @@ CREATE TABLE messages (
   confidence_score NUMERIC(6, 5),
   evidence_score NUMERIC(6, 5),
   retrieval_summary JSONB,
-  message_mode TEXT CHECK (message_mode IN ('grounded', 'social', 'review')),
+  message_mode TEXT CHECK (message_mode IN ('grounded', 'social', 'review', 'provider_error', 'knowledge_suggestions')),
   request_id UUID,
   redacted_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -150,6 +150,17 @@ CREATE TABLE ai_provider_settings (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+CREATE TABLE ai_provider_runtime_health (
+  provider_id UUID PRIMARY KEY REFERENCES ai_provider_settings(id) ON DELETE CASCADE,
+  state TEXT NOT NULL DEFAULT 'closed' CHECK (state IN ('closed', 'open', 'half_open')),
+  consecutive_failures INTEGER NOT NULL DEFAULT 0,
+  opened_until TIMESTAMPTZ,
+  half_open_until TIMESTAMPTZ,
+  last_failure_code TEXT,
+  last_success_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE TABLE assistant_profiles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL DEFAULT 'Trợ lý phản hồi',
@@ -192,7 +203,7 @@ CREATE TABLE retrieval_logs (
   query_text TEXT NOT NULL,
   retrieval_mode TEXT NOT NULL CHECK (retrieval_mode IN ('keyword', 'semantic', 'hybrid')),
   top_chunks_json JSONB NOT NULL DEFAULT '[]'::jsonb,
-  decision TEXT NOT NULL CHECK (decision IN ('answered', 'partial', 'fallback', 'ticket_created')),
+  decision TEXT NOT NULL CHECK (decision IN ('answered', 'partial', 'fallback', 'ticket_created', 'provider_error', 'knowledge_suggestions')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
