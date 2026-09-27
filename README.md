@@ -1,85 +1,113 @@
-# Support Reply Assistant
+# Trợ lý phản hồi
 
-Internal SaaS for grounded customer-support replies, knowledge review, and AI-assisted knowledge growth.
+**Trợ lý phản hồi** là ứng dụng hỗ trợ đội ngũ chăm sóc khách hàng tra cứu, kiểm chứng và sử dụng tri thức nội bộ khi tư vấn. Ứng dụng không hướng đến việc trả lời thay con người bằng nội dung suy đoán; mục tiêu là giúp mỗi phản hồi có căn cứ, minh bạch nguồn tham khảo và được chuyển đúng người khi hệ thống chưa đủ điều kiện trả lời an toàn.
 
-## Current status
+## Ứng dụng dành cho ai?
 
-Local implementation is ready for operational testing:
+| Nhóm người dùng | Giá trị chính |
+| --- | --- |
+| **Nhân viên tư vấn** | Đặt câu hỏi về tình huống khách hàng, nhận phản hồi có nguồn tham khảo và biết rõ khi nào cần chờ chuyên gia. |
+| **Chuyên gia nghiệp vụ/kỹ thuật** | Xử lý yêu cầu cần xác nhận, chuẩn hóa câu trả lời và bổ sung tri thức dùng lại cho toàn đội ngũ. |
+| **Quản trị viên** | Quản lý Agent, chính sách truy xuất, Kho tri thức, người dùng và các nguyên tắc vận hành an toàn. |
 
-- Next.js + TypeScript project shell
-- PostgreSQL-compatible database configured through environment variables (including Supabase)
-- Initial database schema and role seed
-- Gemini and Azure OpenAI provider configuration; only one provider is active at a time
-- Grounded chat, conversation history with stable message ordering and 90-day retention, and expert-request queue
-- Knowledge-base CRUD, text-only bulk import (CSV/XLSX), archive/restore and controlled article merge
-- Retrieval settings, assistant persona, source citations and merge-review controls for administrators
-- Backend provider adapters, permissions, retrieval, knowledge loop and dashboard APIs
-- User administration with role-based access, safe disable/ownership transfer, and controlled data purge
-- Self-service profile: password change with policy feedback, optional TOTP two-factor authentication, and avatar upload normalized to WebP in per-user storage
-- Stitch-derived responsive UI routes
-- In-app **Hướng dẫn sử dụng** at `/guide`, with role-aware quick links and plain-language explanations of Agent, evidence, knowledge merge, and settings
-- Local E2E smoke and security/deployment readiness documents
+## Giá trị mang lại
 
-## UI design gate
+- Rút ngắn thời gian tìm kiếm tài liệu nội bộ khi hỗ trợ khách hàng.
+- Hạn chế phản hồi thiếu căn cứ nhờ cơ chế đánh giá nguồn và ngưỡng an toàn.
+- Đưa các khoảng trống tri thức đến đúng chuyên gia thay vì để câu hỏi bị bỏ quên.
+- Biến câu trả lời đã xác nhận thành tri thức có thể tái sử dụng ở các tình huống sau.
+- Giữ trách nhiệm quyết định ở con người: nhân viên luôn nhìn thấy nguồn và mức căn cứ trước khi tư vấn.
 
-Screen direction and visual design must come from Google Stitch MCP plus the related Stitch skills before implementing production UI. Keep Stitch credentials in local tooling configuration only; never commit them to this repository.
+## Các chức năng chính
 
-## Health check
+| Chức năng | Công dụng |
+| --- | --- |
+| **Tổng quan** | Theo dõi tình hình vận hành tri thức, các chỉ số phản hồi và công việc cần ưu tiên. |
+| **Hướng dẫn sử dụng** | Giải thích theo vai trò về luồng Agent, điểm căn cứ, yêu cầu chuyên gia, gộp bài viết và ý nghĩa từng cấu hình. |
+| **Trợ lý** | Tiếp nhận câu hỏi, tìm nguồn trong Kho tri thức và trình bày phản hồi phù hợp với căn cứ hiện có. |
+| **Hội thoại** | Lưu và tra cứu lịch sử trao đổi theo thứ tự ổn định; dữ liệu được giữ mặc định 90 ngày. |
+| **Kho tri thức** | Tạo, nhập, chỉnh sửa, xuất bản, lưu trữ và khôi phục tài liệu văn bản; chỉ nội dung phù hợp chính sách mới được dùng để tra cứu. |
+| **Gộp bài viết** | Giúp phát hiện các bài có khả năng trùng lặp, tạo bản nháp gộp để người có quyền rà soát trước khi xuất bản. |
+| **Yêu cầu chuyên gia** | Là workspace xử lý các câu hỏi mà hệ thống chưa thể phản hồi an toàn; có tìm kiếm, phân trang và liên kết trực tiếp đến yêu cầu đang chọn. |
+| **Cài đặt** | Cấu hình cách Agent diễn đạt, nguồn/cách xếp hạng tri thức, ngưỡng phản hồi, chủ đề nhạy cảm, nhà cung cấp AI và người dùng. |
+| **Thông tin người dùng** | Cho phép người dùng đổi mật khẩu, quản lý xác thực hai bước và ảnh đại diện của chính mình. |
 
-Use the application manager script to start all local components and print the browser URL:
+## Cách hệ thống xử lý một câu hỏi
 
-```bash
-./scripts/app.sh start      # default command when omitted
-./scripts/app.sh status
-./scripts/app.sh restart
-./scripts/app.sh stop
-./scripts/app.sh logs
+```text
+Người dùng đặt câu hỏi
+        ↓
+Tìm kiếm trong Kho tri thức đã xuất bản
+        ↓
+Đánh giá căn cứ, chính sách nguồn và ngưỡng an toàn
+        ↓
+┌──────────────────────────────────────────────────────────────────┐
+│ Đủ điều kiện: Agent tổng hợp phản hồi kèm nguồn tham khảo.        │
+│ Chưa đủ điều kiện: tạo Yêu cầu chuyên gia và nêu lý do cụ thể.    │
+│ Agent không sẵn sàng: trả gợi ý từ nguồn đã xác minh nếu an toàn. │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
-`start` applies database migrations, starts the Next.js development server, waits for `GET /api/health`, and prints the local URL. The script requires an existing environment file with the database and application secrets configured.
+### Điểm căn cứ là gì?
 
-## Knowledge base and AI configuration
+Điểm căn cứ phản ánh mức độ hệ thống tìm được tài liệu phù hợp để hỗ trợ phản hồi. Điểm này được hình thành từ độ phù hợp của tài liệu, chất lượng nguồn, tính đa dạng của căn cứ và chính sách của từng bài viết.
 
-- Only text is indexed for retrieval. Create/edit articles in **Kho kiến thức**, or import up to 200 text-only rows from CSV/XLSX using the Excel template in the UI.
-- Archived articles are retained for review and can be restored as drafts. Permanently deleting an article is restricted when it has been cited by a conversation.
-- **Gộp bài viết** first creates a review batch and drafts; source articles are archived only after an administrator approves the merged draft.
-- Administrators configure Gemini or Azure OpenAI in **Cài đặt**. Secrets are encrypted server-side and never returned by the API.
-- The assistant keeps conversation history for 90 days by default. A user with access may permanently delete an individual conversation earlier through the application UI.
-- When an answer needs expert confirmation, the system creates an expert request automatically. Each request is linked to its assistant response, so it cannot be created twice from the same response.
-- When an Agent is unavailable, the assistant does not invent an answer: it can show verified knowledge suggestions when evidence is safe; article-merge scanning remains unavailable until an Agent is active again.
+Điểm căn cứ **không phải** lời cam kết rằng câu trả lời đúng tuyệt đối. Hệ thống đối chiếu điểm đó với ngưỡng do quản trị viên đặt. Với chủ đề nhạy cảm hoặc bài viết yêu cầu chuyên gia xác nhận, ngưỡng có thể nghiêm ngặt hơn hoặc hệ thống sẽ chuyển yêu cầu ngay cả khi đã tìm thấy tài liệu.
 
-## In-app guide
+## Hoạt động khi có và không có Agent
 
-Open **Hướng dẫn sử dụng** from the sidebar (immediately below **Tổng quan**) or visit `/guide` after signing in. It explains the answer flow, evidence threshold, expert-request path, knowledge merge workflow, and the operational impact of settings. The page is available to every role; quick links only appear for features available to that role.
+| Trạng thái | Hệ thống làm gì? |
+| --- | --- |
+| **Agent đang hoạt động** | Khi căn cứ đủ, Agent tổng hợp phản hồi từ các nguồn hợp lệ. Agent cũng hỗ trợ đối chiếu các bài viết có khả năng trùng lặp để đề xuất gộp. |
+| **Agent tắt, hết khả năng xử lý hoặc tạm mất kết nối** | Ứng dụng vẫn tìm kiếm trong Kho tri thức. Nếu căn cứ an toàn, người dùng nhận được các gợi ý và nguồn đã xác minh thay vì một câu trả lời được tạo mới. Hệ thống không tự suy đoán. |
+| **Không có tài liệu phù hợp hoặc căn cứ quá thấp** | Hệ thống tạo Yêu cầu chuyên gia kèm lý do thật, ví dụ thiếu tài liệu hoặc thấp hơn ngưỡng cấu hình. |
 
-## User administration and account security
+Quét gộp bài viết cần Agent đang sẵn sàng. Nếu Agent không hoạt động, thao tác này được chặn an toàn và không làm thay đổi dữ liệu bài viết.
 
-- Administrators can create, edit, filter and paginate user accounts. Before disabling an account, they must assign its knowledge articles to another active user and assign open expert requests to an eligible active user.
-- A disabled account is retained for 30 days before it can be purged by the user-retention task. Purging anonymizes the account and removes its avatar and TOTP factor; it is skipped while the account still has open expert requests.
-- Users can view their own profile and change their own password from **Thông tin người dùng**. Passwords must have at least 8 characters, uppercase and lowercase letters, and a special character; only medium or strong passwords are accepted.
-- Users can update or remove their own avatar. Uploads accept JPEG, PNG or WebP up to 5 MB, are validated and normalized to WebP, then stored by user under `USER_STORAGE_DIR` (default: `storage/users`). Use persistent storage for that directory in production.
-- TOTP two-factor authentication is optional in the current rollout. Enabling it requires a verified six-digit authenticator code; disabling it requires the current password.
+## Vòng lặp phát triển tri thức
 
-See [API contract](docs/API.md), [deployment readiness](docs/DEPLOYMENT.md), and the latest [security report](docs/SECURITY-REPORT-2026-09-27.md).
+1. Nhân viên đặt câu hỏi trong Trợ lý.
+2. Hệ thống tìm nguồn và đánh giá căn cứ.
+3. Nếu chưa an toàn, một Yêu cầu chuyên gia được tạo tự động.
+4. Chuyên gia xác nhận câu trả lời, sau đó có thể xuất bản thành tri thức mới.
+5. Lần hỏi sau, tri thức đã xác minh trở thành nguồn căn cứ để hỗ trợ phản hồi tốt hơn.
 
-## Tạo hoặc đặt lại tài khoản quản trị
+Quy trình gộp bài viết cũng giữ nguyên nguyên tắc này: Agent chỉ **đề xuất** các bài gần nhau; người có quyền luôn rà soát bản nháp trước khi phê duyệt xuất bản và lưu trữ các bài nguồn.
 
-```bash
-ADMIN_PASSWORD='MatKhau-Manh-CuaBan' ./scripts/seed-admin.sh
+## Công nghệ và kiến trúc mã nguồn
+
+- **Giao diện và máy chủ ứng dụng:** Next.js 15, React 19, TypeScript.
+- **Cơ sở dữ liệu:** PostgreSQL tương thích, hỗ trợ triển khai với Supabase qua biến môi trường.
+- **AI provider:** Google Gemini hoặc Azure OpenAI; tại một thời điểm chỉ một Agent được bật.
+- **Tìm kiếm tri thức:** truy xuất theo từ khóa/hybrid, xếp hạng lại khi Agent sẵn sàng, ưu tiên tài liệu đã xác minh, còn hiệu lực và đúng chính sách.
+- **Bảo mật:** phiên đăng nhập `httpOnly`, phân quyền theo vai trò ở server, mật khẩu băm, khóa provider mã hóa ở server, TOTP tùy chọn và ảnh đại diện được kiểm tra/chuẩn hóa.
+- **Nhập dữ liệu:** CSV/XLSX cho nội dung văn bản; không lập chỉ mục tệp hình ảnh hoặc tài liệu đa phương tiện.
+
+Các thành phần chính trong mã nguồn:
+
+```text
+app/          Đường dẫn, API và giao diện Next.js
+components/   Thành phần giao diện và khung ứng dụng dùng chung
+lib/          Xác thực, phân quyền, kết nối Agent, truy xuất và nghiệp vụ tri thức
+db/           Lược đồ và cập nhật cơ sở dữ liệu
+scripts/      Khởi tạo dữ liệu, cập nhật, đánh giá và tác vụ bảo trì
+docs/         API, triển khai, bảo mật và tài liệu vận hành
 ```
 
-Lệnh chạy migration rồi tạo tài khoản quản trị nếu chưa có, hoặc đặt lại mật khẩu của tài khoản cùng email nếu đã có. Biến `ADMIN_PASSWORD` là bắt buộc và không được in ra terminal. Email mặc định là `admin@example.local`; có thể chỉ định toàn bộ thông tin:
+## Bảo mật và vận hành
 
-```bash
-ADMIN_EMAIL=quantri@congty.vn ADMIN_NAME="Quản trị viên" ADMIN_USERNAME=quantri ADMIN_PASSWORD='MatKhau-Manh-CuaBan' ./scripts/seed-admin.sh
-```
+- Khóa API của provider được mã hóa ở máy chủ và không trả về trình duyệt.
+- Quyền giao diện chỉ hỗ trợ trải nghiệm; mọi endpoint quan trọng vẫn kiểm tra quyền ở server.
+- Ảnh đại diện chỉ chủ tài khoản được đọc, được kiểm tra nội dung và chuẩn hóa thành WebP trước khi lưu.
+- Tài khoản bị vô hiệu hóa có thời gian lưu giữ trước khi làm sạch; dữ liệu tri thức và yêu cầu đang mở phải được chuyển giao trước đó.
+- Mọi phản hồi thiếu căn cứ đều được ưu tiên minh bạch lý do hơn là tạo nội dung không được kiểm chứng.
 
-## Local setup
+## Bắt đầu sử dụng
 
-```bash
-cp .env.example .env.local
-npm install
-./scripts/app.sh start
-```
+Sau khi đăng nhập, mở **Hướng dẫn sử dụng** ở sidebar (ngay dưới **Tổng quan**) để xem lộ trình phù hợp với vai trò của bạn. Trang này có các liên kết nhanh đến Trợ lý, Kho tri thức, Yêu cầu chuyên gia và Cài đặt theo đúng quyền tài khoản.
 
-Run `npm run db:migrate` after configuring a new database connection. For cleanup of disabled accounts that have passed their retention period, review first with `npm run users:retention`; run the same script with `-- --apply` only after confirming the result.
+## Tài liệu liên quan
+
+- [Hợp đồng API](docs/API.md)
+- [Hướng dẫn triển khai](docs/DEPLOYMENT.md)
+- [Báo cáo bảo mật](docs/SECURITY-REPORT-2026-09-27.md)
