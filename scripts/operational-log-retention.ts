@@ -1,0 +1,3 @@
+import { db, query } from "@/lib/db";
+const apply=process.argv.includes("--apply");
+async function main(){const r=await query<{retention_days:number}>("SELECT retention_days FROM operational_log_settings WHERE id=true");const days=r.rows[0]?.retention_days??90;const count=await query<{count:string}>("SELECT count(*)::text count FROM operational_logs WHERE created_at < now()-($1::text||' days')::interval",[days]);if(!apply){console.log(`Dry run: ${count.rows[0]?.count??0} log quá ${days} ngày.`);return;}await query("DELETE FROM operational_logs WHERE created_at < now()-($1::text||' days')::interval",[days]);console.log(`Đã dọn log quá ${days} ngày.`);}void main().catch(e=>{console.error(e);process.exitCode=1;}).finally(()=>db.end());

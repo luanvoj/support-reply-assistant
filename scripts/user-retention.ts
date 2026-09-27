@@ -6,6 +6,8 @@ const apply = process.argv.includes("--apply");
 type Candidate = { id: string; avatar_key: string | null };
 
 async function main() {
+  console.log("User retention không còn làm sạch tài khoản bị vô hiệu hóa. Xóa tài khoản phải được Quản trị viên xác nhận cùng người kế thừa.");
+  return;
   const candidates = await query<Candidate>(
     `SELECT id, avatar_key FROM users
      WHERE status = 'disabled' AND purge_after IS NOT NULL AND purge_after <= now()

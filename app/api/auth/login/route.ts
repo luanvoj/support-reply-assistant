@@ -4,20 +4,21 @@ import { z } from "zod";
 import { createMfaPendingSession, createSession } from "@/lib/auth/session";
 import { verifyPassword } from "@/lib/auth/password";
 import { query } from "@/lib/db";
+import { writeOperationalLog } from "@/lib/operational-log";
 
 const loginSchema = z.object({
   identity: z.string().trim().min(3).max(254),
   password: z.string().min(8),
 });
 
-type UserRow = { id: string; email: string; username: string; password_hash: string; role: "sales" | "technical" | "admin"; session_version: number; mfa_enabled_at: string | null };
+type UserRow = { id: string; email: string; username: string; full_name: string; password_hash: string; role: "sales" | "technical" | "admin"; session_version: number; mfa_enabled_at: string | null };
 
 export async function POST(request: Request) {
   const parsed = loginSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Invalid credentials" }, { status: 400 });
 
   const result = await query<UserRow>(
-    `SELECT u.id, u.email, u.username, u.password_hash, u.session_version, u.mfa_enabled_at, r.code AS role
+    `SELECT u.id, u.email, u.username, u.full_name, u.password_hash, u.session_version, u.mfa_enabled_at, r.code AS role
      FROM users u JOIN roles r ON r.id = u.role_id
      WHERE (lower(u.email) = lower($1) OR lower(u.username) = lower($1)) AND u.status = 'active'
      LIMIT 1`,
@@ -35,5 +36,6 @@ export async function POST(request: Request) {
   }
   await createSession(payload);
   await query("UPDATE users SET last_login_at = now() WHERE id = $1", [user.id]);
+  await writeOperationalLog({ category: "authentication", action: "login_succeeded", summary: `${user.username} đã đăng nhập`, actorUserId: user.id, actorSnapshot: { fullName: user.full_name, username: user.username, role: user.role } });
   return NextResponse.json({ user: { id: user.id, email: user.email, username: user.username, role: user.role } });
 }

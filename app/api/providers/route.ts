@@ -9,12 +9,10 @@ const providerSchema = z.object({
   providerType: z.enum(["gemini", "azure_openai"]),
   displayName: z.string().min(1).max(100),
   endpoint: z.string().url().optional(),
-  apiKey: z.string().min(1),
+  apiKey: z.string().min(1).optional(),
   deployment: z.string().optional(),
   model: z.string().optional(),
   apiVersion: z.string().optional(),
-  isEnabled: z.boolean().default(false),
-  isDefault: z.boolean().default(false),
   fallbackPriority: z.number().int().min(0).max(100).optional(),
 });
 const providerActivationSchema = z.object({ providerId: z.string().uuid(), isEnabled: z.boolean() });
@@ -73,30 +71,23 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   const savedProvider = await withTransaction(async (client) => {
-    // Chỉ một Agent được bật tại một thời điểm; tránh để các lần lưu tạo nhiều provider hoạt động.
-    await client.query(
-      `UPDATE ai_provider_settings
-       SET is_enabled = false, is_default = false, updated_at = now(), updated_by = $1
-       WHERE provider_type <> $2 AND is_enabled = true`,
-      [session.userId, provider.providerType],
-    );
-
-    const existing = await client.query<{ id: string }>(
-      `SELECT id FROM ai_provider_settings
+    const existing = await client.query<{ id: string; api_key_encrypted: string; is_enabled: boolean; is_default: boolean }>(
+      `SELECT id, api_key_encrypted, is_enabled, is_default FROM ai_provider_settings
        WHERE provider_type = $1
        ORDER BY updated_at DESC, created_at DESC
        LIMIT 1 FOR UPDATE`,
       [provider.providerType],
     );
+    if (!existing.rows[0] && !provider.apiKey) {
+      throw new Error("API_KEY_REQUIRED");
+    }
     const values = [
       provider.displayName,
       provider.endpoint ?? null,
-      encryptSecret(provider.apiKey),
+      provider.apiKey ? encryptSecret(provider.apiKey) : existing.rows[0]!.api_key_encrypted,
       provider.deployment ?? null,
       provider.model ?? null,
       provider.apiVersion ?? null,
-      provider.isEnabled,
-      provider.isDefault,
       provider.fallbackPriority ?? null,
       session.userId,
     ];
@@ -105,18 +96,12 @@ export async function POST(request: Request) {
       const result = await client.query(
         `UPDATE ai_provider_settings
          SET display_name = $1, endpoint = $2, api_key_encrypted = $3, deployment = $4,
-             model = $5, api_version = $6, is_enabled = $7, is_default = $8,
-             fallback_priority = $9, updated_by = $10, updated_at = now()
-         WHERE id = $11
+             model = $5, api_version = $6, fallback_priority = $7,
+             updated_by = $8, updated_at = now()
+         WHERE id = $9
          RETURNING id, provider_type, display_name, endpoint, deployment, model,
                    api_version, is_enabled, is_default, fallback_priority, updated_at`,
         [...values, existing.rows[0].id],
-      );
-      await client.query(
-        `UPDATE ai_provider_settings
-         SET is_enabled = false, is_default = false, updated_at = now(), updated_by = $1
-         WHERE provider_type = $2 AND id <> $3 AND (is_enabled = true OR is_default = true)`,
-        [session.userId, provider.providerType, existing.rows[0].id],
       );
       return result.rows[0];
     }
@@ -125,7 +110,7 @@ export async function POST(request: Request) {
       `INSERT INTO ai_provider_settings
         (provider_type, display_name, endpoint, api_key_encrypted, deployment, model,
          api_version, is_enabled, is_default, fallback_priority, created_by, updated_by)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$11)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,false,false,$8,$9,$9)
        RETURNING id, provider_type, display_name, endpoint, deployment, model,
                  api_version, is_enabled, is_default, fallback_priority, updated_at`,
       [provider.providerType, ...values],
@@ -140,11 +125,15 @@ export async function PATCH(request: Request) {
   const parsed = providerActivationSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   const result = await withTransaction(async (client) => {
-    const selected = await client.query<{ id: string; display_name: string }>(
-      "SELECT id, display_name FROM ai_provider_settings WHERE id = $1 FOR UPDATE",
+    await client.query("SELECT id FROM ai_provider_settings FOR UPDATE");
+    const selected = await client.query<{ id: string; display_name: string; provider_type: string; endpoint: string | null; deployment: string | null; model: string | null }>(
+      "SELECT id, display_name, provider_type, endpoint, deployment, model FROM ai_provider_settings WHERE id = $1 FOR UPDATE",
       [parsed.data.providerId],
     );
     if (!selected.rows[0]) throw new Error("PROVIDER_NOT_FOUND");
+    if (parsed.data.isEnabled && (!selected.rows[0].model || (selected.rows[0].provider_type === "azure_openai" && (!selected.rows[0].endpoint || !selected.rows[0].deployment)))) {
+      throw new Error("PROVIDER_NOT_READY");
+    }
     if (parsed.data.isEnabled) {
       await client.query("UPDATE ai_provider_settings SET is_enabled=false, is_default=false, updated_at=now(), updated_by=$1 WHERE is_enabled=true", [session.userId]);
     }
@@ -159,7 +148,8 @@ export async function PATCH(request: Request) {
       [parsed.data.providerId],
     );
     return selected.rows[0];
-  }).catch((error) => error instanceof Error && error.message === "PROVIDER_NOT_FOUND" ? null : Promise.reject(error));
-  if (!result) return NextResponse.json({ error: "Provider not found" }, { status: 404 });
+  }).catch((error) => error instanceof Error && (error.message === "PROVIDER_NOT_FOUND" || error.message === "PROVIDER_NOT_READY") ? error.message : Promise.reject(error));
+  if (result === "PROVIDER_NOT_FOUND") return NextResponse.json({ error: "Không tìm thấy Agent." }, { status: 404 });
+  if (result === "PROVIDER_NOT_READY") return NextResponse.json({ error: "Cần lưu cấu hình Agent hợp lệ trước khi bật." }, { status: 409 });
   return NextResponse.json({ provider: result, isEnabled: parsed.data.isEnabled });
 }

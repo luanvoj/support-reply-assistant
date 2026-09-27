@@ -71,8 +71,15 @@ All API routes are same-origin Next.js routes. Except for `GET /api/health` and 
 |---|---|---|
 | `GET` / `PUT` | `/api/retrieval/settings` | Read/update active retrieval and merge settings (admin). |
 | `GET` / `POST` | `/api/users` | List filtered, paginated user accounts or create an account (admin). |
-| `PATCH` / `DELETE` | `/api/users/:id` | Update an account, or disable it after ownership transfer (admin). |
-| `GET` / `POST` / `PATCH` | `/api/providers` | List safe provider metadata, save provider configuration, or activate/deactivate one saved Agent (admin). |
+| `PATCH` / `DELETE` | `/api/users/:id` | Update an account, or permanently hard-delete it after ownership transfer (admin). |
+| `GET` | `/api/users/:id/deletion-candidates` | Return server-validated active successor candidates (admin). |
+| `POST` | `/api/users/:id/disable` | Disable login only; keeps all account data and security settings (admin). |
+| `POST` | `/api/users/:id/restore` | Reactivate a disabled account without changing its credentials or 2FA (admin). |
+| `POST` | `/api/users/:id/password` | Reset an active user's password and revoke their sessions (admin, not self). |
+| `DELETE` | `/api/users/:id/mfa` | Disable an active user's 2FA and revoke their sessions (admin, not self). |
+| `GET` / `PUT` | `/api/operational-logs/settings` | Read or change operational-log retention (admin). |
+| `GET` | `/api/operational-logs` | List paginated operational logs; supports category and inclusive Vietnam-date range filters (admin). |
+| `GET` / `POST` / `PATCH` | `/api/providers` | List safe provider metadata, save provider configuration without changing runtime state, or activate/deactivate one saved Agent (admin). |
 | `POST` | `/api/providers/test` | Test saved provider connectivity (admin). |
 | `POST` | `/api/providers/gemini/validate` | Validate Gemini credentials and retrieve usable models. |
 | `POST` | `/api/providers/azure/validate` | Validate Azure endpoint/key and retrieve available configuration. |
@@ -84,11 +91,19 @@ All API routes are same-origin Next.js routes. Except for `GET /api/health` and 
 
 `POST /api/users` requires `fullName`, `username`, `email`, `password`, `passwordConfirmation`, and `role`. Usernames are 3–50 characters and limited to letters, digits, `.`, `_`, and `-`. Passwords must be 8–128 characters and contain uppercase and lowercase letters plus a special character; the confirmation must match.
 
-`DELETE /api/users/:id` does not immediately erase the account. It requires `transferToUserId` and optionally `ticketAssigneeId`; the API transfers knowledge ownership and open expert requests, disables sessions and MFA, then marks the account for a 30-day retention period. The last active administrator cannot be disabled.
+`POST /api/users/:id/password` applies the same password policy and confirmation as account creation. It is an administrator-only recovery action for another active account: the password is hashed server-side, all existing target sessions are revoked, and the audit event records only the actor and action type.
+
+`DELETE /api/users/:id/mfa` is an administrator-only recovery action for another active account with 2FA enabled. It removes the stored TOTP factor, revokes existing target sessions, and records an audit event without returning or storing the TOTP secret in the response.
+
+`POST /api/users/:id/disable` only blocks login and revokes existing sessions; it does not transfer data, delete the avatar, reset the password, or disable 2FA. `POST /api/users/:id/restore` reverses that state for a disabled account.
+
+`DELETE /api/users/:id` requires `successorId`. The server validates the active successor hierarchy (sales → technical → admin; technical → admin; admin → admin), transfers operating ownership of knowledge articles and open expert requests, then anonymizes the deleted account's PII, credential, avatar and 2FA. Historical audit records and private conversations remain attached to the tombstone. The last active administrator cannot be deleted.
 
 `GET /api/unanswered` accepts `page`, `pageSize` (10-100), optional `search` (question or creator, limited to 100 characters), optional `status` (`new`, `in_review`, `answered`, `published`, `rejected`), and optional `id` (UUID). Its response contains `questions`, `pagination`, and `selected`; `selected` supports a deep link even when that request is outside the requested page.
 
-`PATCH /api/providers` requires `{ providerId, isEnabled }`. Enabling a provider disables every other active provider; disabling the active provider leaves the system in verified-knowledge suggestion mode. The endpoint resets runtime-health cooldown state for that selected provider.
+`POST /api/providers` saves or updates configuration only. A new provider is saved inactive; updating one preserves its current runtime state. An omitted API key for an existing provider retains the encrypted key already stored on the server.
+
+`PATCH /api/providers` requires `{ providerId, isEnabled }`. Enabling a provider disables every other active provider atomically; disabling the active provider leaves the system in verified-knowledge suggestion mode. The database permits at most one enabled provider. The endpoint resets runtime-health cooldown state for that selected provider.
 
 ## Security notes
 
@@ -107,3 +122,13 @@ POST /api/assistant/answer returns an escalation object for each completed respo
 - `created`: an expert request was created automatically because evidence was insufficient or a cited source requires expert confirmation. The response includes ticketId; clients should open that request rather than create another one.
 
 When evidence is sufficient but no Agent is available, the same endpoint returns `decision: knowledge_suggestions` and verified source suggestions instead of a generated answer. Provider outage alone does not create an expert request.
+
+## Operational log query and retention
+
+`GET /api/operational-logs` accepts `page`, `pageSize` (10–100), optional `category` (`account`, `authentication`, `knowledge`, `configuration`), and optional date-only `from`/`to` (`YYYY-MM-DD`). Dates are normalized to `Asia/Saigon`; `to` includes the selected end date. Invalid dates or a reversed range return `400`.
+
+Operational logs never contain chat content, passwords, API keys, OTP values or avatar bytes. Admins set retention from 7 to 3650 days; `npm run operational-logs:retention -- --apply` removes expired log rows.
+
+## Account deletion policy
+
+`DELETE /api/users/:id` requires a server-validated active `successorId`. It transfers operating ownership, writes a redacted log snapshot, and then permanently deletes the account credentials, avatar, 2FA and private conversations. The last active administrator cannot be deleted.

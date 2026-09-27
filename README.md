@@ -58,7 +58,7 @@ Tìm kiếm trong Kho tri thức đã xuất bản
 
 | Trạng thái | Hệ thống làm gì? |
 | --- | --- |
-| **Agent đang hoạt động** | Khi căn cứ đủ, Agent tổng hợp phản hồi từ các nguồn hợp lệ. Agent cũng hỗ trợ đối chiếu các bài viết có khả năng trùng lặp để đề xuất gộp. |
+| **Agent đang hoạt động** | Khi căn cứ đủ, Agent tổng hợp phản hồi từ các nguồn hợp lệ. Có thể lưu cấu hình Gemini và Azure độc lập, nhưng chỉ một Agent được bật tại một thời điểm. Bật Agent này sẽ tắt Agent còn lại. |
 | **Agent tắt, hết khả năng xử lý hoặc tạm mất kết nối** | Ứng dụng vẫn tìm kiếm trong Kho tri thức. Nếu căn cứ an toàn, người dùng nhận được các gợi ý và nguồn đã xác minh thay vì một câu trả lời được tạo mới. Hệ thống không tự suy đoán. |
 | **Không có tài liệu phù hợp hoặc căn cứ quá thấp** | Hệ thống tạo Yêu cầu chuyên gia kèm lý do thật, ví dụ thiếu tài liệu hoặc thấp hơn ngưỡng cấu hình. |
 
@@ -80,7 +80,7 @@ Quy trình gộp bài viết cũng giữ nguyên nguyên tắc này: Agent chỉ
 - **Cơ sở dữ liệu:** PostgreSQL tương thích, hỗ trợ triển khai với Supabase qua biến môi trường.
 - **AI provider:** Google Gemini hoặc Azure OpenAI; tại một thời điểm chỉ một Agent được bật.
 - **Tìm kiếm tri thức:** truy xuất theo từ khóa/hybrid, xếp hạng lại khi Agent sẵn sàng, ưu tiên tài liệu đã xác minh, còn hiệu lực và đúng chính sách.
-- **Bảo mật:** phiên đăng nhập `httpOnly`, phân quyền theo vai trò ở server, mật khẩu băm, khóa provider mã hóa ở server, TOTP tùy chọn và ảnh đại diện được kiểm tra/chuẩn hóa.
+- **Bảo mật:** phiên đăng nhập `httpOnly`, phân quyền theo vai trò ở server, mật khẩu băm, khóa provider mã hóa ở server, TOTP tùy chọn và ảnh đại diện được kiểm tra/chuẩn hóa. Quản trị viên có thể khôi phục quyền truy cập cho tài khoản đang hoạt động bằng cách đặt lại mật khẩu hoặc tắt 2FA; mỗi thao tác đều thu hồi phiên cũ và được lưu vết, không lộ mật khẩu hay mã TOTP.
 - **Nhập dữ liệu:** CSV/XLSX cho nội dung văn bản; không lập chỉ mục tệp hình ảnh hoặc tài liệu đa phương tiện.
 
 Các thành phần chính trong mã nguồn:

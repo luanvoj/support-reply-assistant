@@ -5,6 +5,7 @@ import { hashPassword } from "@/lib/auth/password";
 import { requireRole } from "@/lib/auth/guard";
 import { passwordSchema, roleCodes, roleLabel, usernameSchema } from "@/lib/auth/users";
 import { query, withTransaction } from "@/lib/db";
+import { getUserLogSnapshot, writeOperationalLog } from "@/lib/operational-log";
 
 const createSchema = z.object({
   fullName: z.string().trim().min(2).max(120),
@@ -17,13 +18,13 @@ const createSchema = z.object({
   path: ["passwordConfirmation"], message: "Hai mật khẩu chưa trùng khớp.",
 });
 
-type UserRow = { id: string; full_name: string; username: string; email: string; role: "sales" | "technical" | "admin"; status: string; last_login_at: string | null; disabled_at: string | null; purge_after: string | null; created_at: string };
+type UserRow = { id: string; full_name: string; username: string; email: string; role: "sales" | "technical" | "admin"; status: string; mfa_enabled_at: string | null; last_login_at: string | null; disabled_at: string | null; purge_after: string | null; created_at: string };
 
 function asUser(row: UserRow) {
-  return { id: row.id, fullName: row.full_name, username: row.username, email: row.email, role: row.role, roleLabel: roleLabel(row.role), status: row.status, lastLoginAt: row.last_login_at, disabledAt: row.disabled_at, purgeAfter: row.purge_after, createdAt: row.created_at };
+  return { id: row.id, fullName: row.full_name, username: row.username, email: row.email, role: row.role, roleLabel: roleLabel(row.role), status: row.status, mfaEnabled: Boolean(row.mfa_enabled_at), lastLoginAt: row.last_login_at, disabledAt: row.disabled_at, purgeAfter: row.purge_after, createdAt: row.created_at };
 }
 
-const selectUsers = `SELECT u.id, u.full_name, u.username, u.email, r.code AS role, u.status, u.last_login_at, u.disabled_at, u.purge_after, u.created_at
+const selectUsers = `SELECT u.id, u.full_name, u.username, u.email, r.code AS role, u.status, u.mfa_enabled_at, u.last_login_at, u.disabled_at, u.purge_after, u.created_at
   FROM users u JOIN roles r ON r.id = u.role_id`;
 
 export async function GET(request: Request) {
@@ -37,9 +38,9 @@ export async function GET(request: Request) {
     const roleParam = params.get("role");
     const statusParam = params.get("status");
     const role = roleCodes.includes(roleParam as (typeof roleCodes)[number]) ? roleParam : null;
-    const status = ["active", "disabled", "purged"].includes(statusParam ?? "") ? statusParam : null;
+    const status = ["active", "disabled"].includes(statusParam ?? "") ? statusParam : null;
     const search = params.get("search")?.trim().slice(0, 100) || null;
-    const filters = ` WHERE ($1::text IS NULL OR r.code::text = $1)
+    const filters = ` WHERE u.status <> 'purged' AND ($1::text IS NULL OR r.code::text = $1)
       AND ($2::text IS NULL OR u.status::text = $2)
       AND ($3::text IS NULL OR u.full_name ILIKE '%' || $3 || '%' OR u.username ILIKE '%' || $3 || '%' OR u.email ILIKE '%' || $3 || '%')`;
     const result = await query<UserRow>(`${selectUsers}${filters} ORDER BY CASE u.status WHEN 'active' THEN 0 WHEN 'disabled' THEN 1 ELSE 2 END, u.created_at DESC LIMIT $4 OFFSET $5`, [role, status, search, pageSize, (page - 1) * pageSize]);
@@ -64,7 +65,7 @@ export async function POST(request: Request) {
       const user = await client.query<UserRow>(
         `INSERT INTO users(full_name, username, email, password_hash, role_id)
          VALUES ($1, $2, $3, $4, $5)
-         RETURNING id, full_name, username, email, 'sales'::user_role AS role, status, last_login_at, disabled_at, purge_after, created_at`,
+         RETURNING id, full_name, username, email, 'sales'::user_role AS role, status, mfa_enabled_at, last_login_at, disabled_at, purge_after, created_at`,
         [input.fullName, input.username, input.email, passwordHash, roleId],
       );
       const createdUser = user.rows[0];
@@ -73,6 +74,8 @@ export async function POST(request: Request) {
         "INSERT INTO user_lifecycle_events(user_id, actor_id, event_type, details) VALUES ($1, $2, 'created', $3::jsonb)",
         [createdUser.id, actor.userId, JSON.stringify({ role: input.role })],
       );
+      const actorSnapshot = await getUserLogSnapshot(actor.userId, client);
+      await writeOperationalLog({ category: "account", action: "user_created", summary: `${actorSnapshot.username} đã tạo tài khoản ${createdUser.username}`, actorUserId: actor.userId, actorSnapshot, targetUserId: createdUser.id, targetSnapshot: { fullName: createdUser.full_name, username: createdUser.username, role: input.role } }, client);
       return createdUser;
     });
     return NextResponse.json({ user: asUser({ ...created, role: input.role }) }, { status: 201 });

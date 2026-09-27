@@ -4,6 +4,7 @@ import { z } from "zod";
 import { clearMfaPendingSession, createSession, getMfaPendingSession } from "@/lib/auth/session";
 import { verifyTotp } from "@/lib/auth/mfa";
 import { query } from "@/lib/db";
+import { getUserLogSnapshot, writeOperationalLog } from "@/lib/operational-log";
 import { decryptSecret } from "@/lib/security/secrets";
 
 const schema = z.object({ code: z.string().regex(/^\d{6}$/) });
@@ -23,6 +24,8 @@ export async function POST(request: Request) {
   if (!current.rows[0] || current.rows[0].status !== "active" || current.rows[0].session_version !== pending.sessionVersion) return NextResponse.json({ error: "Phiên đăng nhập không còn hiệu lực." }, { status: 401 });
   await query("UPDATE user_mfa_totp SET last_verified_counter = $2, updated_at = now() WHERE user_id = $1", [pending.userId, counter]);
   await createSession(pending);
+  const snapshot = await getUserLogSnapshot(pending.userId);
+  await writeOperationalLog({ category: "authentication", action: "login_succeeded_mfa", summary: `${snapshot.username ?? "Người dùng"} đã đăng nhập với xác thực hai bước`, actorUserId: pending.userId, actorSnapshot: snapshot });
   await clearMfaPendingSession();
   return NextResponse.json({ ok: true });
 }

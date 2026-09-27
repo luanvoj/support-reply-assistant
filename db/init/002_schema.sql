@@ -161,6 +161,9 @@ CREATE TABLE ai_provider_runtime_health (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+CREATE UNIQUE INDEX ai_provider_settings_single_enabled_idx
+  ON ai_provider_settings ((is_enabled)) WHERE is_enabled = true;
+
 CREATE TABLE assistant_profiles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL DEFAULT 'Trợ lý phản hồi',

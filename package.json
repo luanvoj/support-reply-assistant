@@ -11,6 +11,8 @@
     "db:up": "docker compose up -d db",
     "db:down": "docker compose down",
     "db:migrate": "tsx scripts/migrate.ts",
+    "deploy:release": "npm run db:migrate",
+    "deploy:start": "npm run start",
     "retrieval:smoke": "tsx scripts/retrieval-smoke.ts",
     "retrieval:db-smoke": "tsx scripts/retrieval-db-smoke.ts",
     "retrieval:import-corpus": "tsx scripts/import-evaluation-corpus.ts",
@@ -20,7 +22,7 @@
     "knowledge:import-smoke": "tsx scripts/knowledge-import-smoke.ts",
     "db:seed": "tsx scripts/seed.ts",
     "conversations:retention": "tsx scripts/retention.ts",
-    "users:retention": "tsx scripts/user-retention.ts"
+    "operational-logs:retention": "tsx scripts/operational-log-retention.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.10.4",

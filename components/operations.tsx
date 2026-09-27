@@ -3,13 +3,24 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { NavigationIcon } from "@/components/navigation-icon";
-import { AppFeedbackProvider as SharedFeedbackProvider, AppShell, screenLabels, useFeedback as useSharedFeedback } from "@/components/app-shell";
+import {
+  AppFeedbackProvider as SharedFeedbackProvider,
+  AppShell,
+  screenLabels,
+  useFeedback as useSharedFeedback,
+} from "@/components/app-shell";
 import { UserAvatar } from "@/components/user-avatar";
 import { chunkMarkdown } from "@/lib/retrieval/chunker";
 import { passwordChecklist, passwordStrength } from "@/lib/auth/users";
 
 type Screen =
-  "assistant" | "conversations" | "knowledge" | "queue" | "review" | "settings" | "profile";
+  | "assistant"
+  | "conversations"
+  | "knowledge"
+  | "queue"
+  | "review"
+  | "settings"
+  | "profile";
 type Ticket = {
   id: string;
   original_question: string;
@@ -41,7 +52,12 @@ type ChatMessage = {
   sender: "user" | "assistant";
   content: string;
   state: "complete" | "pending" | "error";
-  mode?: "grounded" | "social" | "review" | "provider_error" | "knowledge_suggestions";
+  mode?:
+    | "grounded"
+    | "social"
+    | "review"
+    | "provider_error"
+    | "knowledge_suggestions";
   confidence?: number | null;
   sources?: Array<{
     id?: string;
@@ -63,7 +79,9 @@ function useFeedback() {
   return useSharedFeedback();
 }
 
-function AppFeedbackProvider({ children }: { children: ReactNode }) { return <SharedFeedbackProvider>{children}</SharedFeedbackProvider>; }
+function AppFeedbackProvider({ children }: { children: ReactNode }) {
+  return <SharedFeedbackProvider>{children}</SharedFeedbackProvider>;
+}
 
 function Shell({ screen, children }: { screen: Screen; children: ReactNode }) {
   return <AppShell screen={screen}>{children}</AppShell>;
@@ -83,7 +101,9 @@ function Header({
   return (
     <div className="ops-page-head">
       <div>
-        <small>KHÔNG GIAN LÀM VIỆC / {screenLabels[screen].toUpperCase()}</small>
+        <small>
+          KHÔNG GIAN LÀM VIỆC / {screenLabels[screen].toUpperCase()}
+        </small>
         <h1>{title}</h1>
         <p>{description}</p>
       </div>
@@ -202,9 +222,9 @@ function CitationSources({
       ? "Nguồn cần chuyên gia rà soát"
       : mode === "knowledge_suggestions"
         ? "Gợi ý từ Kho kiến thức"
-      : mode === "provider_error"
-        ? "Nguồn đã tìm thấy"
-        : "Căn cứ đã dùng";
+        : mode === "provider_error"
+          ? "Nguồn đã tìm thấy"
+          : "Căn cứ đã dùng";
   return (
     <details className="chat-citation-sources">
       <summary>
@@ -252,7 +272,10 @@ function AssistantScreen() {
       .then((body) => {
         setConversationId(body.conversation.id);
         setArchived(body.conversation.status === "archived");
-        if (typeof body.assistantName === "string" && body.assistantName.trim()) {
+        if (
+          typeof body.assistantName === "string" &&
+          body.assistantName.trim()
+        ) {
           setAssistantName(body.assistantName);
         }
         setMessages(
@@ -279,7 +302,11 @@ function AssistantScreen() {
                   : Number(item.confidence_score),
               sources: item.retrieval_summary ?? [],
               escalation: item.escalation_ticket_id
-                ? { state: "created" as const, ticketId: item.escalation_ticket_id, status: item.escalation_ticket_status ?? undefined }
+                ? {
+                    state: "created" as const,
+                    ticketId: item.escalation_ticket_id,
+                    status: item.escalation_ticket_status ?? undefined,
+                  }
                 : { state: "none" as const },
             }),
           ),
@@ -494,11 +521,7 @@ function AssistantScreen() {
                     className={`chat-bubble ${message.state} ${message.mode ?? ""}`}
                   >
                     <div className="chat-message-meta">
-                      <b>
-                        {message.sender === "user"
-                          ? "Bạn"
-                          : assistantName}
-                      </b>
+                      <b>{message.sender === "user" ? "Bạn" : assistantName}</b>
                       {message.sender === "assistant" &&
                         message.confidence !== null &&
                         message.confidence !== undefined &&
@@ -540,12 +563,17 @@ function AssistantScreen() {
                     {message.escalation?.state === "created" &&
                       message.state === "complete" && (
                         <div className="chat-escalation">
-                          <span className="warning-pill">Đã chuyển chuyên gia</span>
+                          <span className="warning-pill">
+                            Đã chuyển chuyên gia
+                          </span>
                           <span>Yêu cầu đang chờ được xác nhận.</span>
                         </div>
                       )}
                     {!!message.sources?.length &&
-                      (message.mode === "grounded" || message.mode === "review" || message.mode === "provider_error" || message.mode === "knowledge_suggestions") && (
+                      (message.mode === "grounded" ||
+                        message.mode === "review" ||
+                        message.mode === "provider_error" ||
+                        message.mode === "knowledge_suggestions") && (
                         <CitationSources
                           sources={message.sources}
                           mode={message.mode}
@@ -595,24 +623,28 @@ function AssistantScreen() {
             </small>
           </div>
         </section>
-          <aside className="ops-panel chat-side" aria-label="Cách Trợ lý xử lý câu hỏi">
+        <aside
+          className="ops-panel chat-side"
+          aria-label="Cách Trợ lý xử lý câu hỏi"
+        >
+          <div>
+            <b>Cách Trợ lý xử lý câu hỏi</b>
+            <small>
+              Trợ lý chỉ trả lời khi có nguồn phù hợp. Nếu chưa đủ căn cứ, câu
+              hỏi sẽ được chuyển để rà soát.
+            </small>
+          </div>
+          <dl>
             <div>
-              <b>Cách Trợ lý xử lý câu hỏi</b>
-              <small>
-                Trợ lý chỉ trả lời khi có nguồn phù hợp. Nếu chưa đủ căn cứ, câu hỏi sẽ được chuyển để rà soát.
-              </small>
+              <dt>Nguồn trả lời</dt>
+              <dd>Bài viết đã xuất bản</dd>
             </div>
-            <dl>
-              <div>
-                <dt>Nguồn trả lời</dt>
-                <dd>Bài viết đã xuất bản</dd>
-              </div>
-              <div>
-                <dt>Khi chưa đủ căn cứ</dt>
-                <dd>Chuyển vào hàng đợi rà soát</dd>
-              </div>
-            </dl>
-          </aside>
+            <div>
+              <dt>Khi chưa đủ căn cứ</dt>
+              <dd>Chuyển vào hàng đợi rà soát</dd>
+            </div>
+          </dl>
+        </aside>
       </div>
     </Shell>
   );
@@ -644,14 +676,27 @@ function ConversationsScreen() {
     item.title.toLowerCase().includes(query.toLowerCase()),
   );
   const deletePermanently = async (item: (typeof items)[number]) => {
-    if (!await confirm({ title: "Xóa vĩnh viễn hội thoại?", description: `“${item.title}” cùng toàn bộ tin nhắn và ticket liên quan sẽ bị xóa, không thể khôi phục.`, confirmLabel: "Xóa vĩnh viễn", tone: "danger" })) return;
-    const response = await fetch(`/api/conversations/${item.id}?permanent=true`, {
-      method: "DELETE",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ confirm: true }),
-    });
+    if (
+      !(await confirm({
+        title: "Xóa vĩnh viễn hội thoại?",
+        description: `“${item.title}” cùng toàn bộ tin nhắn và ticket liên quan sẽ bị xóa, không thể khôi phục.`,
+        confirmLabel: "Xóa vĩnh viễn",
+        tone: "danger",
+      }))
+    )
+      return;
+    const response = await fetch(
+      `/api/conversations/${item.id}?permanent=true`,
+      {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ confirm: true }),
+      },
+    );
     if (response.ok) {
-      setItems((current) => current.filter((conversation) => conversation.id !== item.id));
+      setItems((current) =>
+        current.filter((conversation) => conversation.id !== item.id),
+      );
       notify("Đã xóa vĩnh viễn hội thoại.", "success");
     } else notify("Không thể xóa hội thoại. Vui lòng thử lại.", "error");
   };
@@ -776,40 +821,115 @@ function KnowledgeScreen() {
   const [sourcePriority, setSourcePriority] = useState(50);
   const [reviewDueAt, setReviewDueAt] = useState("");
   const [serviceGroup, setServiceGroup] = useState("");
-  const [responsePolicy, setResponsePolicy] = useState<"grounded" | "escalate">("grounded");
+  const [responsePolicy, setResponsePolicy] = useState<"grounded" | "escalate">(
+    "grounded",
+  );
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editSnapshot, setEditSnapshot] = useState<string | null>(null);
   const [articleFilter, setArticleFilter] = useState("");
-  const [articleStatus, setArticleStatus] = useState<"published" | "draft" | "archived">("published");
-  const [articlePage,setArticlePage]=useState(1); const [articleTotal,setArticleTotal]=useState(0);
+  const [articleStatus, setArticleStatus] = useState<
+    "published" | "draft" | "archived"
+  >("published");
+  const [articlePage, setArticlePage] = useState(1);
+  const [articleTotal, setArticleTotal] = useState(0);
   const [importFile, setImportFile] = useState<File | null>(null);
-  const [importPreview, setImportPreview] = useState<{ total: number; valid: number; invalid: number; rows: Array<{ rowNumber: number; title: string; errors: string[] }> } | null>(null);
+  const [importPreview, setImportPreview] = useState<{
+    total: number;
+    valid: number;
+    invalid: number;
+    rows: Array<{ rowNumber: number; title: string; errors: string[] }>;
+  } | null>(null);
   const [importing, setImporting] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [showMergeWorkspace, setShowMergeWorkspace] = useState(false);
-  const [mergeBatch, setMergeBatch] = useState<{id:string;status:string;total_articles:number;scanned_articles:number;proposed_groups:number;error_code?:string;error_message?:string} | null>(null);
-  const [mergeItems, setMergeItems] = useState<Array<{id:string;article_ids:string[];score:number;reason:string;status:string;merge_run_id?:string;merge_status?:string;decision?:string;analysis?:{sharedTopics?:string[];uniqueTopics?:{articleA?:string[];articleB?:string[]};uniqueCoverage?:number};error_code?:string;error_message?:string;errors?:Array<{code:string;user_message:string;created_at:string}>}>>([]);
-  const [mergeDiff,setMergeDiff]=useState<{run:{id:string;title:string;content_markdown:string;status:string};sources:Array<{title:string;content_markdown:string;status:string}>}|null>(null);
-  const [selectedMergeItems,setSelectedMergeItems]=useState<string[]>([]); const [generatingMerge,setGeneratingMerge]=useState(false);
-  const [mergeLimit,setMergeLimit]=useState(100); const [mergeThreshold,setMergeThreshold]=useState(.78); const [mergeGroup,setMergeGroup]=useState("");
+  const [mergeBatch, setMergeBatch] = useState<{
+    id: string;
+    status: string;
+    total_articles: number;
+    scanned_articles: number;
+    proposed_groups: number;
+    error_code?: string;
+    error_message?: string;
+  } | null>(null);
+  const [mergeItems, setMergeItems] = useState<
+    Array<{
+      id: string;
+      article_ids: string[];
+      score: number;
+      reason: string;
+      status: string;
+      merge_run_id?: string;
+      merge_status?: string;
+      decision?: string;
+      analysis?: {
+        sharedTopics?: string[];
+        uniqueTopics?: { articleA?: string[]; articleB?: string[] };
+        uniqueCoverage?: number;
+      };
+      error_code?: string;
+      error_message?: string;
+      errors?: Array<{
+        code: string;
+        user_message: string;
+        created_at: string;
+      }>;
+    }>
+  >([]);
+  const [mergeDiff, setMergeDiff] = useState<{
+    run: {
+      id: string;
+      title: string;
+      content_markdown: string;
+      status: string;
+    };
+    sources: Array<{ title: string; content_markdown: string; status: string }>;
+  } | null>(null);
+  const [selectedMergeItems, setSelectedMergeItems] = useState<string[]>([]);
+  const [generatingMerge, setGeneratingMerge] = useState(false);
+  const [mergeLimit, setMergeLimit] = useState(100);
+  const [mergeThreshold, setMergeThreshold] = useState(0.78);
+  const [mergeGroup, setMergeGroup] = useState("");
   const editorRef = useRef<HTMLElement | null>(null);
   const editorTitleRef = useRef<HTMLInputElement | null>(null);
   const contentLimit = 30000;
-  const hasArticleChanges = !editingId || editSnapshot !== JSON.stringify({ title, content, isVerified, sourcePriority, reviewDueAt, serviceGroup, responsePolicy });
-  const chunkPreview = useMemo(() => (content.trim() ? chunkMarkdown(content).slice(0, 3) : []), [content]);
+  const hasArticleChanges =
+    !editingId ||
+    editSnapshot !==
+      JSON.stringify({
+        title,
+        content,
+        isVerified,
+        sourcePriority,
+        reviewDueAt,
+        serviceGroup,
+        responsePolicy,
+      });
+  const chunkPreview = useMemo(
+    () => (content.trim() ? chunkMarkdown(content).slice(0, 3) : []),
+    [content],
+  );
   const load = async () => {
-    const response = await fetch(`/api/knowledge/articles?status=${articleStatus}&page=${articlePage}`);
+    const response = await fetch(
+      `/api/knowledge/articles?status=${articleStatus}&page=${articlePage}`,
+    );
     const body = await response.json().catch(() => ({}));
-    if (response.ok) {setArticles(body.articles ?? []);setArticleTotal(body.pagination?.total??0);}
-    else setMessage("Không thể tải kho kiến thức.");
+    if (response.ok) {
+      setArticles(body.articles ?? []);
+      setArticleTotal(body.pagination?.total ?? 0);
+    } else setMessage("Không thể tải kho kiến thức.");
   };
   useEffect(() => {
     void load();
-  }, [articleStatus,articlePage]);
+  }, [articleStatus, articlePage]);
   useEffect(() => {
     if (!editingId || !showForm) return;
     const frame = window.requestAnimationFrame(() => {
-      editorRef.current?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+      editorRef.current?.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
+        block: "start",
+      });
       editorTitleRef.current?.focus({ preventScroll: true });
     });
     return () => window.cancelAnimationFrame(frame);
@@ -830,26 +950,37 @@ function KnowledgeScreen() {
         .replace(/[\u0300-\u036f]/g, "")
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/(^-|-$)/g, "") || `bai-viet-${Date.now()}`;
-    const response = await fetch(editingId ? `/api/knowledge/articles/${editingId}` : "/api/knowledge/articles", {
-      method: editingId ? "PATCH" : "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        title,
-        slug,
-        contentMarkdown: content,
-        status: articleStatus,
-        isVerified,
-        sourcePriority,
-        serviceGroup: serviceGroup || null,
-        responsePolicy,
-        reviewDueAt: reviewDueAt ? new Date(reviewDueAt).toISOString() : undefined,
-      }),
-    });
+    const response = await fetch(
+      editingId
+        ? `/api/knowledge/articles/${editingId}`
+        : "/api/knowledge/articles",
+      {
+        method: editingId ? "PATCH" : "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          title,
+          slug,
+          contentMarkdown: content,
+          status: articleStatus,
+          isVerified,
+          sourcePriority,
+          serviceGroup: serviceGroup || null,
+          responsePolicy,
+          reviewDueAt: reviewDueAt
+            ? new Date(reviewDueAt).toISOString()
+            : undefined,
+        }),
+      },
+    );
     if (response.ok) {
       setMessage(
         articleStatus === "published"
-          ? editingId ? "Đã cập nhật, xuất bản và lập chỉ mục bài viết." : "Đã xuất bản và lập chỉ mục bài viết."
-          : editingId ? "Đã cập nhật bản nháp." : "Đã lưu bản nháp.",
+          ? editingId
+            ? "Đã cập nhật, xuất bản và lập chỉ mục bài viết."
+            : "Đã xuất bản và lập chỉ mục bài viết."
+          : editingId
+            ? "Đã cập nhật bản nháp."
+            : "Đã lưu bản nháp.",
       );
       setShowForm(false);
       setTitle("");
@@ -869,56 +1000,290 @@ function KnowledgeScreen() {
     const body = await response.json().catch(() => ({}));
     if (!response.ok) return setMessage("Không thể tải bài viết để chỉnh sửa.");
     const item = body.article;
-    setEditingId(id); setTitle(item.title ?? ""); setContent(item.content_markdown ?? "");
-    setIsVerified(Boolean(item.is_verified)); setSourcePriority(Number(item.source_priority ?? 50));
-    setReviewDueAt(item.review_due_at ? String(item.review_due_at).slice(0, 10) : "");
-    setServiceGroup(item.service_group ?? ""); setResponsePolicy(item.response_policy ?? "grounded"); setEditSnapshot(JSON.stringify({ title:item.title ?? "", content:item.content_markdown ?? "", isVerified:Boolean(item.is_verified), sourcePriority:Number(item.source_priority ?? 50), reviewDueAt:item.review_due_at ? String(item.review_due_at).slice(0,10) : "", serviceGroup:item.service_group ?? "", responsePolicy:item.response_policy ?? "grounded" })); setShowForm(true);
+    setEditingId(id);
+    setTitle(item.title ?? "");
+    setContent(item.content_markdown ?? "");
+    setIsVerified(Boolean(item.is_verified));
+    setSourcePriority(Number(item.source_priority ?? 50));
+    setReviewDueAt(
+      item.review_due_at ? String(item.review_due_at).slice(0, 10) : "",
+    );
+    setServiceGroup(item.service_group ?? "");
+    setResponsePolicy(item.response_policy ?? "grounded");
+    setEditSnapshot(
+      JSON.stringify({
+        title: item.title ?? "",
+        content: item.content_markdown ?? "",
+        isVerified: Boolean(item.is_verified),
+        sourcePriority: Number(item.source_priority ?? 50),
+        reviewDueAt: item.review_due_at
+          ? String(item.review_due_at).slice(0, 10)
+          : "",
+        serviceGroup: item.service_group ?? "",
+        responsePolicy: item.response_policy ?? "grounded",
+      }),
+    );
+    setShowForm(true);
   };
   const archive = async (id: string) => {
-    if (!await confirm({ title: "Lưu trữ bài viết?", description: "Agent sẽ không dùng bài viết này cho câu trả lời mới. Bạn vẫn có thể xem và xóa vĩnh viễn sau đó.", confirmLabel: "Lưu trữ" })) return;
-    const response = await fetch(`/api/knowledge/articles/${id}`, { method: "DELETE" });
-    if (response.ok) notify("Đã lưu trữ bài viết khỏi kho tri thức.", "success"); else notify("Không thể lưu trữ bài viết.", "error");
+    if (
+      !(await confirm({
+        title: "Lưu trữ bài viết?",
+        description:
+          "Agent sẽ không dùng bài viết này cho câu trả lời mới. Bạn vẫn có thể xem và xóa vĩnh viễn sau đó.",
+        confirmLabel: "Lưu trữ",
+      }))
+    )
+      return;
+    const response = await fetch(`/api/knowledge/articles/${id}`, {
+      method: "DELETE",
+    });
+    if (response.ok)
+      notify("Đã lưu trữ bài viết khỏi kho tri thức.", "success");
+    else notify("Không thể lưu trữ bài viết.", "error");
     if (response.ok) void load();
   };
   const purge = async (item: Article) => {
-    if (!await confirm({ title: "Xóa vĩnh viễn bài viết?", description: "Bài viết và các đoạn tìm kiếm của nó sẽ bị xóa. Hành động này không thể khôi phục.", confirmLabel: "Xóa vĩnh viễn", tone: "danger", requiredValue: item.title })) return;
-    const response = await fetch(`/api/knowledge/articles/${item.id}?permanent=true`, { method: "DELETE" });
+    if (
+      !(await confirm({
+        title: "Xóa vĩnh viễn bài viết?",
+        description:
+          "Bài viết và các đoạn tìm kiếm của nó sẽ bị xóa. Hành động này không thể khôi phục.",
+        confirmLabel: "Xóa vĩnh viễn",
+        tone: "danger",
+        requiredValue: item.title,
+      }))
+    )
+      return;
+    const response = await fetch(
+      `/api/knowledge/articles/${item.id}?permanent=true`,
+      { method: "DELETE" },
+    );
     const body = await response.json().catch(() => ({}));
-    if (response.ok) notify("Đã xóa vĩnh viễn bài viết.", "success"); else notify(body.error ?? "Không thể xóa vĩnh viễn bài viết.", "error");
+    if (response.ok) notify("Đã xóa vĩnh viễn bài viết.", "success");
+    else notify(body.error ?? "Không thể xóa vĩnh viễn bài viết.", "error");
     if (response.ok) void load();
   };
-  const restore = async (item: Article) => { const response=await fetch(`/api/knowledge/articles/${item.id}/restore`,{method:"POST"}); const body=await response.json().catch(()=>({})); if(response.ok){notify("Đã khôi phục bài viết thành bản nháp để bạn rà soát.","success");void load();}else notify(body.error??"Không thể khôi phục bài viết.","error"); };
-  const previewImport = async (file: File) => {
-    setImportFile(file); setImportPreview(null); setMessage("");
-    const form = new FormData(); form.append("file", file);
-    const response = await fetch("/api/knowledge/import/preview", { method: "POST", body: form });
+  const restore = async (item: Article) => {
+    const response = await fetch(`/api/knowledge/articles/${item.id}/restore`, {
+      method: "POST",
+    });
     const body = await response.json().catch(() => ({}));
-    if (response.ok) setImportPreview(body); else setMessage(body.error ?? "Không thể kiểm tra tệp import.");
+    if (response.ok) {
+      notify("Đã khôi phục bài viết thành bản nháp để bạn rà soát.", "success");
+      void load();
+    } else notify(body.error ?? "Không thể khôi phục bài viết.", "error");
+  };
+  const previewImport = async (file: File) => {
+    setImportFile(file);
+    setImportPreview(null);
+    setMessage("");
+    const form = new FormData();
+    form.append("file", file);
+    const response = await fetch("/api/knowledge/import/preview", {
+      method: "POST",
+      body: form,
+    });
+    const body = await response.json().catch(() => ({}));
+    if (response.ok) setImportPreview(body);
+    else setMessage(body.error ?? "Không thể kiểm tra tệp import.");
   };
   const applyImport = async () => {
     if (!importFile || !importPreview || importPreview.invalid) return;
-    setImporting(true); const form = new FormData(); form.append("file", importFile);
-    const response = await fetch("/api/knowledge/import", { method: "POST", body: form }); const body = await response.json().catch(() => ({})); setImporting(false);
-    if (response.ok) { notify(`Đã import ${body.imported} bài viết và lập chỉ mục để Agent tra cứu.`, "success"); setImportFile(null); setImportPreview(null); setShowImport(false); void load(); }
-    else setMessage(body.error ?? "Không thể import tệp.");
+    setImporting(true);
+    const form = new FormData();
+    form.append("file", importFile);
+    const response = await fetch("/api/knowledge/import", {
+      method: "POST",
+      body: form,
+    });
+    const body = await response.json().catch(() => ({}));
+    setImporting(false);
+    if (response.ok) {
+      notify(
+        `Đã import ${body.imported} bài viết và lập chỉ mục để Agent tra cứu.`,
+        "success",
+      );
+      setImportFile(null);
+      setImportPreview(null);
+      setShowImport(false);
+      void load();
+    } else setMessage(body.error ?? "Không thể import tệp.");
   };
   const suggestMerge = async (item: Article) => {
-    const response = await fetch("/api/knowledge/merge/suggest", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ articleId: item.id }) }); const body = await response.json().catch(() => ({}));
-    if (response.ok && body.suggestion) { notify(`Đã tạo bản nháp gộp từ “${body.suggestion.sourceTitles.join("” và “")}”. Hãy mở bài nháp để kiểm tra trước khi xuất bản.`, "success"); void load(); }
-    else notify(body.message ?? body.error ?? "Chưa thể tạo đề xuất gộp bài viết.", "info");
+    const response = await fetch("/api/knowledge/merge/suggest", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ articleId: item.id }),
+    });
+    const body = await response.json().catch(() => ({}));
+    if (response.ok && body.suggestion) {
+      notify(
+        `Đã tạo bản nháp gộp từ “${body.suggestion.sourceTitles.join("” và “")}”. Hãy mở bài nháp để kiểm tra trước khi xuất bản.`,
+        "success",
+      );
+      void load();
+    } else
+      notify(
+        body.message ?? body.error ?? "Chưa thể tạo đề xuất gộp bài viết.",
+        "info",
+      );
   };
   const decideMerge = async (item: Article, decision: "approve" | "reject") => {
     if (!item.merge_run_id) return;
-    const accepted = await confirm({ title: decision === "approve" ? "Xuất bản bản gộp?" : "Từ chối bản gộp?", description: decision === "approve" ? "Bài gộp sẽ được xuất bản; hai bài nguồn sẽ chuyển sang lưu trữ nhưng vẫn được giữ để đối soát." : "Bản nháp gộp sẽ được lưu trữ; hai bài nguồn vẫn không thay đổi.", confirmLabel: decision === "approve" ? "Duyệt và lưu trữ nguồn" : "Từ chối" });
-    if (!accepted) return; const response=await fetch(`/api/knowledge/merge/${item.merge_run_id}/${decision}`,{method:"POST"}); const body=await response.json().catch(()=>({})); if(response.ok){notify(decision === "approve" ? "Đã xuất bản bài gộp và lưu trữ nguồn để đối soát." : "Đã từ chối bản gộp; nguồn được giữ nguyên.","success");void load();}else notify(body.error??"Không thể cập nhật đề xuất gộp.","error");
+    const accepted = await confirm({
+      title: decision === "approve" ? "Xuất bản bản gộp?" : "Từ chối bản gộp?",
+      description:
+        decision === "approve"
+          ? "Bài gộp sẽ được xuất bản; hai bài nguồn sẽ chuyển sang lưu trữ nhưng vẫn được giữ để đối soát."
+          : "Bản nháp gộp sẽ được lưu trữ; hai bài nguồn vẫn không thay đổi.",
+      confirmLabel:
+        decision === "approve" ? "Duyệt và lưu trữ nguồn" : "Từ chối",
+    });
+    if (!accepted) return;
+    const response = await fetch(
+      `/api/knowledge/merge/${item.merge_run_id}/${decision}`,
+      { method: "POST" },
+    );
+    const body = await response.json().catch(() => ({}));
+    if (response.ok) {
+      notify(
+        decision === "approve"
+          ? "Đã xuất bản bài gộp và lưu trữ nguồn để đối soát."
+          : "Đã từ chối bản gộp; nguồn được giữ nguyên.",
+        "success",
+      );
+      void load();
+    } else notify(body.error ?? "Không thể cập nhật đề xuất gộp.", "error");
   };
-  const loadMergeBatch=async(id:string)=>{const r=await fetch(`/api/knowledge/merge/batches/${id}`);const b=await r.json().catch(()=>({}));if(r.ok){setMergeBatch(b.batch);setMergeItems(b.items??[]);}};
-  const startMergeBatch=async()=>{setMergeItems([]);setSelectedMergeItems([]);setMergeDiff(null);const r=await fetch("/api/knowledge/merge/batches",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({limit:mergeLimit,threshold:mergeThreshold,serviceGroup:mergeGroup||undefined,verifiedOnly:true})});const b=await r.json().catch(()=>({}));if(!r.ok){notify(b.error??"Không thể tạo đợt gộp.","error");return;}setMergeBatch(b.batch);const scan=await fetch(`/api/knowledge/merge/batches/${b.batch.id}/scan`,{method:"POST"});if(!scan.ok){const e=await scan.json().catch(()=>({}));notify(`${e.error??"Quét gộp không hoàn tất."}${e.code?` Mã: ${e.code}`:""}`,"error");}await loadMergeBatch(b.batch.id);};
-  const cancelMergeBatch=async()=>{if(!mergeBatch)return;const r=await fetch(`/api/knowledge/merge/batches/${mergeBatch.id}/cancel`,{method:"POST"});if(r.ok)await loadMergeBatch(mergeBatch.id);};
-  const saveMergeOutcome=async(itemId:string,code:string)=>fetch(`/api/knowledge/merge/batches/${mergeBatch?.id}/items/${itemId}/fail`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({code})});
-  const generateSelectedMerges=async(itemIds=selectedMergeItems)=>{if(!mergeBatch||!itemIds.length)return;setGeneratingMerge(true);let done=0;let failed=0;let skipped=0;for(const item of mergeItems.filter(x=>itemIds.includes(x.id))){const suggest=await fetch('/api/knowledge/merge/suggest',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({articleId:item.article_ids[0]})}).catch(()=>null);const payload=await suggest?.json().catch(()=>({}));if(!suggest||!suggest.ok||!payload.suggestion){const code=payload?.code??'AGENT_REQUEST_FAILED';const result=await saveMergeOutcome(item.id,code);const outcome=await result.json().catch(()=>({}));if(outcome.status==='skipped')skipped++;else failed++;continue;}const attached=await fetch(`/api/knowledge/merge/batches/${mergeBatch.id}/items/${item.id}/attach`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({mergeRunId:payload.suggestion.runId})}).catch(()=>null);if(!attached?.ok){await saveMergeOutcome(item.id,'ATTACH_FAILED');failed++;continue;}done++;}setGeneratingMerge(false);const summary=[done?`đã tạo ${done} bản nháp`:null,skipped?`${skipped} nhóm được giữ riêng`:null,failed?`${failed} nhóm cần xử lý`:null].filter(Boolean).join('; ');notify(summary?`${summary[0].toUpperCase()}${summary.slice(1)}.`:'Không có nhóm nào được xử lý.',failed?'error':'success');await loadMergeBatch(mergeBatch.id);void load();};
-  const openMergeDiff=async(id:string)=>{const r=await fetch(`/api/knowledge/merge/${id}`);const b=await r.json().catch(()=>({}));if(r.ok)setMergeDiff({run:b.run,sources:b.sources});else notify(b.error??'Không thể tải đối chiếu.',"error")};
-  const mergeDecisionText=(item:{decision?:string;merge_status?:string})=>item.merge_status==='approved'?'Đã gộp và duyệt':item.decision==='merge_full'||item.decision==='merge_partial'?'Đã tạo nháp':item.decision==='keep_separate'?'Giữ nguyên':'Đã tạo nháp';
+  const loadMergeBatch = async (id: string) => {
+    const r = await fetch(`/api/knowledge/merge/batches/${id}`);
+    const b = await r.json().catch(() => ({}));
+    if (r.ok) {
+      setMergeBatch(b.batch);
+      setMergeItems(b.items ?? []);
+    }
+  };
+  const startMergeBatch = async () => {
+    setMergeItems([]);
+    setSelectedMergeItems([]);
+    setMergeDiff(null);
+    const r = await fetch("/api/knowledge/merge/batches", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        limit: mergeLimit,
+        threshold: mergeThreshold,
+        serviceGroup: mergeGroup || undefined,
+        verifiedOnly: true,
+      }),
+    });
+    const b = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      notify(b.error ?? "Không thể tạo đợt gộp.", "error");
+      return;
+    }
+    setMergeBatch(b.batch);
+    const scan = await fetch(
+      `/api/knowledge/merge/batches/${b.batch.id}/scan`,
+      { method: "POST" },
+    );
+    if (!scan.ok) {
+      const e = await scan.json().catch(() => ({}));
+      notify(
+        `${e.error ?? "Quét gộp không hoàn tất."}${e.code ? ` Mã: ${e.code}` : ""}`,
+        "error",
+      );
+    }
+    await loadMergeBatch(b.batch.id);
+  };
+  const cancelMergeBatch = async () => {
+    if (!mergeBatch) return;
+    const r = await fetch(
+      `/api/knowledge/merge/batches/${mergeBatch.id}/cancel`,
+      { method: "POST" },
+    );
+    if (r.ok) await loadMergeBatch(mergeBatch.id);
+  };
+  const saveMergeOutcome = async (itemId: string, code: string) =>
+    fetch(
+      `/api/knowledge/merge/batches/${mergeBatch?.id}/items/${itemId}/fail`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ code }),
+      },
+    );
+  const generateSelectedMerges = async (itemIds = selectedMergeItems) => {
+    if (!mergeBatch || !itemIds.length) return;
+    setGeneratingMerge(true);
+    let done = 0;
+    let failed = 0;
+    let skipped = 0;
+    for (const item of mergeItems.filter((x) => itemIds.includes(x.id))) {
+      const suggest = await fetch("/api/knowledge/merge/suggest", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ articleId: item.article_ids[0] }),
+      }).catch(() => null);
+      const payload = await suggest?.json().catch(() => ({}));
+      if (!suggest || !suggest.ok || !payload.suggestion) {
+        const code = payload?.code ?? "AGENT_REQUEST_FAILED";
+        const result = await saveMergeOutcome(item.id, code);
+        const outcome = await result.json().catch(() => ({}));
+        if (outcome.status === "skipped") skipped++;
+        else failed++;
+        continue;
+      }
+      const attached = await fetch(
+        `/api/knowledge/merge/batches/${mergeBatch.id}/items/${item.id}/attach`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ mergeRunId: payload.suggestion.runId }),
+        },
+      ).catch(() => null);
+      if (!attached?.ok) {
+        await saveMergeOutcome(item.id, "ATTACH_FAILED");
+        failed++;
+        continue;
+      }
+      done++;
+    }
+    setGeneratingMerge(false);
+    const summary = [
+      done ? `đã tạo ${done} bản nháp` : null,
+      skipped ? `${skipped} nhóm được giữ riêng` : null,
+      failed ? `${failed} nhóm cần xử lý` : null,
+    ]
+      .filter(Boolean)
+      .join("; ");
+    notify(
+      summary
+        ? `${summary[0].toUpperCase()}${summary.slice(1)}.`
+        : "Không có nhóm nào được xử lý.",
+      failed ? "error" : "success",
+    );
+    await loadMergeBatch(mergeBatch.id);
+    void load();
+  };
+  const openMergeDiff = async (id: string) => {
+    const r = await fetch(`/api/knowledge/merge/${id}`);
+    const b = await r.json().catch(() => ({}));
+    if (r.ok) setMergeDiff({ run: b.run, sources: b.sources });
+    else notify(b.error ?? "Không thể tải đối chiếu.", "error");
+  };
+  const mergeDecisionText = (item: {
+    decision?: string;
+    merge_status?: string;
+  }) =>
+    item.merge_status === "approved"
+      ? "Đã gộp và duyệt"
+      : item.decision === "merge_full" || item.decision === "merge_partial"
+        ? "Đã tạo nháp"
+        : item.decision === "keep_separate"
+          ? "Giữ nguyên"
+          : "Đã tạo nháp";
   return (
     <Shell screen="knowledge">
       <Header
@@ -926,17 +1291,345 @@ function KnowledgeScreen() {
         title="Kho kiến thức"
         description="Quản lý các nguồn được phép dùng để trả lời khách hàng."
         action={
-          <div className="header-actions"><button className="ops-button" onClick={() => setShowImport(true)}>Nhập dữ liệu</button><button className="ops-button" onClick={() => setShowMergeWorkspace(!showMergeWorkspace)}>Gộp bài viết</button>{!showForm&&<button className="ops-button primary" onClick={() => setShowForm(true)}>+ Thêm bài viết</button>}</div>
+          <div className="header-actions">
+            <button className="ops-button" onClick={() => setShowImport(true)}>
+              Nhập dữ liệu
+            </button>
+            <button
+              className="ops-button"
+              onClick={() => setShowMergeWorkspace(!showMergeWorkspace)}
+            >
+              Gộp bài viết
+            </button>
+            {!showForm && (
+              <button
+                className="ops-button primary"
+                onClick={() => setShowForm(true)}
+              >
+                + Thêm bài viết
+              </button>
+            )}
+          </div>
         }
       />
       <Message value={message} />
-      {showMergeWorkspace && <section className="ops-panel merge-workspace"><div className="merge-heading"><div><b>Gộp bài viết theo đợt</b><small>Hệ thống chỉ đề xuất các bài cùng nhóm dịch vụ và chính sách phản hồi. Bạn luôn duyệt trước khi nguồn bị lưu trữ.</small></div>{mergeBatch&&["queued","scanning","generating"].includes(mergeBatch.status)&&<button className="ops-button" onClick={()=>void cancelMergeBatch()}>Hủy đợt</button>}</div>{!mergeBatch||["failed","cancelled","completed"].includes(mergeBatch.status)?<div className="merge-controls"><label>Nhóm dịch vụ<input value={mergeGroup} onChange={e=>setMergeGroup(e.target.value)} placeholder="Toàn kho"/></label><label>Số bài tối đa <input type="number" min="10" max="200" value={mergeLimit} onChange={e=>setMergeLimit(Number(e.target.value))}/></label><label>Ngưỡng tương đồng {Math.round(mergeThreshold*100)}%<input type="range" min="0.5" max="0.98" step="0.01" value={mergeThreshold} onChange={e=>setMergeThreshold(Number(e.target.value))}/></label><button className="ops-button primary" onClick={()=>void startMergeBatch()}>Bắt đầu quét</button></div>:<div className="merge-progress"><b>{mergeBatch.status === "review_ready" ? "Đã sẵn sàng để rà soát" : "Đang quét và xếp hạng bài viết"}</b><progress value={mergeBatch.scanned_articles} max={Math.max(mergeBatch.total_articles,1)}/><span>{mergeBatch.scanned_articles}/{mergeBatch.total_articles} bài · {mergeBatch.proposed_groups} nhóm đề xuất</span>{mergeBatch.error_code&&<small>Mã lỗi {mergeBatch.error_code}: {mergeBatch.error_message}</small>}</div>}{mergeBatch?.status==="review_ready"&&!mergeItems.length&&<div className="merge-empty"><b>Chưa tìm thấy nhóm bài viết phù hợp</b><p>Đợt quét đã hoàn tất với {mergeBatch.total_articles} bài. Hãy mở rộng nhóm dịch vụ, tăng số bài quét hoặc hạ ngưỡng tương đồng để thử lại.</p><span>Tiêu chí đã dùng: {mergeGroup||"toàn kho"} · tối đa {mergeLimit} bài · từ {Math.round(mergeThreshold*100)}% tương đồng</span><button className="ops-button primary" onClick={()=>{setMergeBatch(null);setMergeItems([]);setMergeDiff(null)}}>Điều chỉnh tiêu chí</button></div>}{mergeItems.length>0&&<div className="merge-candidate-list"><div className="merge-selection"><b>Nhóm được đề xuất</b><button className="ops-button primary" disabled={!selectedMergeItems.length||generatingMerge} onClick={()=>void generateSelectedMerges()}>{generatingMerge?"Đang tạo nháp…":`Tạo nháp (${selectedMergeItems.length})`}</button></div>{mergeItems.map(item=><div key={item.id} className={`merge-candidate ${item.status==='failed'?'merge-candidate-error':''}`}><input type="checkbox" disabled={['drafted','skipped'].includes(item.status)} checked={selectedMergeItems.includes(item.id)} onChange={e=>setSelectedMergeItems(v=>e.target.checked?[...v,item.id]:v.filter(id=>id!==item.id))}/><span><strong>{Math.round(item.score*100)}% tương đồng</strong><small>{item.status==='failed'||item.status==='skipped'?item.error_message??item.reason:item.reason}</small>{item.status==='drafted'&&<em className="merge-decision">{mergeDecisionText(item)}</em>}{item.status==='skipped'&&<em className="merge-decision neutral">Giữ riêng</em>}{item.status==='failed'&&<details className="merge-error-detail"><summary>Mã {item.error_code??'UNKNOWN'} · Xem chi tiết</summary><p>{item.errors?.[0]?.user_message??item.error_message??'Chưa có chi tiết lỗi.'}</p><button type="button" className="link-button" onClick={()=>void generateSelectedMerges([item.id])}>Thử lại nhóm này</button></details>}</span><span>{item.status==='drafted'?<button type="button" className="link-button" onClick={()=>item.merge_run_id&&void openMergeDiff(item.merge_run_id)}>Xem đối chiếu</button>:item.status==='failed'?'Cần xử lý':item.status==='skipped'?'Không tạo nháp':`${item.article_ids.length} bài trong nhóm`}</span></div>)}</div>}{mergeDiff&&<section className="merge-diff"><div><b>Bản nháp gộp: {mergeDiff.run.title}</b><p>{mergeDiff.run.content_markdown}</p></div>{mergeDiff.sources.map((source,i)=><div key={i}><b>Nguồn {i+1}: {source.title}</b><p>{source.content_markdown}</p></div>)}</section>}</section>}
-      {showImport && <div className="app-modal-backdrop" role="presentation" onMouseDown={() => !importing && setShowImport(false)}><section className="app-modal import-modal" role="dialog" aria-modal="true" aria-labelledby="import-modal-title" onMouseDown={(event) => event.stopPropagation()}><small>NHẬP KHO KIẾN THỨC</small><h2 id="import-modal-title">Nhập dữ liệu hàng loạt</h2><p>Nhận CSV UTF-8 hoặc Excel (.xlsx), tối đa 200 bài / 5 MB. Chỉ nhận văn bản.</p><div className="import-modal-tools"><label className="file-picker">Chọn tệp CSV/XLSX<input autoFocus type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={(event) => { const file = event.target.files?.[0]; if (file) void previewImport(file); }} /></label><div className="import-template-help"><span>Chưa có tệp đúng định dạng?</span><a className="link-button" href="/api/knowledge/import/template?format=xlsx">Tải file mẫu Excel</a></div></div>{importPreview && <div className={importPreview.invalid ? "import-summary error" : "import-summary"}><b>{importFile?.name}</b><span>{importPreview.valid}/{importPreview.total} dòng hợp lệ{importPreview.invalid ? ` · ${importPreview.invalid} dòng cần sửa` : " · sẵn sàng import"}</span>{importPreview.invalid ? <ul>{importPreview.rows.filter((row) => row.errors.length).slice(0, 5).map((row) => <li key={row.rowNumber}>Dòng {row.rowNumber}: {row.errors.join(" ")}</li>)}</ul> : <button className="ops-button primary" disabled={importing} onClick={() => void applyImport()}>{importing ? "Đang import…" : `Import ${importPreview.valid} bài viết`}</button>}</div>}<div className="app-modal-actions"><button className="ops-button" disabled={importing} onClick={() => setShowImport(false)}>Đóng</button></div></section></div>}
+      {showMergeWorkspace && (
+        <section className="ops-panel merge-workspace">
+          <div className="merge-heading">
+            <div>
+              <b>Gộp bài viết theo đợt</b>
+              <small>
+                Hệ thống chỉ đề xuất các bài cùng nhóm dịch vụ và chính sách
+                phản hồi. Bạn luôn duyệt trước khi nguồn bị lưu trữ.
+              </small>
+            </div>
+            {mergeBatch &&
+              ["queued", "scanning", "generating"].includes(
+                mergeBatch.status,
+              ) && (
+                <button
+                  className="ops-button"
+                  onClick={() => void cancelMergeBatch()}
+                >
+                  Hủy đợt
+                </button>
+              )}
+          </div>
+          {!mergeBatch ||
+          ["failed", "cancelled", "completed"].includes(mergeBatch.status) ? (
+            <div className="merge-controls">
+              <label>
+                Nhóm dịch vụ
+                <input
+                  value={mergeGroup}
+                  onChange={(e) => setMergeGroup(e.target.value)}
+                  placeholder="Toàn kho"
+                />
+              </label>
+              <label>
+                Số bài tối đa{" "}
+                <input
+                  type="number"
+                  min="10"
+                  max="200"
+                  value={mergeLimit}
+                  onChange={(e) => setMergeLimit(Number(e.target.value))}
+                />
+              </label>
+              <label>
+                Ngưỡng tương đồng {Math.round(mergeThreshold * 100)}%
+                <input
+                  type="range"
+                  min="0.5"
+                  max="0.98"
+                  step="0.01"
+                  value={mergeThreshold}
+                  onChange={(e) => setMergeThreshold(Number(e.target.value))}
+                />
+              </label>
+              <button
+                className="ops-button primary"
+                onClick={() => void startMergeBatch()}
+              >
+                Bắt đầu quét
+              </button>
+            </div>
+          ) : (
+            <div className="merge-progress">
+              <b>
+                {mergeBatch.status === "review_ready"
+                  ? "Đã sẵn sàng để rà soát"
+                  : "Đang quét và xếp hạng bài viết"}
+              </b>
+              <progress
+                value={mergeBatch.scanned_articles}
+                max={Math.max(mergeBatch.total_articles, 1)}
+              />
+              <span>
+                {mergeBatch.scanned_articles}/{mergeBatch.total_articles} bài ·{" "}
+                {mergeBatch.proposed_groups} nhóm đề xuất
+              </span>
+              {mergeBatch.error_code && (
+                <small>
+                  Mã lỗi {mergeBatch.error_code}: {mergeBatch.error_message}
+                </small>
+              )}
+            </div>
+          )}
+          {mergeBatch?.status === "review_ready" && !mergeItems.length && (
+            <div className="merge-empty">
+              <b>Chưa tìm thấy nhóm bài viết phù hợp</b>
+              <p>
+                Đợt quét đã hoàn tất với {mergeBatch.total_articles} bài. Hãy mở
+                rộng nhóm dịch vụ, tăng số bài quét hoặc hạ ngưỡng tương đồng để
+                thử lại.
+              </p>
+              <span>
+                Tiêu chí đã dùng: {mergeGroup || "toàn kho"} · tối đa{" "}
+                {mergeLimit} bài · từ {Math.round(mergeThreshold * 100)}% tương
+                đồng
+              </span>
+              <button
+                className="ops-button primary"
+                onClick={() => {
+                  setMergeBatch(null);
+                  setMergeItems([]);
+                  setMergeDiff(null);
+                }}
+              >
+                Điều chỉnh tiêu chí
+              </button>
+            </div>
+          )}
+          {mergeItems.length > 0 && (
+            <div className="merge-candidate-list">
+              <div className="merge-selection">
+                <b>Nhóm được đề xuất</b>
+                <button
+                  className="ops-button primary"
+                  disabled={!selectedMergeItems.length || generatingMerge}
+                  onClick={() => void generateSelectedMerges()}
+                >
+                  {generatingMerge
+                    ? "Đang tạo nháp…"
+                    : `Tạo nháp (${selectedMergeItems.length})`}
+                </button>
+              </div>
+              {mergeItems.map((item) => (
+                <div
+                  key={item.id}
+                  className={`merge-candidate ${item.status === "failed" ? "merge-candidate-error" : ""}`}
+                >
+                  <input
+                    type="checkbox"
+                    disabled={["drafted", "skipped"].includes(item.status)}
+                    checked={selectedMergeItems.includes(item.id)}
+                    onChange={(e) =>
+                      setSelectedMergeItems((v) =>
+                        e.target.checked
+                          ? [...v, item.id]
+                          : v.filter((id) => id !== item.id),
+                      )
+                    }
+                  />
+                  <span>
+                    <strong>{Math.round(item.score * 100)}% tương đồng</strong>
+                    <small>
+                      {item.status === "failed" || item.status === "skipped"
+                        ? (item.error_message ?? item.reason)
+                        : item.reason}
+                    </small>
+                    {item.status === "drafted" && (
+                      <em className="merge-decision">
+                        {mergeDecisionText(item)}
+                      </em>
+                    )}
+                    {item.status === "skipped" && (
+                      <em className="merge-decision neutral">Giữ riêng</em>
+                    )}
+                    {item.status === "failed" && (
+                      <details className="merge-error-detail">
+                        <summary>
+                          Mã {item.error_code ?? "UNKNOWN"} · Xem chi tiết
+                        </summary>
+                        <p>
+                          {item.errors?.[0]?.user_message ??
+                            item.error_message ??
+                            "Chưa có chi tiết lỗi."}
+                        </p>
+                        <button
+                          type="button"
+                          className="link-button"
+                          onClick={() => void generateSelectedMerges([item.id])}
+                        >
+                          Thử lại nhóm này
+                        </button>
+                      </details>
+                    )}
+                  </span>
+                  <span>
+                    {item.status === "drafted" ? (
+                      <button
+                        type="button"
+                        className="link-button"
+                        onClick={() =>
+                          item.merge_run_id &&
+                          void openMergeDiff(item.merge_run_id)
+                        }
+                      >
+                        Xem đối chiếu
+                      </button>
+                    ) : item.status === "failed" ? (
+                      "Cần xử lý"
+                    ) : item.status === "skipped" ? (
+                      "Không tạo nháp"
+                    ) : (
+                      `${item.article_ids.length} bài trong nhóm`
+                    )}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+          {mergeDiff && (
+            <section className="merge-diff">
+              <div>
+                <b>Bản nháp gộp: {mergeDiff.run.title}</b>
+                <p>{mergeDiff.run.content_markdown}</p>
+              </div>
+              {mergeDiff.sources.map((source, i) => (
+                <div key={i}>
+                  <b>
+                    Nguồn {i + 1}: {source.title}
+                  </b>
+                  <p>{source.content_markdown}</p>
+                </div>
+              ))}
+            </section>
+          )}
+        </section>
+      )}
+      {showImport && (
+        <div
+          className="app-modal-backdrop"
+          role="presentation"
+          onMouseDown={() => !importing && setShowImport(false)}
+        >
+          <section
+            className="app-modal import-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="import-modal-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <small>NHẬP KHO KIẾN THỨC</small>
+            <h2 id="import-modal-title">Nhập dữ liệu hàng loạt</h2>
+            <p>
+              Nhận CSV UTF-8 hoặc Excel (.xlsx), tối đa 200 bài / 5 MB. Chỉ nhận
+              văn bản.
+            </p>
+            <div className="import-modal-tools">
+              <label className="file-picker">
+                Chọn tệp CSV/XLSX
+                <input
+                  autoFocus
+                  type="file"
+                  accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (file) void previewImport(file);
+                  }}
+                />
+              </label>
+              <div className="import-template-help">
+                <span>Chưa có tệp đúng định dạng?</span>
+                <a
+                  className="link-button"
+                  href="/api/knowledge/import/template?format=xlsx"
+                >
+                  Tải file mẫu Excel
+                </a>
+              </div>
+            </div>
+            {importPreview && (
+              <div
+                className={
+                  importPreview.invalid
+                    ? "import-summary error"
+                    : "import-summary"
+                }
+              >
+                <b>{importFile?.name}</b>
+                <span>
+                  {importPreview.valid}/{importPreview.total} dòng hợp lệ
+                  {importPreview.invalid
+                    ? ` · ${importPreview.invalid} dòng cần sửa`
+                    : " · sẵn sàng import"}
+                </span>
+                {importPreview.invalid ? (
+                  <ul>
+                    {importPreview.rows
+                      .filter((row) => row.errors.length)
+                      .slice(0, 5)
+                      .map((row) => (
+                        <li key={row.rowNumber}>
+                          Dòng {row.rowNumber}: {row.errors.join(" ")}
+                        </li>
+                      ))}
+                  </ul>
+                ) : (
+                  <button
+                    className="ops-button primary"
+                    disabled={importing}
+                    onClick={() => void applyImport()}
+                  >
+                    {importing
+                      ? "Đang import…"
+                      : `Import ${importPreview.valid} bài viết`}
+                  </button>
+                )}
+              </div>
+            )}
+            <div className="app-modal-actions">
+              <button
+                className="ops-button"
+                disabled={importing}
+                onClick={() => setShowImport(false)}
+              >
+                Đóng
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
       {showForm && (
         <section className="ops-panel review-form" ref={editorRef}>
           <label>
             {editingId ? "Chỉnh sửa bài viết" : "Thêm bài viết"}
-            <small className="field-hint neutral">Sửa và xuất bản sẽ tạo lại các đoạn để Agent tra cứu; chỉ nhận văn bản.</small>
+            <small className="field-hint neutral">
+              Sửa và xuất bản sẽ tạo lại các đoạn để Agent tra cứu; chỉ nhận văn
+              bản.
+            </small>
           </label>
           <label>
             Tiêu đề
@@ -1016,32 +1709,73 @@ function KnowledgeScreen() {
               ) || 0}{" "}
               đoạn để Trợ lý tra cứu
             </small>
-            {!!chunkPreview.length && <details className="chunk-preview"><summary>Xem trước {chunkPreview.length} đoạn đầu Agent sẽ tra cứu</summary><ol>{chunkPreview.map((chunk) => <li key={chunk.index}>{chunk.content.slice(0, 220)}{chunk.content.length > 220 ? "…" : ""}</li>)}</ol></details>}
+            {!!chunkPreview.length && (
+              <details className="chunk-preview">
+                <summary>
+                  Xem trước {chunkPreview.length} đoạn đầu Agent sẽ tra cứu
+                </summary>
+                <ol>
+                  {chunkPreview.map((chunk) => (
+                    <li key={chunk.index}>
+                      {chunk.content.slice(0, 220)}
+                      {chunk.content.length > 220 ? "…" : ""}
+                    </li>
+                  ))}
+                </ol>
+              </details>
+            )}
           </label>
           <div className="knowledge-metadata-grid">
             <label className="setting-switch compact">
-              <input type="checkbox" checked={isVerified} onChange={(e) => setIsVerified(e.target.checked)} />
-              <span><b>Nguồn đã được xác minh</b><small>Chỉ nguồn đã xác minh mới được Trợ lý ưu tiên khi trả lời.</small></span>
+              <input
+                type="checkbox"
+                checked={isVerified}
+                onChange={(e) => setIsVerified(e.target.checked)}
+              />
+              <span>
+                <b>Nguồn đã được xác minh</b>
+                <small>
+                  Chỉ nguồn đã xác minh mới được Trợ lý ưu tiên khi trả lời.
+                </small>
+              </span>
             </label>
             <label>
               Mức ưu tiên nguồn
-              <select value={sourcePriority} onChange={(e) => setSourcePriority(Number(e.target.value))}>
-                <option value={80}>Cao — chính sách/quy trình chính thức</option>
+              <select
+                value={sourcePriority}
+                onChange={(e) => setSourcePriority(Number(e.target.value))}
+              >
+                <option value={80}>
+                  Cao — chính sách/quy trình chính thức
+                </option>
                 <option value={50}>Tiêu chuẩn — hướng dẫn vận hành</option>
                 <option value={20}>Tham khảo — cần đối chiếu thêm</option>
               </select>
             </label>
             <label>
               Nhắc rà soát lại
-              <input type="date" value={reviewDueAt} onChange={(e) => setReviewDueAt(e.target.value)} />
+              <input
+                type="date"
+                value={reviewDueAt}
+                onChange={(e) => setReviewDueAt(e.target.value)}
+              />
             </label>
             <label>
               Nhóm dịch vụ
-              <input value={serviceGroup} onChange={(e) => setServiceGroup(e.target.value)} placeholder="Ví dụ: Cloud Server" />
+              <input
+                value={serviceGroup}
+                onChange={(e) => setServiceGroup(e.target.value)}
+                placeholder="Ví dụ: Cloud Server"
+              />
             </label>
             <label>
               Cách Agent phản hồi
-              <select value={responsePolicy} onChange={(e) => setResponsePolicy(e.target.value as typeof responsePolicy)}>
+              <select
+                value={responsePolicy}
+                onChange={(e) =>
+                  setResponsePolicy(e.target.value as typeof responsePolicy)
+                }
+              >
                 <option value="grounded">Trả lời có căn cứ</option>
                 <option value="escalate">Chuyển chuyên gia</option>
               </select>
@@ -1053,7 +1787,8 @@ function KnowledgeScreen() {
               disabled={
                 title.length < 3 ||
                 content.length < 20 ||
-                content.length > contentLimit || !hasArticleChanges
+                content.length > contentLimit ||
+                !hasArticleChanges
               }
               onClick={() => void create("draft")}
             >
@@ -1064,64 +1799,196 @@ function KnowledgeScreen() {
               disabled={
                 title.length < 3 ||
                 content.length < 20 ||
-                content.length > contentLimit || !hasArticleChanges
+                content.length > contentLimit ||
+                !hasArticleChanges
               }
               onClick={() => void create("published")}
             >
               Xuất bản
             </button>
-            <button className="ops-button" onClick={() => { setShowForm(false); setEditingId(null); setEditSnapshot(null); }}>Đóng soạn thảo</button>
+            <button
+              className="ops-button"
+              onClick={() => {
+                setShowForm(false);
+                setEditingId(null);
+                setEditSnapshot(null);
+              }}
+            >
+              Đóng soạn thảo
+            </button>
           </div>
         </section>
       )}
       <div className="ops-panel">
-        <div className="knowledge-status-tabs"><button className={articleStatus === "published" ? "active" : ""} onClick={() => {setArticleStatus("published");setArticlePage(1)}}>Đang sử dụng</button><button className={articleStatus === "draft" ? "active" : ""} onClick={() => {setArticleStatus("draft");setArticlePage(1)}}>Bản nháp</button><button className={articleStatus === "archived" ? "active" : ""} onClick={() => {setArticleStatus("archived");setArticlePage(1)}}>Đã lưu trữ</button></div>
+        <div className="knowledge-status-tabs">
+          <button
+            className={articleStatus === "published" ? "active" : ""}
+            onClick={() => {
+              setArticleStatus("published");
+              setArticlePage(1);
+            }}
+          >
+            Đang sử dụng
+          </button>
+          <button
+            className={articleStatus === "draft" ? "active" : ""}
+            onClick={() => {
+              setArticleStatus("draft");
+              setArticlePage(1);
+            }}
+          >
+            Bản nháp
+          </button>
+          <button
+            className={articleStatus === "archived" ? "active" : ""}
+            onClick={() => {
+              setArticleStatus("archived");
+              setArticlePage(1);
+            }}
+          >
+            Đã lưu trữ
+          </button>
+        </div>
         <label className="knowledge-filter">
           <span>Tìm trong kho</span>
-          <input value={articleFilter} onChange={(event) => setArticleFilter(event.target.value)} placeholder="Tiêu đề, nhóm dịch vụ hoặc trạng thái phản hồi…" />
+          <input
+            value={articleFilter}
+            onChange={(event) => setArticleFilter(event.target.value)}
+            placeholder="Tiêu đề, nhóm dịch vụ hoặc trạng thái phản hồi…"
+          />
         </label>
         <div className="article-list">
-          {articles.filter((item) => `${item.title} ${item.service_group ?? ""} ${item.status} ${item.response_policy ?? ""}`.toLocaleLowerCase("vi-VN").includes(articleFilter.toLocaleLowerCase("vi-VN"))).length ? (
-            articles.filter((item) => `${item.title} ${item.service_group ?? ""} ${item.status} ${item.response_policy ?? ""}`.toLocaleLowerCase("vi-VN").includes(articleFilter.toLocaleLowerCase("vi-VN"))).map((item) => (
-              <div className="article-row" key={item.id}>
-                <span className="doc-icon">
-                  <NavigationIcon name="knowledge" />
-                </span>
-                <span>
-                  <b>{item.title}</b>
-                  <small>
-                    {item.service_group ?? item.category ?? "Chưa phân loại"} · Cập nhật{" "}
-                    {new Date(item.updated_at).toLocaleString("vi-VN")}
-                    {item.is_verified ? " · Đã xác minh" : " · Chưa xác minh"}
-                    {item.version ? ` · v${item.version}` : ""}
-                    {item.source_file ? " · Nguồn import" : ""}
-                  </small>
-                </span>
-                <span>{item.chunk_count} đoạn</span>
-                <span className="info-pill">{item.response_policy === "escalate" ? "Chuyển chuyên gia" : "Có căn cứ"}</span>
-                <span
-                  className={
-                    item.status === "published"
-                      ? "success-pill"
-                      : "warning-pill"
-                  }
-                >
-                  {item.status === "published"
-                    ? "Đã xuất bản"
-                    : item.status === "draft"
-                      ? "Bản nháp"
-                      : "Đã lưu trữ"}
-                </span>
-                <span className="article-actions"><button className="link-button" onClick={() => void edit(item.id)}>Chỉnh sửa</button>{item.merge_status === "draft" ? <><button className="link-button" onClick={() => void decideMerge(item,"approve")}>Duyệt gộp</button><button className="link-button danger" onClick={() => void decideMerge(item,"reject")}>Từ chối</button></> : item.status === "published" && <button className="link-button" onClick={() => void suggestMerge(item)}>Gộp bài</button>}{item.status !== "archived" ? <button className="link-button danger" onClick={() => void archive(item.id)}>Lưu trữ</button> : <><button className="link-button" onClick={() => void restore(item)}>Khôi phục</button><button className="link-button danger" onClick={() => void purge(item)}>Xóa vĩnh viễn</button></>}</span>
-              </div>
-            ))
+          {articles.filter((item) =>
+            `${item.title} ${item.service_group ?? ""} ${item.status} ${item.response_policy ?? ""}`
+              .toLocaleLowerCase("vi-VN")
+              .includes(articleFilter.toLocaleLowerCase("vi-VN")),
+          ).length ? (
+            articles
+              .filter((item) =>
+                `${item.title} ${item.service_group ?? ""} ${item.status} ${item.response_policy ?? ""}`
+                  .toLocaleLowerCase("vi-VN")
+                  .includes(articleFilter.toLocaleLowerCase("vi-VN")),
+              )
+              .map((item) => (
+                <div className="article-row" key={item.id}>
+                  <span className="doc-icon">
+                    <NavigationIcon name="knowledge" />
+                  </span>
+                  <span>
+                    <b>{item.title}</b>
+                    <small>
+                      {item.service_group ?? item.category ?? "Chưa phân loại"}{" "}
+                      · Cập nhật{" "}
+                      {new Date(item.updated_at).toLocaleString("vi-VN")}
+                      {item.is_verified ? " · Đã xác minh" : " · Chưa xác minh"}
+                      {item.version ? ` · v${item.version}` : ""}
+                      {item.source_file ? " · Nguồn import" : ""}
+                    </small>
+                  </span>
+                  <span>{item.chunk_count} đoạn</span>
+                  <span className="info-pill">
+                    {item.response_policy === "escalate"
+                      ? "Chuyển chuyên gia"
+                      : "Có căn cứ"}
+                  </span>
+                  <span
+                    className={
+                      item.status === "published"
+                        ? "success-pill"
+                        : "warning-pill"
+                    }
+                  >
+                    {item.status === "published"
+                      ? "Đã xuất bản"
+                      : item.status === "draft"
+                        ? "Bản nháp"
+                        : "Đã lưu trữ"}
+                  </span>
+                  <span className="article-actions">
+                    <button
+                      className="link-button"
+                      onClick={() => void edit(item.id)}
+                    >
+                      Chỉnh sửa
+                    </button>
+                    {item.merge_status === "draft" ? (
+                      <>
+                        <button
+                          className="link-button"
+                          onClick={() => void decideMerge(item, "approve")}
+                        >
+                          Duyệt gộp
+                        </button>
+                        <button
+                          className="link-button danger"
+                          onClick={() => void decideMerge(item, "reject")}
+                        >
+                          Từ chối
+                        </button>
+                      </>
+                    ) : (
+                      item.status === "published" && (
+                        <button
+                          className="link-button"
+                          onClick={() => void suggestMerge(item)}
+                        >
+                          Gộp bài
+                        </button>
+                      )
+                    )}
+                    {item.status !== "archived" ? (
+                      <button
+                        className="link-button danger"
+                        onClick={() => void archive(item.id)}
+                      >
+                        Lưu trữ
+                      </button>
+                    ) : (
+                      <>
+                        <button
+                          className="link-button"
+                          onClick={() => void restore(item)}
+                        >
+                          Khôi phục
+                        </button>
+                        <button
+                          className="link-button danger"
+                          onClick={() => void purge(item)}
+                        >
+                          Xóa vĩnh viễn
+                        </button>
+                      </>
+                    )}
+                  </span>
+                </div>
+              ))
           ) : (
             <div className="ops-empty">
               Chưa có bài viết. Hãy thêm tài liệu đã được xác minh.
             </div>
           )}
         </div>
-        {articleTotal>20&&<div className="pagination"><button className="ops-button" disabled={articlePage===1} onClick={()=>setArticlePage(p=>p-1)}>← Trước</button><span>Trang {articlePage} / {Math.ceil(articleTotal/20)}</span><button className="ops-button" disabled={articlePage>=Math.ceil(articleTotal/20)} onClick={()=>setArticlePage(p=>p+1)}>Sau →</button></div>}
+        {articleTotal > 20 && (
+          <div className="pagination">
+            <button
+              className="ops-button"
+              disabled={articlePage === 1}
+              onClick={() => setArticlePage((p) => p - 1)}
+            >
+              ← Trước
+            </button>
+            <span>
+              Trang {articlePage} / {Math.ceil(articleTotal / 20)}
+            </span>
+            <button
+              className="ops-button"
+              disabled={articlePage >= Math.ceil(articleTotal / 20)}
+              onClick={() => setArticlePage((p) => p + 1)}
+            >
+              Sau →
+            </button>
+          </div>
+        )}
       </div>
     </Shell>
   );
@@ -1148,13 +2015,39 @@ function LegacyQueueScreen() {
     item.original_question.toLowerCase().includes(query.toLowerCase()),
   );
   const selected = tickets.find((item) => item.id === selectedId) ?? null;
-  const open = (id: string) => { setSelectedId(id); setTitle(""); setAnswer(""); setMessage(""); router.replace(`/unanswered?id=${id}`); };
+  const open = (id: string) => {
+    setSelectedId(id);
+    setTitle("");
+    setAnswer("");
+    setMessage("");
+    router.replace(`/unanswered?id=${id}`);
+  };
   const publish = async () => {
-    if (!selected || title.trim().length < 3 || answer.trim().length < 20) return;
-    const slug = title.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-    const response = await fetch(`/api/unanswered/${selected.id}/review`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ draftAnswer: answer, finalAnswer: answer, publish: true, title, slug }) });
-    if (!response.ok) { setMessage("Không thể xuất bản. Hãy kiểm tra quyền và nội dung."); return; }
-    setMessage("Đã bổ sung tri thức đã xác minh và đóng yêu cầu."); await load();
+    if (!selected || title.trim().length < 3 || answer.trim().length < 20)
+      return;
+    const slug = title
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
+    const response = await fetch(`/api/unanswered/${selected.id}/review`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        draftAnswer: answer,
+        finalAnswer: answer,
+        publish: true,
+        title,
+        slug,
+      }),
+    });
+    if (!response.ok) {
+      setMessage("Không thể xuất bản. Hãy kiểm tra quyền và nội dung.");
+      return;
+    }
+    setMessage("Đã bổ sung tri thức đã xác minh và đóng yêu cầu.");
+    await load();
   };
   return (
     <Shell screen="queue">
@@ -1236,10 +2129,54 @@ function LegacyQueueScreen() {
         </div>
         {selected && (
           <section className="review-form expert-request-detail">
-            <div className="panel-heading"><div><small>YÊU CẦU ĐANG CHỌN</small><h2>{selected.original_question}</h2><p>{selected.reason_code === "missing_knowledge" ? "Không tìm thấy tài liệu phù hợp trong Kho kiến thức." : selected.reason_code === "expert_required" ? "Nội dung cần chuyên gia xác nhận trước khi tư vấn." : `Độ tin cậy ${Math.round((selected.retrieval_score ?? 0) * 100)}% chưa đạt ngưỡng trả lời an toàn.`}</p></div><button className="ops-button" onClick={() => { setSelectedId(null); router.replace("/unanswered"); }}>Đóng chi tiết</button></div>
-            <label>Tiêu đề tri thức mới<input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Dùng khi nội dung có thể tái sử dụng" /></label>
-            <label>Câu trả lời đã được chuyên gia xác nhận<textarea className="large-textarea" value={answer} onChange={(event) => setAnswer(event.target.value)} placeholder="Viết câu trả lời để Trợ lý có thể dùng lại…" /></label>
-            <div className="review-actions"><button className="ops-button primary" disabled={title.trim().length < 3 || answer.trim().length < 20} onClick={() => void publish()}>Bổ sung tri thức & đóng yêu cầu</button></div>
+            <div className="panel-heading">
+              <div>
+                <small>YÊU CẦU ĐANG CHỌN</small>
+                <h2>{selected.original_question}</h2>
+                <p>
+                  {selected.reason_code === "missing_knowledge"
+                    ? "Không tìm thấy tài liệu phù hợp trong Kho kiến thức."
+                    : selected.reason_code === "expert_required"
+                      ? "Nội dung cần chuyên gia xác nhận trước khi tư vấn."
+                      : `Độ tin cậy ${Math.round((selected.retrieval_score ?? 0) * 100)}% chưa đạt ngưỡng trả lời an toàn.`}
+                </p>
+              </div>
+              <button
+                className="ops-button"
+                onClick={() => {
+                  setSelectedId(null);
+                  router.replace("/unanswered");
+                }}
+              >
+                Đóng chi tiết
+              </button>
+            </div>
+            <label>
+              Tiêu đề tri thức mới
+              <input
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+                placeholder="Dùng khi nội dung có thể tái sử dụng"
+              />
+            </label>
+            <label>
+              Câu trả lời đã được chuyên gia xác nhận
+              <textarea
+                className="large-textarea"
+                value={answer}
+                onChange={(event) => setAnswer(event.target.value)}
+                placeholder="Viết câu trả lời để Trợ lý có thể dùng lại…"
+              />
+            </label>
+            <div className="review-actions">
+              <button
+                className="ops-button primary"
+                disabled={title.trim().length < 3 || answer.trim().length < 20}
+                onClick={() => void publish()}
+              >
+                Bổ sung tri thức & đóng yêu cầu
+              </button>
+            </div>
             {message && <Message value={message} />}
           </section>
         )}
@@ -1254,7 +2191,11 @@ function QueueScreen() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
-  const [pagination, setPagination] = useState({ page: 1, pageSize: 20, total: 0 });
+  const [pagination, setPagination] = useState({
+    page: 1,
+    pageSize: 20,
+    total: 0,
+  });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [title, setTitle] = useState("");
@@ -1267,69 +2208,319 @@ function QueueScreen() {
     const params = new URLSearchParams({ page: String(page), pageSize: "20" });
     if (query.trim()) params.set("search", query.trim());
     if (selectedId) params.set("id", selectedId);
-    const response = await fetch(`/api/unanswered?${params.toString()}`).catch(() => null);
+    const response = await fetch(`/api/unanswered?${params.toString()}`).catch(
+      () => null,
+    );
     const body = await response?.json().catch(() => ({}));
     setLoading(false);
-    if (!response?.ok) { notify("Không thể tải danh sách yêu cầu chuyên gia.", "error"); return; }
+    if (!response?.ok) {
+      notify("Không thể tải danh sách yêu cầu chuyên gia.", "error");
+      return;
+    }
     const questions = body.questions ?? [];
     setTickets(questions);
     setPagination(body.pagination ?? { page: 1, pageSize: 20, total: 0 });
-    setSelectedTicket(body.selected ?? questions.find((item: Ticket) => item.id === selectedId) ?? null);
+    setSelectedTicket(
+      body.selected ??
+        questions.find((item: Ticket) => item.id === selectedId) ??
+        null,
+    );
   };
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const requestedPage = Number(params.get("page") ?? 1);
-    setPage(Number.isFinite(requestedPage) ? Math.max(1, Math.floor(requestedPage)) : 1);
+    setPage(
+      Number.isFinite(requestedPage)
+        ? Math.max(1, Math.floor(requestedPage))
+        : 1,
+    );
     setSelectedId(params.get("id"));
     setInitialized(true);
   }, []);
-  useEffect(() => { if (initialized) void load(); }, [initialized, page, query, selectedId]);
+  useEffect(() => {
+    if (initialized) void load();
+  }, [initialized, page, query, selectedId]);
 
-  const reasonText = (ticket: Ticket) => ticket.reason_code === "missing_knowledge"
-    ? "Không tìm thấy tài liệu phù hợp trong Kho kiến thức."
-    : ticket.reason_code === "expert_required"
-      ? "Nội dung cần chuyên gia xác nhận trước khi tư vấn."
-      : ticket.reason_code === "expert_requested"
-        ? "Người dùng cần chuyên gia hỗ trợ thêm cho câu trả lời này."
-        : `Độ tin cậy ${Math.round((ticket.retrieval_score ?? 0) * 100)}% chưa đạt ngưỡng trả lời an toàn.`;
-  const reasonLabel = (ticket: Ticket) => ticket.reason_code === "missing_knowledge" ? "Thiếu tài liệu" : ticket.reason_code === "expert_required" ? "Cần chuyên gia xác nhận" : ticket.reason_code === "expert_requested" ? "Yêu cầu hỗ trợ thêm" : "Độ tin cậy thấp";
+  const reasonText = (ticket: Ticket) =>
+    ticket.reason_code === "missing_knowledge"
+      ? "Không tìm thấy tài liệu phù hợp trong Kho kiến thức."
+      : ticket.reason_code === "expert_required"
+        ? "Nội dung cần chuyên gia xác nhận trước khi tư vấn."
+        : ticket.reason_code === "expert_requested"
+          ? "Người dùng cần chuyên gia hỗ trợ thêm cho câu trả lời này."
+          : `Độ tin cậy ${Math.round((ticket.retrieval_score ?? 0) * 100)}% chưa đạt ngưỡng trả lời an toàn.`;
+  const reasonLabel = (ticket: Ticket) =>
+    ticket.reason_code === "missing_knowledge"
+      ? "Thiếu tài liệu"
+      : ticket.reason_code === "expert_required"
+        ? "Cần chuyên gia xác nhận"
+        : ticket.reason_code === "expert_requested"
+          ? "Yêu cầu hỗ trợ thêm"
+          : "Độ tin cậy thấp";
   const open = (ticket: Ticket) => {
-    setSelectedId(ticket.id); setSelectedTicket(ticket); setTitle(""); setAnswer("");
+    setSelectedId(ticket.id);
+    setSelectedTicket(ticket);
+    setTitle("");
+    setAnswer("");
     router.replace(`/unanswered?id=${ticket.id}&page=${page}`);
   };
   const close = () => {
-    setSelectedId(null); setSelectedTicket(null); setTitle(""); setAnswer("");
+    setSelectedId(null);
+    setSelectedTicket(null);
+    setTitle("");
+    setAnswer("");
     router.replace(`/unanswered?page=${page}`);
   };
   const publish = async () => {
-    if (!selectedTicket || title.trim().length < 3 || answer.trim().length < 20) return;
-    const slug = title.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-    const response = await fetch(`/api/unanswered/${selectedTicket.id}/review`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ draftAnswer: answer, finalAnswer: answer, publish: true, title, slug }) });
-    if (!response.ok) { notify("Không thể xuất bản. Hãy kiểm tra quyền và nội dung.", "error"); return; }
+    if (!selectedTicket || title.trim().length < 3 || answer.trim().length < 20)
+      return;
+    const slug = title
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
+    const response = await fetch(
+      `/api/unanswered/${selectedTicket.id}/review`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          draftAnswer: answer,
+          finalAnswer: answer,
+          publish: true,
+          title,
+          slug,
+        }),
+      },
+    );
+    if (!response.ok) {
+      notify("Không thể xuất bản. Hãy kiểm tra quyền và nội dung.", "error");
+      return;
+    }
     notify("Đã bổ sung tri thức đã xác minh và đóng yêu cầu.", "success");
     close();
   };
-  const totalPages = Math.max(1, Math.ceil(pagination.total / pagination.pageSize));
+  const totalPages = Math.max(
+    1,
+    Math.ceil(pagination.total / pagination.pageSize),
+  );
 
-  return <Shell screen="queue">
-    <Header screen="queue" title="Yêu cầu chuyên gia" description="Tiếp nhận các câu hỏi Trợ lý chưa thể phản hồi an toàn và biến kiến thức đã xác nhận thành tài sản dùng lại." action={<button className="ops-button" disabled={loading} onClick={() => void load()}>↻ Làm mới</button>} />
-    <div className={`expert-request-workspace${selectedTicket ? " has-selection" : ""}`}>
-      <section className="ops-panel expert-request-list">
-        <div className="panel-heading expert-request-list-heading"><div><h2>Danh sách yêu cầu</h2><p>{loading ? "Đang tải…" : `${pagination.total} yêu cầu phù hợp.`}</p></div></div>
-        <div className="ops-toolbar"><input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder="Tìm câu hỏi hoặc người tạo…" aria-label="Tìm yêu cầu chuyên gia" /></div>
-        <div className="ops-table"><table><thead><tr><th>Câu hỏi</th><th>Độ tin cậy</th><th>Nguyên nhân</th><th>Người tạo</th><th>Trạng thái</th><th /></tr></thead><tbody>{tickets.length ? tickets.map((item) => <tr className={item.id === selectedId ? "is-selected" : ""} key={item.id}><td><b>{item.original_question}</b><small>{new Date(item.created_at).toLocaleString("vi-VN")}</small></td><td className="warning-text">{Math.round((item.retrieval_score ?? 0) * 100)}%</td><td>{reasonLabel(item)}</td><td>{item.creator}</td><td><span className="warning-pill">{item.status === "new" ? "Mới" : item.status}</span></td><td><button className="link-button" onClick={() => open(item)}>{item.id === selectedId ? "Đang xem" : "Xử lý →"}</button></td></tr>) : <tr><td colSpan={6}>{loading ? "Đang tải yêu cầu…" : "Không có câu hỏi cần xử lý."}</td></tr>}</tbody></table></div>
-        {pagination.total > pagination.pageSize && <div className="pagination"><button className="ops-button" disabled={page === 1 || loading} onClick={() => setPage((value) => value - 1)}>← Trước</button><span>Trang {page} / {totalPages}</span><button className="ops-button" disabled={page >= totalPages || loading} onClick={() => setPage((value) => value + 1)}>Sau →</button></div>}
-      </section>
-      {selectedTicket ? <section className="ops-panel review-form expert-request-detail">
-        <header className="expert-request-detail-header"><div><small>YÊU CẦU ĐANG XỬ LÝ</small><h2>{selectedTicket.original_question}</h2><p>{reasonText(selectedTicket)}</p></div><button className="ops-button" onClick={close}>Đóng</button></header>
-        <div className="expert-request-meta" aria-label="Thông tin yêu cầu"><div><small>Trạng thái</small><span className="warning-pill">{selectedTicket.status === "new" ? "Mới" : selectedTicket.status}</span></div><div><small>Độ tin cậy</small><strong>{Math.round((selectedTicket.retrieval_score ?? 0) * 100)}%</strong></div><div><small>Người tạo</small><strong>{selectedTicket.creator}</strong></div><div><small>Thời điểm tạo</small><strong>{new Date(selectedTicket.created_at).toLocaleString("vi-VN")}</strong></div></div>
-        <div className="expert-request-context"><small>LÝ DO CẦN XỬ LÝ</small><p>{reasonText(selectedTicket)}</p></div>
-        <div className="expert-request-form"><div><h3>Bổ sung vào Kho kiến thức</h3><p>Nội dung được xuất bản sẽ là câu trả lời đã xác minh để Trợ lý có thể dùng lại.</p></div><label>Tiêu đề tri thức mới<input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Dùng khi nội dung có thể tái sử dụng" /></label><label>Câu trả lời đã được chuyên gia xác nhận<textarea className="large-textarea" value={answer} onChange={(event) => setAnswer(event.target.value)} placeholder="Viết câu trả lời để Trợ lý có thể dùng lại…" /></label></div>
-        <footer className="review-actions expert-request-actions"><small>Yêu cầu sẽ được đóng sau khi nội dung được xuất bản.</small><button className="ops-button primary" disabled={title.trim().length < 3 || answer.trim().length < 20} onClick={() => void publish()}>Bổ sung tri thức & đóng yêu cầu</button></footer>
-      </section> : <aside className="ops-panel expert-request-empty"><div><small>CHI TIẾT XỬ LÝ</small><h2>Chọn một yêu cầu</h2><p>Chọn “Xử lý” từ danh sách để xem ngữ cảnh và bổ sung tri thức đã xác minh.</p></div></aside>}
-    </div>
-  </Shell>;
+  return (
+    <Shell screen="queue">
+      <Header
+        screen="queue"
+        title="Yêu cầu chuyên gia"
+        description="Tiếp nhận các câu hỏi Trợ lý chưa thể phản hồi an toàn và biến kiến thức đã xác nhận thành tài sản dùng lại."
+        action={
+          <button
+            className="ops-button"
+            disabled={loading}
+            onClick={() => void load()}
+          >
+            ↻ Làm mới
+          </button>
+        }
+      />
+      <div
+        className={`expert-request-workspace${selectedTicket ? " has-selection" : ""}`}
+      >
+        <section className="ops-panel expert-request-list">
+          <div className="panel-heading expert-request-list-heading">
+            <div>
+              <h2>Danh sách yêu cầu</h2>
+              <p>
+                {loading ? "Đang tải…" : `${pagination.total} yêu cầu phù hợp.`}
+              </p>
+            </div>
+          </div>
+          <div className="ops-toolbar">
+            <input
+              value={query}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setPage(1);
+              }}
+              placeholder="Tìm câu hỏi hoặc người tạo…"
+              aria-label="Tìm yêu cầu chuyên gia"
+            />
+          </div>
+          <div className="ops-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Câu hỏi</th>
+                  <th>Độ tin cậy</th>
+                  <th>Nguyên nhân</th>
+                  <th>Người tạo</th>
+                  <th>Trạng thái</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {tickets.length ? (
+                  tickets.map((item) => (
+                    <tr
+                      className={item.id === selectedId ? "is-selected" : ""}
+                      key={item.id}
+                    >
+                      <td>
+                        <b>{item.original_question}</b>
+                        <small>
+                          {new Date(item.created_at).toLocaleString("vi-VN")}
+                        </small>
+                      </td>
+                      <td className="warning-text">
+                        {Math.round((item.retrieval_score ?? 0) * 100)}%
+                      </td>
+                      <td>{reasonLabel(item)}</td>
+                      <td>{item.creator}</td>
+                      <td>
+                        <span className="warning-pill">
+                          {item.status === "new" ? "Mới" : item.status}
+                        </span>
+                      </td>
+                      <td>
+                        <button
+                          className="link-button"
+                          onClick={() => open(item)}
+                        >
+                          {item.id === selectedId ? "Đang xem" : "Xử lý →"}
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={6}>
+                      {loading
+                        ? "Đang tải yêu cầu…"
+                        : "Không có câu hỏi cần xử lý."}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          {pagination.total > pagination.pageSize && (
+            <div className="pagination">
+              <button
+                className="ops-button"
+                disabled={page === 1 || loading}
+                onClick={() => setPage((value) => value - 1)}
+              >
+                ← Trước
+              </button>
+              <span>
+                Trang {page} / {totalPages}
+              </span>
+              <button
+                className="ops-button"
+                disabled={page >= totalPages || loading}
+                onClick={() => setPage((value) => value + 1)}
+              >
+                Sau →
+              </button>
+            </div>
+          )}
+        </section>
+        {selectedTicket ? (
+          <section className="ops-panel review-form expert-request-detail">
+            <header className="expert-request-detail-header">
+              <div>
+                <small>YÊU CẦU ĐANG XỬ LÝ</small>
+                <h2>{selectedTicket.original_question}</h2>
+                <p>{reasonText(selectedTicket)}</p>
+              </div>
+              <button className="ops-button" onClick={close}>
+                Đóng
+              </button>
+            </header>
+            <div className="expert-request-meta" aria-label="Thông tin yêu cầu">
+              <div>
+                <small>Trạng thái</small>
+                <span className="warning-pill">
+                  {selectedTicket.status === "new"
+                    ? "Mới"
+                    : selectedTicket.status}
+                </span>
+              </div>
+              <div>
+                <small>Độ tin cậy</small>
+                <strong>
+                  {Math.round((selectedTicket.retrieval_score ?? 0) * 100)}%
+                </strong>
+              </div>
+              <div>
+                <small>Người tạo</small>
+                <strong>{selectedTicket.creator}</strong>
+              </div>
+              <div>
+                <small>Thời điểm tạo</small>
+                <strong>
+                  {new Date(selectedTicket.created_at).toLocaleString("vi-VN")}
+                </strong>
+              </div>
+            </div>
+            <div className="expert-request-context">
+              <small>LÝ DO CẦN XỬ LÝ</small>
+              <p>{reasonText(selectedTicket)}</p>
+            </div>
+            <div className="expert-request-form">
+              <div>
+                <h3>Bổ sung vào Kho kiến thức</h3>
+                <p>
+                  Nội dung được xuất bản sẽ là câu trả lời đã xác minh để Trợ lý
+                  có thể dùng lại.
+                </p>
+              </div>
+              <label>
+                Tiêu đề tri thức mới
+                <input
+                  value={title}
+                  onChange={(event) => setTitle(event.target.value)}
+                  placeholder="Dùng khi nội dung có thể tái sử dụng"
+                />
+              </label>
+              <label>
+                Câu trả lời đã được chuyên gia xác nhận
+                <textarea
+                  className="large-textarea"
+                  value={answer}
+                  onChange={(event) => setAnswer(event.target.value)}
+                  placeholder="Viết câu trả lời để Trợ lý có thể dùng lại…"
+                />
+              </label>
+            </div>
+            <footer className="review-actions expert-request-actions">
+              <small>
+                Yêu cầu sẽ được đóng sau khi nội dung được xuất bản.
+              </small>
+              <button
+                className="ops-button primary"
+                disabled={title.trim().length < 3 || answer.trim().length < 20}
+                onClick={() => void publish()}
+              >
+                Bổ sung tri thức & đóng yêu cầu
+              </button>
+            </footer>
+          </section>
+        ) : (
+          <aside className="ops-panel expert-request-empty">
+            <div>
+              <small>CHI TIẾT XỬ LÝ</small>
+              <h2>Chọn một yêu cầu</h2>
+              <p>
+                Chọn “Xử lý” từ danh sách để xem ngữ cảnh và bổ sung tri thức đã
+                xác minh.
+              </p>
+            </div>
+          </aside>
+        )}
+      </div>
+    </Shell>
+  );
 }
 
 function ReviewScreen() {
@@ -1447,34 +2638,63 @@ function ReviewScreen() {
 
 function ProfileScreen() {
   const { notify } = useFeedback();
-  const [profile, setProfile] = useState<{ fullName: string; username: string; email: string; roleLabel: string; avatarUrl: string | null; mfaEnabled: boolean } | null>(null);
+  const [profile, setProfile] = useState<{
+    fullName: string;
+    username: string;
+    email: string;
+    roleLabel: string;
+    avatarUrl: string | null;
+    mfaEnabled: boolean;
+  } | null>(null);
   const [currentPassword, setCurrentPassword] = useState("");
   const [currentPasswordError, setCurrentPasswordError] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirmation, setPasswordConfirmation] = useState("");
   const [saving, setSaving] = useState(false);
   const [mfaDialog, setMfaDialog] = useState<"setup" | "disable" | null>(null);
-  const [mfaSetup, setMfaSetup] = useState<{ qrCodeDataUrl: string; uri: string } | null>(null);
+  const [mfaSetup, setMfaSetup] = useState<{
+    qrCodeDataUrl: string;
+    uri: string;
+  } | null>(null);
   const [mfaCode, setMfaCode] = useState("");
   const [mfaPassword, setMfaPassword] = useState("");
   const [mfaSaving, setMfaSaving] = useState(false);
   const [avatarSaving, setAvatarSaving] = useState(false);
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
-  useEffect(() => { void fetch("/api/profile").then((response) => response.ok ? response.json() : null).then((body) => setProfile(body?.profile ?? null)); }, []);
+  useEffect(() => {
+    void fetch("/api/profile")
+      .then((response) => (response.ok ? response.json() : null))
+      .then((body) => setProfile(body?.profile ?? null));
+  }, []);
   const rules = passwordChecklist(password);
   const readyForStrength = Object.values(rules).every(Boolean);
   const strength = passwordStrength(password);
-  const passwordMatches = passwordConfirmation.length > 0 && password === passwordConfirmation;
+  const passwordMatches =
+    passwordConfirmation.length > 0 && password === passwordConfirmation;
   const uploadAvatar = async (file?: File) => {
     if (!file) return;
-    const form = new FormData(); form.append("file", file);
+    const form = new FormData();
+    form.append("file", file);
     setAvatarSaving(true);
-    const response = await fetch("/api/profile/avatar", { method: "POST", body: form });
+    const response = await fetch("/api/profile/avatar", {
+      method: "POST",
+      body: form,
+    });
     const body = await response.json().catch(() => ({}));
     setAvatarSaving(false);
-    if (!response.ok) { notify(readableApiError(body.error, "Không thể cập nhật ảnh đại diện."), "error"); return; }
-    setProfile((current) => current ? { ...current, avatarUrl: `${body.avatarUrl}?v=${Date.now()}` } : current);
+    if (!response.ok) {
+      notify(
+        readableApiError(body.error, "Không thể cập nhật ảnh đại diện."),
+        "error",
+      );
+      return;
+    }
+    setProfile((current) =>
+      current
+        ? { ...current, avatarUrl: `${body.avatarUrl}?v=${Date.now()}` }
+        : current,
+    );
     window.dispatchEvent(new Event("profile-avatar-updated"));
     notify("Đã cập nhật ảnh đại diện.", "success");
   };
@@ -1483,54 +2703,518 @@ function ProfileScreen() {
     const response = await fetch("/api/profile/avatar", { method: "DELETE" });
     const body = await response.json().catch(() => ({}));
     setAvatarSaving(false);
-    if (!response.ok) { notify(readableApiError(body.error, "Không thể xóa ảnh đại diện."), "error"); return; }
-    setProfile((current) => current ? { ...current, avatarUrl: null } : current);
+    if (!response.ok) {
+      notify(
+        readableApiError(body.error, "Không thể xóa ảnh đại diện."),
+        "error",
+      );
+      return;
+    }
+    setProfile((current) =>
+      current ? { ...current, avatarUrl: null } : current,
+    );
     window.dispatchEvent(new Event("profile-avatar-updated"));
     notify("Đã xóa ảnh đại diện.", "success");
   };
   const changePassword = async () => {
     setCurrentPasswordError("");
     setSaving(true);
-    const response = await fetch("/api/profile", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ currentPassword, password, passwordConfirmation }) });
+    const response = await fetch("/api/profile", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ currentPassword, password, passwordConfirmation }),
+    });
     const body = await response.json().catch(() => ({}));
     setSaving(false);
     if (!response.ok) {
-      const errorMessage = readableApiError(body.error, "Không thể đổi mật khẩu.");
-      if (errorMessage === "Mật khẩu hiện tại không đúng.") { setCurrentPasswordError(errorMessage); return; }
+      const errorMessage = readableApiError(
+        body.error,
+        "Không thể đổi mật khẩu.",
+      );
+      if (errorMessage === "Mật khẩu hiện tại không đúng.") {
+        setCurrentPasswordError(errorMessage);
+        return;
+      }
       notify(errorMessage, "error");
       return;
     }
-    setCurrentPassword(""); setPassword(""); setPasswordConfirmation(""); notify("Đã đổi mật khẩu. Vui lòng đăng nhập lại trên các thiết bị khác.", "success");
+    setCurrentPassword("");
+    setPassword("");
+    setPasswordConfirmation("");
+    notify(
+      "Đã đổi mật khẩu. Vui lòng đăng nhập lại trên các thiết bị khác.",
+      "success",
+    );
   };
-  const beginMfa = async () => { setMfaSaving(true); const response = await fetch("/api/profile/mfa", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "setup" }) }); const body = await response.json().catch(() => ({})); setMfaSaving(false); if (!response.ok) { notify(readableApiError(body.error, "Không thể bắt đầu thiết lập 2FA."), "error"); return; } setMfaSetup(body); setMfaCode(""); setMfaDialog("setup"); };
-  const verifyMfa = async () => { setMfaSaving(true); const response = await fetch("/api/profile/mfa", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "verify", code: mfaCode }) }); const body = await response.json().catch(() => ({})); setMfaSaving(false); if (!response.ok) { notify(readableApiError(body.error, "Không thể bật 2FA."), "error"); return; } setProfile((current) => current ? { ...current, mfaEnabled: true } : current); setMfaDialog(null); setMfaSetup(null); notify("Đã bật xác thực hai bước.", "success"); };
-  const disableMfa = async () => { setMfaSaving(true); const response = await fetch("/api/profile/mfa", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "disable", currentPassword: mfaPassword }) }); const body = await response.json().catch(() => ({})); setMfaSaving(false); if (!response.ok) { notify(readableApiError(body.error, "Không thể tắt 2FA."), "error"); return; } setProfile((current) => current ? { ...current, mfaEnabled: false } : current); setMfaPassword(""); setMfaDialog(null); notify("Đã tắt xác thực hai bước.", "success"); };
-  return <Shell screen="profile"><Header screen="profile" title="Thông tin người dùng" description="Quản lý mật khẩu, ảnh đại diện và bảo mật tài khoản của bạn." />
-    <section className="ops-panel profile-workspace">
-      <div className="profile-summary"><button className="profile-avatar-trigger" type="button" aria-label="Thay đổi ảnh đại diện" onClick={() => setAvatarDialogOpen(true)}><UserAvatar className="profile-avatar-large" fullName={profile?.fullName} src={profile?.avatarUrl} alt="Ảnh đại diện hiện tại" /><span aria-hidden="true">Chỉnh sửa</span></button><div><h2>{profile?.fullName ?? "Đang tải thông tin…"}</h2><p>{profile?.roleLabel ?? ""}</p></div></div>
-      <div className="profile-readonly-grid"><label>Họ và tên<input value={profile?.fullName ?? ""} readOnly /></label><label>Tên đăng nhập<input value={profile?.username ?? ""} readOnly /></label><label>Email<input value={profile?.email ?? ""} readOnly /></label><label>Vai trò<input value={profile?.roleLabel ?? ""} readOnly /></label></div>
-      <section className="profile-password-section"><div><h2>Đổi mật khẩu</h2><p>Trước tiên xác thực mật khẩu hiện tại, sau đó đặt mật khẩu mới theo checklist.</p></div><div className="password-current-group"><h3>1. Xác thực hiện tại</h3><label>Mật khẩu hiện tại<input type="password" autoComplete="current-password" value={currentPassword} onChange={(event) => { setCurrentPassword(event.target.value); setCurrentPasswordError(""); }} /><small className={`field-feedback ${currentPasswordError ? "field-invalid" : "field-placeholder"}`} aria-live="polite">{currentPasswordError || "Trạng thái xác thực"}</small></label></div><div className="password-new-group"><h3>2. Đặt mật khẩu mới</h3><div className="profile-password-grid"><label>Mật khẩu mới<input type="password" autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} /><small className="field-feedback field-placeholder" aria-hidden="true">Trạng thái xác nhận</small></label><label>Nhập lại mật khẩu mới<input type="password" autoComplete="new-password" value={passwordConfirmation} onChange={(event) => setPasswordConfirmation(event.target.value)} /><small className={`field-feedback ${passwordConfirmation ? (passwordMatches ? "field-valid" : "field-invalid") : "field-placeholder"}`} aria-live="polite">{passwordConfirmation ? (passwordMatches ? "✓ Mật khẩu trùng khớp" : "Mật khẩu chưa trùng khớp") : "Trạng thái xác nhận"}</small></label></div><ul className="password-checklist" aria-label="Điều kiện mật khẩu">{[[rules.minimumLength, "Ít nhất 8 ký tự"], [rules.uppercase, "Có ký tự IN HOA"], [rules.lowercase, "Có ký tự thường"], [rules.specialCharacter, "Có ký tự đặc biệt như @, #, !, %"]].map(([passed, label]) => <li className={passed ? "passed" : ""} key={String(label)}><span>{passed ? "✓" : "○"}</span>{label}</li>)}</ul>{readyForStrength && <small className={`password-strength ${strength === "strong" ? "strong" : "medium"}`}>Độ mạnh: {strength === "strong" ? "Mạnh" : "Trung bình"}</small>}</div><div className="editor-actions"><button className="ops-button primary" disabled={saving || !currentPassword || !readyForStrength || !passwordMatches} onClick={() => void changePassword()}>{saving ? "Đang áp dụng…" : "Áp dụng mật khẩu mới"}</button></div></section>
-      <section className="profile-security-row"><div><h2>Xác thực hai bước</h2><p>{profile?.mfaEnabled ? "Đang bật bằng ứng dụng xác thực." : "Tự nguyện ở giai đoạn hiện tại; bật để bảo vệ tài khoản tốt hơn."}</p></div><div className="profile-mfa-action"><span className={profile?.mfaEnabled ? "success-pill" : "info-pill"}>{profile?.mfaEnabled ? "Đang bật" : "Chưa bật"}</span><button type="button" role="switch" aria-checked={Boolean(profile?.mfaEnabled)} className={`setting-toggle ${profile?.mfaEnabled ? "enabled" : ""}`} disabled={mfaSaving} onClick={() => profile?.mfaEnabled ? setMfaDialog("disable") : void beginMfa()}><span aria-hidden="true" /></button></div></section>
-    </section>
-    {avatarDialogOpen && <div className="app-modal-backdrop" role="presentation" onMouseDown={() => !avatarSaving && setAvatarDialogOpen(false)}><section className="app-modal avatar-modal" role="dialog" aria-modal="true" aria-labelledby="avatar-modal-title" onMouseDown={(event) => event.stopPropagation()}><small>ẢNH ĐẠI DIỆN</small><h2 id="avatar-modal-title">Cập nhật ảnh đại diện</h2><p>Ảnh được cắt vuông, chuẩn hóa và lưu riêng cho tài khoản của bạn.</p><div className="avatar-modal-content"><UserAvatar className="avatar-modal-preview" fullName={profile?.fullName} src={profile?.avatarUrl} alt="Xem trước ảnh đại diện" /><div className="avatar-dropzone" role="button" tabIndex={0} aria-describedby="avatar-upload-help" onClick={() => avatarInputRef.current?.click()} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); avatarInputRef.current?.click(); } }} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); void uploadAvatar(event.dataTransfer.files[0]); }}><strong>{avatarSaving ? "Đang xử lý ảnh…" : "Kéo thả ảnh vào đây hoặc chọn tệp"}</strong><span id="avatar-upload-help">JPG, PNG hoặc WebP · tối đa 5 MB</span></div></div><input ref={avatarInputRef} className="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { void uploadAvatar(event.target.files?.[0]); event.currentTarget.value = ""; }} /><div className="app-modal-actions"><button className="ops-button" type="button" disabled={avatarSaving} onClick={() => setAvatarDialogOpen(false)}>Đóng</button>{profile?.avatarUrl && <button className="ops-button danger" type="button" disabled={avatarSaving} onClick={() => void removeAvatar()}>Xóa ảnh</button>}</div></section></div>}
-    {mfaDialog === "setup" && <div className="app-modal-backdrop"><section className="app-modal mfa-modal" role="dialog" aria-modal="true" aria-labelledby="mfa-setup-title"><small>XÁC THỰC HAI BƯỚC</small><h2 id="mfa-setup-title">Quét mã bằng ứng dụng xác thực</h2><p>Quét mã QR bằng Google Authenticator, Microsoft Authenticator hoặc ứng dụng tương thích; sau đó nhập mã 6 số để hoàn tất.</p>{mfaSetup?.qrCodeDataUrl && <img className="mfa-qr" src={mfaSetup.qrCodeDataUrl} alt="Mã QR thiết lập xác thực hai bước" />}<label>Mã xác thực 6 số<input inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={mfaCode} onChange={(event) => setMfaCode(event.target.value.replace(/\D/g, ""))} /></label><div className="app-modal-actions"><button className="ops-button" disabled={mfaSaving} onClick={() => { setMfaDialog(null); setMfaSetup(null); }}>Hủy</button><button className="ops-button primary" disabled={mfaSaving || mfaCode.length !== 6} onClick={() => void verifyMfa()}>{mfaSaving ? "Đang xác minh…" : "Bật xác thực hai bước"}</button></div></section></div>}
-    {mfaDialog === "disable" && <div className="app-modal-backdrop"><section className="app-modal" role="dialog" aria-modal="true" aria-labelledby="mfa-disable-title"><small>XÁC NHẬN BẢO MẬT</small><h2 id="mfa-disable-title">Tắt xác thực hai bước?</h2><p>Nhập mật khẩu hiện tại để xác nhận. Bạn có thể bật lại bất cứ lúc nào.</p><label>Mật khẩu hiện tại<input type="password" autoComplete="current-password" value={mfaPassword} onChange={(event) => setMfaPassword(event.target.value)} /></label><div className="app-modal-actions"><button className="ops-button" disabled={mfaSaving} onClick={() => { setMfaDialog(null); setMfaPassword(""); }}>Hủy</button><button className="ops-button danger" disabled={mfaSaving || !mfaPassword} onClick={() => void disableMfa()}>{mfaSaving ? "Đang tắt…" : "Tắt 2FA"}</button></div></section></div>}
-  </Shell>;
+  const beginMfa = async () => {
+    setMfaSaving(true);
+    const response = await fetch("/api/profile/mfa", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "setup" }),
+    });
+    const body = await response.json().catch(() => ({}));
+    setMfaSaving(false);
+    if (!response.ok) {
+      notify(
+        readableApiError(body.error, "Không thể bắt đầu thiết lập 2FA."),
+        "error",
+      );
+      return;
+    }
+    setMfaSetup(body);
+    setMfaCode("");
+    setMfaDialog("setup");
+  };
+  const verifyMfa = async () => {
+    setMfaSaving(true);
+    const response = await fetch("/api/profile/mfa", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "verify", code: mfaCode }),
+    });
+    const body = await response.json().catch(() => ({}));
+    setMfaSaving(false);
+    if (!response.ok) {
+      notify(readableApiError(body.error, "Không thể bật 2FA."), "error");
+      return;
+    }
+    setProfile((current) =>
+      current ? { ...current, mfaEnabled: true } : current,
+    );
+    setMfaDialog(null);
+    setMfaSetup(null);
+    notify("Đã bật xác thực hai bước.", "success");
+  };
+  const disableMfa = async () => {
+    setMfaSaving(true);
+    const response = await fetch("/api/profile/mfa", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "disable", currentPassword: mfaPassword }),
+    });
+    const body = await response.json().catch(() => ({}));
+    setMfaSaving(false);
+    if (!response.ok) {
+      notify(readableApiError(body.error, "Không thể tắt 2FA."), "error");
+      return;
+    }
+    setProfile((current) =>
+      current ? { ...current, mfaEnabled: false } : current,
+    );
+    setMfaPassword("");
+    setMfaDialog(null);
+    notify("Đã tắt xác thực hai bước.", "success");
+  };
+  return (
+    <Shell screen="profile">
+      <Header
+        screen="profile"
+        title="Thông tin người dùng"
+        description="Quản lý mật khẩu, ảnh đại diện và bảo mật tài khoản của bạn."
+      />
+      <section className="ops-panel profile-workspace">
+        <div className="profile-summary">
+          <button
+            className="profile-avatar-trigger"
+            type="button"
+            aria-label="Thay đổi ảnh đại diện"
+            onClick={() => setAvatarDialogOpen(true)}
+          >
+            <UserAvatar
+              className="profile-avatar-large"
+              fullName={profile?.fullName}
+              src={profile?.avatarUrl}
+              alt="Ảnh đại diện hiện tại"
+            />
+            <span aria-hidden="true">Chỉnh sửa</span>
+          </button>
+          <div>
+            <h2>{profile?.fullName ?? "Đang tải thông tin…"}</h2>
+            <p>{profile?.roleLabel ?? ""}</p>
+          </div>
+        </div>
+        <div className="profile-readonly-grid">
+          <label>
+            Họ và tên
+            <input value={profile?.fullName ?? ""} readOnly />
+          </label>
+          <label>
+            Tên đăng nhập
+            <input value={profile?.username ?? ""} readOnly />
+          </label>
+          <label>
+            Email
+            <input value={profile?.email ?? ""} readOnly />
+          </label>
+          <label>
+            Vai trò
+            <input value={profile?.roleLabel ?? ""} readOnly />
+          </label>
+        </div>
+        <section className="profile-password-section">
+          <div>
+            <h2>Đổi mật khẩu</h2>
+            <p>
+              Trước tiên xác thực mật khẩu hiện tại, sau đó đặt mật khẩu mới
+              theo checklist.
+            </p>
+          </div>
+          <div className="password-current-group">
+            <h3>1. Xác thực hiện tại</h3>
+            <label>
+              Mật khẩu hiện tại
+              <input
+                type="password"
+                autoComplete="current-password"
+                value={currentPassword}
+                onChange={(event) => {
+                  setCurrentPassword(event.target.value);
+                  setCurrentPasswordError("");
+                }}
+              />
+              <small
+                className={`field-feedback ${currentPasswordError ? "field-invalid" : "field-placeholder"}`}
+                aria-live="polite"
+              >
+                {currentPasswordError || "Trạng thái xác thực"}
+              </small>
+            </label>
+          </div>
+          <div className="password-new-group">
+            <h3>2. Đặt mật khẩu mới</h3>
+            <div className="profile-password-grid">
+              <label>
+                Mật khẩu mới
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                />
+                <small
+                  className="field-feedback field-placeholder"
+                  aria-hidden="true"
+                >
+                  Trạng thái xác nhận
+                </small>
+              </label>
+              <label>
+                Nhập lại mật khẩu mới
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  value={passwordConfirmation}
+                  onChange={(event) =>
+                    setPasswordConfirmation(event.target.value)
+                  }
+                />
+                <small
+                  className={`field-feedback ${passwordConfirmation ? (passwordMatches ? "field-valid" : "field-invalid") : "field-placeholder"}`}
+                  aria-live="polite"
+                >
+                  {passwordConfirmation
+                    ? passwordMatches
+                      ? "✓ Mật khẩu trùng khớp"
+                      : "Mật khẩu chưa trùng khớp"
+                    : "Trạng thái xác nhận"}
+                </small>
+              </label>
+            </div>
+            <ul className="password-checklist" aria-label="Điều kiện mật khẩu">
+              {[
+                [rules.minimumLength, "Ít nhất 8 ký tự"],
+                [rules.uppercase, "Có ký tự IN HOA"],
+                [rules.lowercase, "Có ký tự thường"],
+                [rules.specialCharacter, "Có ký tự đặc biệt như @, #, !, %"],
+              ].map(([passed, label]) => (
+                <li className={passed ? "passed" : ""} key={String(label)}>
+                  <span>{passed ? "✓" : "○"}</span>
+                  {label}
+                </li>
+              ))}
+            </ul>
+            {readyForStrength && (
+              <small
+                className={`password-strength ${strength === "strong" ? "strong" : "medium"}`}
+              >
+                Độ mạnh: {strength === "strong" ? "Mạnh" : "Trung bình"}
+              </small>
+            )}
+          </div>
+          <div className="editor-actions">
+            <button
+              className="ops-button primary"
+              disabled={
+                saving ||
+                !currentPassword ||
+                !readyForStrength ||
+                !passwordMatches
+              }
+              onClick={() => void changePassword()}
+            >
+              {saving ? "Đang áp dụng…" : "Áp dụng mật khẩu mới"}
+            </button>
+          </div>
+        </section>
+        <section className="profile-security-row">
+          <div>
+            <h2>Xác thực hai bước</h2>
+            <p>
+              {profile?.mfaEnabled
+                ? "Đang bật bằng ứng dụng xác thực."
+                : "Tự nguyện ở giai đoạn hiện tại; bật để bảo vệ tài khoản tốt hơn."}
+            </p>
+          </div>
+          <div className="profile-mfa-action">
+            <span
+              className={profile?.mfaEnabled ? "success-pill" : "info-pill"}
+            >
+              {profile?.mfaEnabled ? "Đang bật" : "Chưa bật"}
+            </span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={Boolean(profile?.mfaEnabled)}
+              className={`setting-toggle ${profile?.mfaEnabled ? "enabled" : ""}`}
+              disabled={mfaSaving}
+              onClick={() =>
+                profile?.mfaEnabled ? setMfaDialog("disable") : void beginMfa()
+              }
+            >
+              <span aria-hidden="true" />
+            </button>
+          </div>
+        </section>
+      </section>
+      {avatarDialogOpen && (
+        <div
+          className="app-modal-backdrop"
+          role="presentation"
+          onMouseDown={() => !avatarSaving && setAvatarDialogOpen(false)}
+        >
+          <section
+            className="app-modal avatar-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="avatar-modal-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <small>ẢNH ĐẠI DIỆN</small>
+            <h2 id="avatar-modal-title">Cập nhật ảnh đại diện</h2>
+            <p>
+              Ảnh được cắt vuông, chuẩn hóa và lưu riêng cho tài khoản của bạn.
+            </p>
+            <div className="avatar-modal-content">
+              <UserAvatar
+                className="avatar-modal-preview"
+                fullName={profile?.fullName}
+                src={profile?.avatarUrl}
+                alt="Xem trước ảnh đại diện"
+              />
+              <div
+                className="avatar-dropzone"
+                role="button"
+                tabIndex={0}
+                aria-describedby="avatar-upload-help"
+                onClick={() => avatarInputRef.current?.click()}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    avatarInputRef.current?.click();
+                  }
+                }}
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  void uploadAvatar(event.dataTransfer.files[0]);
+                }}
+              >
+                <strong>
+                  {avatarSaving
+                    ? "Đang xử lý ảnh…"
+                    : "Kéo thả ảnh vào đây hoặc chọn tệp"}
+                </strong>
+                <span id="avatar-upload-help">
+                  JPG, PNG hoặc WebP · tối đa 5 MB
+                </span>
+              </div>
+            </div>
+            <input
+              ref={avatarInputRef}
+              className="visually-hidden"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={(event) => {
+                void uploadAvatar(event.target.files?.[0]);
+                event.currentTarget.value = "";
+              }}
+            />
+            <div className="app-modal-actions">
+              <button
+                className="ops-button"
+                type="button"
+                disabled={avatarSaving}
+                onClick={() => setAvatarDialogOpen(false)}
+              >
+                Đóng
+              </button>
+              {profile?.avatarUrl && (
+                <button
+                  className="ops-button danger"
+                  type="button"
+                  disabled={avatarSaving}
+                  onClick={() => void removeAvatar()}
+                >
+                  Xóa ảnh
+                </button>
+              )}
+            </div>
+          </section>
+        </div>
+      )}
+      {mfaDialog === "setup" && (
+        <div className="app-modal-backdrop">
+          <section
+            className="app-modal mfa-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="mfa-setup-title"
+          >
+            <small>XÁC THỰC HAI BƯỚC</small>
+            <h2 id="mfa-setup-title">Quét mã bằng ứng dụng xác thực</h2>
+            <p>
+              Quét mã QR bằng Google Authenticator, Microsoft Authenticator hoặc
+              ứng dụng tương thích; sau đó nhập mã 6 số để hoàn tất.
+            </p>
+            {mfaSetup?.qrCodeDataUrl && (
+              <img
+                className="mfa-qr"
+                src={mfaSetup.qrCodeDataUrl}
+                alt="Mã QR thiết lập xác thực hai bước"
+              />
+            )}
+            <label>
+              Mã xác thực 6 số
+              <input
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={6}
+                value={mfaCode}
+                onChange={(event) =>
+                  setMfaCode(event.target.value.replace(/\D/g, ""))
+                }
+              />
+            </label>
+            <div className="app-modal-actions">
+              <button
+                className="ops-button"
+                disabled={mfaSaving}
+                onClick={() => {
+                  setMfaDialog(null);
+                  setMfaSetup(null);
+                }}
+              >
+                Hủy
+              </button>
+              <button
+                className="ops-button primary"
+                disabled={mfaSaving || mfaCode.length !== 6}
+                onClick={() => void verifyMfa()}
+              >
+                {mfaSaving ? "Đang xác minh…" : "Bật xác thực hai bước"}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+      {mfaDialog === "disable" && (
+        <div className="app-modal-backdrop">
+          <section
+            className="app-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="mfa-disable-title"
+          >
+            <small>XÁC NHẬN BẢO MẬT</small>
+            <h2 id="mfa-disable-title">Tắt xác thực hai bước?</h2>
+            <p>
+              Nhập mật khẩu hiện tại để xác nhận. Bạn có thể bật lại bất cứ lúc
+              nào.
+            </p>
+            <label>
+              Mật khẩu hiện tại
+              <input
+                type="password"
+                autoComplete="current-password"
+                value={mfaPassword}
+                onChange={(event) => setMfaPassword(event.target.value)}
+              />
+            </label>
+            <div className="app-modal-actions">
+              <button
+                className="ops-button"
+                disabled={mfaSaving}
+                onClick={() => {
+                  setMfaDialog(null);
+                  setMfaPassword("");
+                }}
+              >
+                Hủy
+              </button>
+              <button
+                className="ops-button danger"
+                disabled={mfaSaving || !mfaPassword}
+                onClick={() => void disableMfa()}
+              >
+                {mfaSaving ? "Đang tắt…" : "Tắt 2FA"}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+    </Shell>
+  );
 }
 
-type ManagedUser = { id: string; fullName: string; username: string; email: string; role: "sales" | "technical" | "admin"; roleLabel: string; status: string; purgeAfter: string | null };
+type ManagedUser = {
+  id: string;
+  fullName: string;
+  username: string;
+  email: string;
+  role: "sales" | "technical" | "admin";
+  roleLabel: string;
+  status: string;
+  mfaEnabled: boolean;
+  purgeAfter: string | null;
+};
 
 function UserManagementSettings() {
   const { notify, confirm } = useFeedback();
   const [users, setUsers] = useState<ManagedUser[]>([]);
-  const [pagination, setPagination] = useState({ page: 1, pageSize: 20, total: 0 });
+  const [pagination, setPagination] = useState({
+    page: 1,
+    pageSize: 20,
+    total: 0,
+  });
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [formOpen, setFormOpen] = useState(false);
-  const [form, setForm] = useState({ fullName: "", username: "", email: "", password: "", passwordConfirmation: "", role: "sales" });
+  const [form, setForm] = useState({
+    fullName: "",
+    username: "",
+    email: "",
+    password: "",
+    passwordConfirmation: "",
+    role: "sales",
+  });
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ManagedUser | null>(null);
+  const [successorId, setSuccessorId] = useState("");
+  const [deleteCandidates, setDeleteCandidates] = useState<ManagedUser[]>([]);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const load = () => {
@@ -1539,29 +3223,688 @@ function UserManagementSettings() {
     if (search.trim()) params.set("search", search.trim());
     if (roleFilter) params.set("role", roleFilter);
     if (statusFilter) params.set("status", statusFilter);
-    return fetch("/api/users?" + params.toString()).then(async (response) => response.ok ? response.json() : Promise.reject()).then((body) => { setUsers(body.users ?? []); setPagination(body.pagination ?? { page: 1, pageSize: 20, total: 0 }); }).catch(() => notify("Không thể tải danh sách người dùng.", "error")).finally(() => setLoading(false));
+    return fetch("/api/users?" + params.toString())
+      .then(async (response) =>
+        response.ok ? response.json() : Promise.reject(),
+      )
+      .then((body) => {
+        setUsers(body.users ?? []);
+        setPagination(body.pagination ?? { page: 1, pageSize: 20, total: 0 });
+      })
+      .catch(() => notify("Không thể tải danh sách người dùng.", "error"))
+      .finally(() => setLoading(false));
   };
-  useEffect(() => { void load(); }, [page, search, roleFilter, statusFilter]);
-  const createUser = async () => { setSaving(true); const response = await fetch("/api/users", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(form) }); const body = await response.json().catch(() => ({})); setSaving(false); if (!response.ok) { notify(readableApiError(body.error, "Không thể tạo người dùng."), "error"); return; } setForm({ fullName: "", username: "", email: "", password: "", passwordConfirmation: "", role: "sales" }); setFormOpen(false); notify("Đã tạo người dùng mới.", "success"); load(); };
-  const updateUser = async () => { if (!editingId) return; setSaving(true); const response = await fetch(`/api/users/${editingId}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(form) }); const body = await response.json().catch(() => ({})); setSaving(false); if (!response.ok) { notify(readableApiError(body.error, "Không thể điều chỉnh người dùng."), "error"); return; } setFormOpen(false); setEditingId(null); setForm({ fullName: "", username: "", email: "", password: "", passwordConfirmation: "", role: "sales" }); notify("Đã điều chỉnh người dùng.", "success"); load(); };
-  const disableUser = async (user: ManagedUser) => { const candidates = users.filter((candidate) => candidate.status === "active" && candidate.id !== user.id); const transferee = candidates[0]; if (!transferee) { notify("Cần còn ít nhất một tài khoản đang hoạt động khác để nhận bài viết.", "error"); return; } if (!await confirm({ title: `Vô hiệu hóa ${user.fullName}?`, description: `Bài viết sẽ được chuyển cho ${transferee.fullName}; tài khoản có thể khôi phục trong 30 ngày trước khi dữ liệu định danh được làm sạch.`, confirmLabel: "Vô hiệu hóa", tone: "danger" })) return; const response = await fetch(`/api/users/${user.id}`, { method: "DELETE", headers: { "content-type": "application/json" }, body: JSON.stringify({ transferToUserId: transferee.id, ticketAssigneeId: candidates.find((candidate) => candidate.role !== "sales")?.id ?? transferee.id }) }); const body = await response.json().catch(() => ({})); if (!response.ok) { notify(readableApiError(body.error, "Không thể vô hiệu hóa người dùng."), "error"); return; } notify("Đã vô hiệu hóa tài khoản và chuyển dữ liệu liên quan.", "success"); load(); };
+  useEffect(() => {
+    void load();
+  }, [page, search, roleFilter, statusFilter]);
+  useEffect(() => {
+    void fetch("/api/auth/me")
+      .then((response) => (response.ok ? response.json() : null))
+      .then((body) => setCurrentUserId(body?.user?.userId ?? null));
+  }, []);
+  const createUser = async () => {
+    setSaving(true);
+    const response = await fetch("/api/users", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(form),
+    });
+    const body = await response.json().catch(() => ({}));
+    setSaving(false);
+    if (!response.ok) {
+      notify(
+        readableApiError(body.error, "Không thể tạo người dùng."),
+        "error",
+      );
+      return;
+    }
+    setForm({
+      fullName: "",
+      username: "",
+      email: "",
+      password: "",
+      passwordConfirmation: "",
+      role: "sales",
+    });
+    setFormOpen(false);
+    notify("Đã tạo người dùng mới.", "success");
+    load();
+  };
+  const updateUser = async () => {
+    if (!editingId) return;
+    setSaving(true);
+    const response = await fetch(`/api/users/${editingId}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(form),
+    });
+    const body = await response.json().catch(() => ({}));
+    setSaving(false);
+    if (!response.ok) {
+      notify(
+        readableApiError(body.error, "Không thể điều chỉnh người dùng."),
+        "error",
+      );
+      return;
+    }
+    setFormOpen(false);
+    setEditingId(null);
+    setForm({
+      fullName: "",
+      username: "",
+      email: "",
+      password: "",
+      passwordConfirmation: "",
+      role: "sales",
+    });
+    notify("Đã điều chỉnh người dùng.", "success");
+    load();
+  };
+  const disableUser = async (user: ManagedUser) => {
+    if (
+      !(await confirm({
+        title: `Vô hiệu hóa ${user.fullName}?`,
+        description: "Tài khoản sẽ không thể đăng nhập cho đến khi được kích hoạt lại. Dữ liệu, mật khẩu, ảnh đại diện và 2FA vẫn được giữ nguyên.",
+        confirmLabel: "Vô hiệu hóa",
+        tone: "danger",
+      }))
+    )
+      return;
+    const response = await fetch(`/api/users/${user.id}/disable`, { method: "POST" });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      notify(
+        readableApiError(body.error, "Không thể vô hiệu hóa người dùng."),
+        "error",
+      );
+      return;
+    }
+    notify("Đã vô hiệu hóa tài khoản. Dữ liệu và cấu hình bảo mật vẫn được giữ nguyên.", "success");
+    load();
+  };
+  const restoreUser = async (user: ManagedUser) => {
+    if (!(await confirm({ title: `Kích hoạt lại ${user.fullName}?`, description: "Tài khoản sẽ có thể đăng nhập lại bằng thông tin và cấu hình bảo mật đã giữ nguyên.", confirmLabel: "Kích hoạt lại", tone: "default" }))) return;
+    const response = await fetch(`/api/users/${user.id}/restore`, { method: "POST" });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) { notify(readableApiError(body.error, "Không thể kích hoạt lại tài khoản."), "error"); return; }
+    notify("Đã kích hoạt lại tài khoản.", "success"); load();
+  };
+  const openDelete = async (user: ManagedUser) => {
+    const response = await fetch(`/api/users/${user.id}/deletion-candidates`);
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) { notify(readableApiError(body.error, "Không thể tải tài khoản kế thừa."), "error"); return; }
+    setDeleteCandidates(body.candidates ?? []);
+    setSuccessorId("");
+    setDeleteTarget(user);
+  };
+  const deleteUser = async () => {
+    if (!deleteTarget || !successorId) return;
+    const response = await fetch(`/api/users/${deleteTarget.id}`, { method: "DELETE", headers: { "content-type": "application/json" }, body: JSON.stringify({ successorId }) });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) { notify(readableApiError(body.error, "Không thể xóa tài khoản."), "error"); return; }
+    setDeleteTarget(null); setDeleteCandidates([]); setSuccessorId(""); notify("Đã xóa hẳn tài khoản và chuyển quyền vận hành.", "success"); load();
+  };
+  const resetUserPassword = async () => {
+    if (!editingId) return;
+    setSaving(true);
+    const response = await fetch(`/api/users/${editingId}/password`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        password: form.password,
+        passwordConfirmation: form.passwordConfirmation,
+      }),
+    });
+    const body = await response.json().catch(() => ({}));
+    setSaving(false);
+    if (!response.ok) {
+      notify(
+        readableApiError(body.error, "Không thể đặt lại mật khẩu."),
+        "error",
+      );
+      return;
+    }
+    setForm({ ...form, password: "", passwordConfirmation: "" });
+    notify("Đã đặt lại mật khẩu và thu hồi các phiên đăng nhập cũ.", "success");
+  };
+  const disableUserMfa = async (user: ManagedUser) => {
+    if (
+      !(await confirm({
+        title: `Tắt 2FA của ${user.fullName}?`,
+        description:
+          "Người dùng sẽ cần đăng nhập lại và thiết lập 2FA mới nếu muốn sử dụng lại.",
+        confirmLabel: "Tắt 2FA",
+        tone: "danger",
+      }))
+    )
+      return;
+    setSaving(true);
+    const response = await fetch(`/api/users/${user.id}/mfa`, {
+      method: "DELETE",
+    });
+    const body = await response.json().catch(() => ({}));
+    setSaving(false);
+    if (!response.ok) {
+      notify(readableApiError(body.error, "Không thể tắt 2FA."), "error");
+      return;
+    }
+    notify("Đã tắt 2FA và thu hồi các phiên đăng nhập cũ.", "success");
+    load();
+  };
   const newUserPasswordRules = passwordChecklist(form.password);
-  const newUserPasswordReady = Object.values(newUserPasswordRules).every(Boolean);
-  const newUserPasswordsMatch = form.passwordConfirmation.length > 0 && form.password === form.passwordConfirmation;
+  const newUserPasswordReady =
+    Object.values(newUserPasswordRules).every(Boolean);
+  const newUserPasswordsMatch =
+    form.passwordConfirmation.length > 0 &&
+    form.password === form.passwordConfirmation;
   const newUserPasswordStrength = passwordStrength(form.password);
-  return <section className="settings-user-management">{formOpen && <div className="app-modal-backdrop" role="presentation"><section className="app-modal user-form-modal" role="dialog" aria-modal="true" aria-labelledby="user-form-title"><div className="panel-heading"><div><h2 id="user-form-title">{editingId ? "Điều chỉnh người dùng" : "Tạo người dùng mới"}</h2><p>{editingId ? "Cập nhật thông tin và vai trò của tài khoản." : "Mật khẩu cần tối thiểu 8 ký tự, có chữ hoa, chữ thường và ký tự đặc biệt."}</p></div>{editingId && <button className="ops-button" onClick={() => { setEditingId(null); setForm({ fullName: "", username: "", email: "", password: "", passwordConfirmation: "", role: "sales" }); }}>Hủy</button>}</div><section className="user-account-group"><h3>Thông tin tài khoản</h3><div className="user-form-grid"><label>Họ và tên<input value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} /></label><label>Tên đăng nhập<input value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} /></label><label>Email<input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></label><label>Vai trò<select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}><option value="sales">Người dùng</option><option value="technical">Chuyên gia</option><option value="admin">Quản trị viên</option></select></label></div></section>{!editingId && <><section className="password-new-group user-password-group"><h3>Thiết lập mật khẩu</h3><div className="profile-password-grid"><label>Mật khẩu<input type="password" autoComplete="new-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} /><small className="field-feedback field-placeholder" aria-hidden="true">Trạng thái xác nhận</small></label><label>Nhập lại mật khẩu<input type="password" autoComplete="new-password" value={form.passwordConfirmation} onChange={(e) => setForm({ ...form, passwordConfirmation: e.target.value })} /><small className={`field-feedback ${form.passwordConfirmation ? (newUserPasswordsMatch ? "field-valid" : "field-invalid") : "field-placeholder"}`} aria-live="polite">{form.passwordConfirmation ? (newUserPasswordsMatch ? "✓ Mật khẩu trùng khớp" : "Mật khẩu chưa trùng khớp") : "Trạng thái xác nhận"}</small></label></div><ul className="password-checklist user-password-checklist" aria-label="Điều kiện mật khẩu">{[[newUserPasswordRules.minimumLength, "Ít nhất 8 ký tự"], [newUserPasswordRules.uppercase, "Có ký tự IN HOA"], [newUserPasswordRules.lowercase, "Có ký tự thường"], [newUserPasswordRules.specialCharacter, "Có ký tự đặc biệt như @, #, !, %"]].map(([passed, label]) => <li className={passed ? "passed" : ""} key={String(label)}><span>{passed ? "✓" : "○"}</span>{label}</li>)}</ul>{newUserPasswordReady && <small className={`password-strength ${newUserPasswordStrength === "strong" ? "strong" : "medium"}`}>Độ mạnh: {newUserPasswordStrength === "strong" ? "Mạnh" : "Trung bình"}</small>}</section></>}<div className="editor-actions"><button className="ops-button" disabled={saving} onClick={() => { setFormOpen(false); setEditingId(null); setForm({ fullName: "", username: "", email: "", password: "", passwordConfirmation: "", role: "sales" }); }}>Hủy</button><button className="ops-button primary" disabled={saving || (!editingId && (!newUserPasswordReady || !newUserPasswordsMatch))} onClick={() => void (editingId ? updateUser() : createUser())}>{saving ? "Đang lưu…" : editingId ? "Lưu điều chỉnh" : "Tạo người dùng"}</button></div></section></div>}<section className="ops-panel ops-table user-management-list"><div className="panel-heading"><div><h2>Danh sách người dùng</h2><p>{loading ? "Đang tải…" : `${pagination.total} tài khoản phù hợp.`}</p></div><button className="ops-button primary" onClick={() => { setEditingId(null); setForm({ fullName: "", username: "", email: "", password: "", passwordConfirmation: "", role: "sales" }); setFormOpen(true); }}>+ Tạo người dùng</button></div><div className="user-management-toolbar"><input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="Tìm tên, email hoặc tên đăng nhập" aria-label="Tìm người dùng" /><select value={roleFilter} onChange={(event) => { setRoleFilter(event.target.value); setPage(1); }} aria-label="Lọc theo vai trò"><option value="">Tất cả vai trò</option><option value="admin">Quản trị viên</option><option value="technical">Chuyên gia</option><option value="sales">Người dùng</option></select><select value={statusFilter} onChange={(event) => { setStatusFilter(event.target.value); setPage(1); }} aria-label="Lọc theo trạng thái"><option value="">Tất cả trạng thái</option><option value="active">Đang hoạt động</option><option value="disabled">Đã vô hiệu hóa</option><option value="purged">Đã làm sạch</option></select></div><table><thead><tr><th>Người dùng</th><th>Vai trò</th><th>Trạng thái</th><th>Vòng đời</th><th>Tác vụ</th></tr></thead><tbody>{users.map((user) => <tr key={user.id}><td><strong>{user.fullName}</strong><small>{user.username} · {user.email}</small></td><td>{user.roleLabel}</td><td><span className={user.status === "active" ? "success-pill" : "warning-pill"}>{user.status === "active" ? "Đang hoạt động" : user.status === "disabled" ? "Đã vô hiệu hóa" : "Đã làm sạch"}</span></td><td>{user.purgeAfter ? `Làm sạch sau ${new Date(user.purgeAfter).toLocaleDateString("vi-VN")}` : "—"}</td><td>{user.status === "active" && <><button className="link-button" onClick={() => { setEditingId(user.id); setForm({ fullName: user.fullName, username: user.username, email: user.email, password: "", passwordConfirmation: "", role: user.role }); setFormOpen(true); }}>Điều chỉnh</button><button className="link-button danger" onClick={() => void disableUser(user)}>Vô hiệu hóa</button></>}</td></tr>)}</tbody></table>{pagination.total > pagination.pageSize && <div className="pagination"><button className="ops-button" disabled={page === 1 || loading} onClick={() => setPage((value) => value - 1)}>← Trước</button><span>Trang {page} / {Math.ceil(pagination.total / pagination.pageSize)}</span><button className="ops-button" disabled={page >= Math.ceil(pagination.total / pagination.pageSize) || loading} onClick={() => setPage((value) => value + 1)}>Sau →</button></div>}</section></section>;
+  const editingUser = users.find((user) => user.id === editingId);
+  const canRecoverEditingUser = Boolean(
+    editingUser &&
+      currentUserId &&
+      editingUser.id !== currentUserId &&
+      editingUser.status === "active",
+  );
+  return (
+    <section className="settings-user-management">
+      {deleteTarget && <div className="app-modal-backdrop" role="presentation"><section className="app-modal user-form-modal" role="dialog" aria-modal="true" aria-labelledby="delete-user-title"><div className="panel-heading"><div><h2 id="delete-user-title">Xóa hẳn tài khoản</h2><p>Không thể hoàn tác. Thông tin đăng nhập, ảnh, 2FA và hội thoại riêng tư sẽ bị xóa.</p></div></div><section className="user-account-group"><h3>Chọn tài khoản kế thừa</h3><p className="user-security-copy">Bài viết, yêu cầu chuyên gia và cấu hình vận hành sẽ chuyển cho người được chọn. Chỉ các tài khoản hợp lệ theo cấp bậc mới xuất hiện.</p><select value={successorId} onChange={(event) => setSuccessorId(event.target.value)}><option value="">Chọn tài khoản phù hợp</option>{deleteCandidates.map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.fullName} · {candidate.roleLabel}</option>)}</select></section><div className="editor-actions"><button className="ops-button" onClick={() => { setDeleteTarget(null); setDeleteCandidates([]); setSuccessorId(""); }}>Hủy</button><button className="ops-button danger" disabled={!successorId} onClick={() => void deleteUser()}>Xóa hẳn tài khoản</button></div></section></div>}
+      {formOpen && (
+        <div className="app-modal-backdrop" role="presentation">
+          <section
+            className="app-modal user-form-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="user-form-title"
+          >
+            <div className="panel-heading">
+              <div>
+                <h2 id="user-form-title">
+                  {editingId ? "Điều chỉnh người dùng" : "Tạo người dùng mới"}
+                </h2>
+                <p>
+                  {editingId
+                    ? "Cập nhật thông tin và vai trò của tài khoản."
+                    : "Mật khẩu cần tối thiểu 8 ký tự, có chữ hoa, chữ thường và ký tự đặc biệt."}
+                </p>
+              </div>
+            </div>
+            <section className="user-account-group">
+              <h3>Thông tin tài khoản</h3>
+              <div className="user-form-grid">
+                <label>
+                  Họ và tên
+                  <input
+                    value={form.fullName}
+                    onChange={(e) =>
+                      setForm({ ...form, fullName: e.target.value })
+                    }
+                  />
+                </label>
+                <label>
+                  Tên đăng nhập
+                  <input
+                    value={form.username}
+                    onChange={(e) =>
+                      setForm({ ...form, username: e.target.value })
+                    }
+                  />
+                </label>
+                <label>
+                  Email
+                  <input
+                    type="email"
+                    value={form.email}
+                    onChange={(e) =>
+                      setForm({ ...form, email: e.target.value })
+                    }
+                  />
+                </label>
+                <label>
+                  Vai trò
+                  <select
+                    value={form.role}
+                    onChange={(e) => setForm({ ...form, role: e.target.value })}
+                  >
+                    <option value="sales">Người dùng</option>
+                    <option value="technical">Chuyên gia</option>
+                    <option value="admin">Quản trị viên</option>
+                  </select>
+                </label>
+              </div>
+            </section>
+            {editingId && (
+              <section className="password-new-group user-security-group">
+                <h3>Bảo mật tài khoản</h3>
+                <p className="user-security-copy">
+                  {canRecoverEditingUser
+                    ? "Đặt lại mật khẩu hoặc tắt 2FA sẽ thu hồi các phiên đăng nhập cũ của người dùng."
+                    : editingUser?.id === currentUserId
+                      ? "Để bảo vệ tài khoản của chính bạn, hãy dùng Thông tin người dùng."
+                      : "Chỉ có thể khôi phục bảo mật cho tài khoản đang hoạt động."}
+                </p>
+                {canRecoverEditingUser && <><div className="profile-password-grid">
+                  <label>
+                    Mật khẩu mới
+                    <input
+                      type="password"
+                      autoComplete="new-password"
+                      value={form.password}
+                      onChange={(e) =>
+                        setForm({ ...form, password: e.target.value })
+                      }
+                    />
+                    <small className="field-feedback field-placeholder" aria-hidden="true">
+                      Trạng thái xác nhận
+                    </small>
+                  </label>
+                  <label>
+                    Nhập lại mật khẩu mới
+                    <input
+                      type="password"
+                      autoComplete="new-password"
+                      value={form.passwordConfirmation}
+                      onChange={(e) =>
+                        setForm({ ...form, passwordConfirmation: e.target.value })
+                      }
+                    />
+                    <small
+                      className={`field-feedback ${form.passwordConfirmation ? (newUserPasswordsMatch ? "field-valid" : "field-invalid") : "field-placeholder"}`}
+                      aria-live="polite"
+                    >
+                      {form.passwordConfirmation
+                        ? newUserPasswordsMatch
+                          ? "✓ Mật khẩu trùng khớp"
+                          : "Mật khẩu chưa trùng khớp"
+                        : "Trạng thái xác nhận"}
+                    </small>
+                  </label>
+                </div>
+                <ul className="password-checklist user-password-checklist" aria-label="Điều kiện mật khẩu">
+                  {[
+                    [newUserPasswordRules.minimumLength, "Ít nhất 8 ký tự"],
+                    [newUserPasswordRules.uppercase, "Có ký tự IN HOA"],
+                    [newUserPasswordRules.lowercase, "Có ký tự thường"],
+                    [newUserPasswordRules.specialCharacter, "Có ký tự đặc biệt như @, #, !, %"],
+                  ].map(([passed, label]) => (
+                    <li className={passed ? "passed" : ""} key={String(label)}>
+                      <span>{passed ? "✓" : "○"}</span>
+                      {label}
+                    </li>
+                  ))}
+                </ul>
+                {newUserPasswordReady && (
+                  <small className={`password-strength ${newUserPasswordStrength === "strong" ? "strong" : "medium"}`}>
+                    Độ mạnh: {newUserPasswordStrength === "strong" ? "Mạnh" : "Trung bình"}
+                  </small>
+                )}
+                <div className="user-security-actions">
+                  <button
+                    className="ops-button primary"
+                    disabled={saving || !newUserPasswordReady || !newUserPasswordsMatch}
+                    onClick={() => void resetUserPassword()}
+                  >
+                    Đặt lại mật khẩu
+                  </button>
+                  {editingUser?.mfaEnabled ? (
+                    <button
+                      className="ops-button danger"
+                      disabled={saving}
+                      onClick={() => editingUser && void disableUserMfa(editingUser)}
+                    >
+                      Tắt 2FA
+                    </button>
+                  ) : (
+                    <span className="info-pill">2FA chưa bật</span>
+                  )}
+                </div></>}
+              </section>
+            )}
+            {!editingId && (
+              <>
+                <section className="password-new-group user-password-group">
+                  <h3>Thiết lập mật khẩu</h3>
+                  <div className="profile-password-grid">
+                    <label>
+                      Mật khẩu
+                      <input
+                        type="password"
+                        autoComplete="new-password"
+                        value={form.password}
+                        onChange={(e) =>
+                          setForm({ ...form, password: e.target.value })
+                        }
+                      />
+                      <small
+                        className="field-feedback field-placeholder"
+                        aria-hidden="true"
+                      >
+                        Trạng thái xác nhận
+                      </small>
+                    </label>
+                    <label>
+                      Nhập lại mật khẩu
+                      <input
+                        type="password"
+                        autoComplete="new-password"
+                        value={form.passwordConfirmation}
+                        onChange={(e) =>
+                          setForm({
+                            ...form,
+                            passwordConfirmation: e.target.value,
+                          })
+                        }
+                      />
+                      <small
+                        className={`field-feedback ${form.passwordConfirmation ? (newUserPasswordsMatch ? "field-valid" : "field-invalid") : "field-placeholder"}`}
+                        aria-live="polite"
+                      >
+                        {form.passwordConfirmation
+                          ? newUserPasswordsMatch
+                            ? "✓ Mật khẩu trùng khớp"
+                            : "Mật khẩu chưa trùng khớp"
+                          : "Trạng thái xác nhận"}
+                      </small>
+                    </label>
+                  </div>
+                  <ul
+                    className="password-checklist user-password-checklist"
+                    aria-label="Điều kiện mật khẩu"
+                  >
+                    {[
+                      [newUserPasswordRules.minimumLength, "Ít nhất 8 ký tự"],
+                      [newUserPasswordRules.uppercase, "Có ký tự IN HOA"],
+                      [newUserPasswordRules.lowercase, "Có ký tự thường"],
+                      [
+                        newUserPasswordRules.specialCharacter,
+                        "Có ký tự đặc biệt như @, #, !, %",
+                      ],
+                    ].map(([passed, label]) => (
+                      <li
+                        className={passed ? "passed" : ""}
+                        key={String(label)}
+                      >
+                        <span>{passed ? "✓" : "○"}</span>
+                        {label}
+                      </li>
+                    ))}
+                  </ul>
+                  {newUserPasswordReady && (
+                    <small
+                      className={`password-strength ${newUserPasswordStrength === "strong" ? "strong" : "medium"}`}
+                    >
+                      Độ mạnh:{" "}
+                      {newUserPasswordStrength === "strong"
+                        ? "Mạnh"
+                        : "Trung bình"}
+                    </small>
+                  )}
+                </section>
+              </>
+            )}
+            <div className="editor-actions">
+              <button
+                className="ops-button"
+                disabled={saving}
+                onClick={() => {
+                  setFormOpen(false);
+                  setEditingId(null);
+                  setForm({
+                    fullName: "",
+                    username: "",
+                    email: "",
+                    password: "",
+                    passwordConfirmation: "",
+                    role: "sales",
+                  });
+                }}
+              >
+                Hủy
+              </button>
+              <button
+                className="ops-button primary"
+                disabled={
+                  saving ||
+                  (!editingId &&
+                    (!newUserPasswordReady || !newUserPasswordsMatch))
+                }
+                onClick={() => void (editingId ? updateUser() : createUser())}
+              >
+                {saving
+                  ? "Đang lưu…"
+                  : editingId
+                    ? "Lưu điều chỉnh"
+                    : "Tạo người dùng"}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+      <section className="ops-panel ops-table user-management-list">
+        <div className="panel-heading">
+          <div>
+            <h2>Danh sách người dùng</h2>
+            <p>
+              {loading ? "Đang tải…" : `${pagination.total} tài khoản phù hợp.`}
+            </p>
+          </div>
+          <button
+            className="ops-button primary"
+            onClick={() => {
+              setEditingId(null);
+              setForm({
+                fullName: "",
+                username: "",
+                email: "",
+                password: "",
+                passwordConfirmation: "",
+                role: "sales",
+              });
+              setFormOpen(true);
+            }}
+          >
+            + Tạo người dùng
+          </button>
+        </div>
+        <div className="user-management-toolbar">
+          <input
+            value={search}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setPage(1);
+            }}
+            placeholder="Tìm tên, email hoặc tên đăng nhập"
+            aria-label="Tìm người dùng"
+          />
+          <select
+            value={roleFilter}
+            onChange={(event) => {
+              setRoleFilter(event.target.value);
+              setPage(1);
+            }}
+            aria-label="Lọc theo vai trò"
+          >
+            <option value="">Tất cả vai trò</option>
+            <option value="admin">Quản trị viên</option>
+            <option value="technical">Chuyên gia</option>
+            <option value="sales">Người dùng</option>
+          </select>
+          <select
+            value={statusFilter}
+            onChange={(event) => {
+              setStatusFilter(event.target.value);
+              setPage(1);
+            }}
+            aria-label="Lọc theo trạng thái"
+          >
+            <option value="">Tất cả trạng thái</option>
+            <option value="active">Đang hoạt động</option>
+            <option value="disabled">Đã vô hiệu hóa</option>
+            <option value="purged">Đã làm sạch</option>
+          </select>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Người dùng</th>
+              <th>Vai trò</th>
+              <th>Trạng thái</th>
+              <th>Vòng đời</th>
+              <th>Tác vụ</th>
+            </tr>
+          </thead>
+          <tbody>
+            {users.map((user) => (
+              <tr key={user.id}>
+                <td>
+                  <strong>{user.fullName}</strong>
+                  <small>
+                    {user.username} · {user.email}
+                  </small>
+                </td>
+                <td>{user.roleLabel}</td>
+                <td>
+                  <span
+                    className={
+                      user.status === "active" ? "success-pill" : "warning-pill"
+                    }
+                  >
+                    {user.status === "active"
+                      ? "Đang hoạt động"
+                      : user.status === "disabled"
+                        ? "Đã vô hiệu hóa"
+                        : "Đã làm sạch"}
+                  </span>
+                </td>
+                <td>—</td>
+                <td>
+                  {user.status === "active" && (
+                    <>
+                      <button
+                        className="link-button"
+                        onClick={() => {
+                          setEditingId(user.id);
+                          setForm({
+                            fullName: user.fullName,
+                            username: user.username,
+                            email: user.email,
+                            password: "",
+                            passwordConfirmation: "",
+                            role: user.role,
+                          });
+                          setFormOpen(true);
+                        }}
+                      >
+                        Điều chỉnh
+                      </button>
+                      <button
+                        className="link-button danger"
+                        onClick={() => void disableUser(user)}
+                      >
+                        Vô hiệu hóa
+                      </button>
+                      <button className="link-button danger" onClick={() => void openDelete(user)}>Xóa tài khoản…</button>
+                    </>
+                  )}
+                  {user.status === "disabled" && <button className="link-button" onClick={() => void restoreUser(user)}>Kích hoạt lại</button>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {pagination.total > pagination.pageSize && (
+          <div className="pagination">
+            <button
+              className="ops-button"
+              disabled={page === 1 || loading}
+              onClick={() => setPage((value) => value - 1)}
+            >
+              ← Trước
+            </button>
+            <span>
+              Trang {page} / {Math.ceil(pagination.total / pagination.pageSize)}
+            </span>
+            <button
+              className="ops-button"
+              disabled={
+                page >= Math.ceil(pagination.total / pagination.pageSize) ||
+                loading
+              }
+              onClick={() => setPage((value) => value + 1)}
+            >
+              Sau →
+            </button>
+          </div>
+        )}
+      </section>
+    </section>
+  );
+}
+
+type OperationalLogRow = { id: string; category: "account" | "authentication" | "knowledge" | "configuration"; summary: string; created_at: string; details: Record<string, unknown> };
+
+function OperationalLogSettings() {
+  const { notify } = useFeedback();
+  const [logs, setLogs] = useState<OperationalLogRow[]>([]);
+  const [category, setCategory] = useState("");
+  const [range, setRange] = useState("all");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [retentionDays, setRetentionDays] = useState(90);
+  const [loading, setLoading] = useState(true);
+  const load = async () => {
+    setLoading(true);
+    const params = new URLSearchParams({ page: String(page) });
+    if (category) params.set("category", category);
+    if (from) params.set("from", from);
+    if (to) params.set("to", to);
+    const response = await fetch(`/api/operational-logs?${params}`);
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) notify(readableApiError(body.error, "Không thể tải nhật ký vận hành."), "error");
+    else { setLogs(body.logs ?? []); setTotal(body.pagination?.total ?? 0); }
+    setLoading(false);
+  };
+  useEffect(() => { void load(); }, [page, category, from, to]);
+  const changeRange = (value: string) => {
+    setRange(value); setPage(1);
+    if (value === "custom") return;
+    if (value === "all") { setFrom(""); setTo(""); return; }
+    const end = new Date();
+    const start = new Date(end);
+    start.setDate(end.getDate() - (value === "today" ? 0 : value === "7d" ? 6 : 29));
+    const format = (date: Date) => date.toLocaleDateString("en-CA", { timeZone: "Asia/Ho_Chi_Minh" });
+    setFrom(format(start)); setTo(format(end));
+  };
+  useEffect(() => { void fetch("/api/operational-logs/settings").then(async r => r.ok ? r.json() : null).then(body => { if (body?.retentionDays) setRetentionDays(body.retentionDays); }); }, []);
+  const saveRetention = async () => {
+    const response = await fetch("/api/operational-logs/settings", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ retentionDays }) });
+    const body = await response.json().catch(() => ({}));
+    notify(response.ok ? "Đã cập nhật thời gian lưu nhật ký." : readableApiError(body.error, "Không thể cập nhật thời gian lưu."), response.ok ? "success" : "error");
+  };
+  const label: Record<OperationalLogRow["category"], string> = { account: "Tài khoản", authentication: "Đăng nhập", knowledge: "Tri thức", configuration: "Cấu hình" };
+  const first = total ? (page - 1) * 30 + 1 : 0;
+  const last = Math.min(page * 30, total);
+  return <section className="ops-panel settings-log-panel"><div className="panel-heading"><div><span className="settings-eyebrow">Theo dõi & kiểm soát</span><h2>Nhật ký vận hành</h2><p>Ghi nhận thay đổi tài khoản, cấu hình, tri thức và đăng nhập. Không lưu nội dung hội thoại, mật khẩu, khóa API hoặc OTP.</p></div></div><div className="settings-log-toolbar"><label>Loại thao tác<select value={category} onChange={e => { setPage(1); setCategory(e.target.value); }}><option value="">Tất cả hoạt động</option><option value="account">Tài khoản</option><option value="authentication">Đăng nhập</option><option value="knowledge">Tri thức</option><option value="configuration">Cấu hình</option></select></label><label>Thời gian<select value={range} onChange={e => changeRange(e.target.value)}><option value="today">Hôm nay</option><option value="7d">7 ngày qua</option><option value="30d">30 ngày qua</option><option value="all">Toàn bộ thời gian</option><option value="custom">Tùy chọn</option></select></label>{range === "custom" && <div className="settings-log-date-range"><label>Từ ngày<input type="date" value={from} onChange={e => { setPage(1); setFrom(e.target.value); }}/></label><label>Đến ngày<input type="date" value={to} onChange={e => { setPage(1); setTo(e.target.value); }}/></label></div>}<div className="settings-log-retention"><label>Lưu nhật ký (ngày)<input type="number" min="7" max="3650" value={retentionDays} onChange={e => setRetentionDays(Number(e.target.value))}/></label><small>7–3650 ngày · chỉ áp dụng cho nhật ký vận hành.</small></div><button className="ops-button primary" onClick={() => void saveRetention()}>Lưu thời hạn</button></div><div className="settings-log-list">{loading ? <p>Đang tải nhật ký…</p> : logs.length === 0 ? <div className="settings-log-empty"><b>Chưa có thao tác vận hành phù hợp.</b><span>Nhật ký sẽ xuất hiện khi có đăng nhập, thay đổi tài khoản hoặc cập nhật cấu hình.</span></div> : logs.map(log => <details key={log.id} className="settings-log-row"><summary><span className={`status-pill log-${log.category}`}>{label[log.category]}</span><b>{log.summary}</b><time>{new Date(log.created_at).toLocaleString("vi-VN")}</time></summary>{Object.keys(log.details ?? {}).length > 0 && <pre>{JSON.stringify(log.details, null, 2)}</pre>}</details>)}</div>{total > 30 && <div className="editor-actions settings-log-pagination"><span>Hiển thị {first}–{last} / {total} hoạt động</span><button className="ops-button" disabled={page === 1} onClick={() => setPage(page - 1)}>Trang trước</button><span>Trang {page} / {Math.ceil(total / 30)}</span><button className="ops-button" disabled={page * 30 >= total} onClick={() => setPage(page + 1)}>Trang sau</button></div>}</section>;
 }
 
 function SettingsScreen() {
   const [message, setMessage] = useState("");
   const [settingsTab, setSettingsTab] = useState<
-    "agent" | "retrieval" | "providers" | "users"
+    "agent" | "retrieval" | "providers" | "users" | "logs"
   >("retrieval");
   useEffect(() => {
     const tab = new URLSearchParams(window.location.search).get("tab");
-    if (tab === "agent" || tab === "retrieval" || tab === "providers" || tab === "users") setSettingsTab(tab);
+    if (
+      tab === "agent" ||
+      tab === "retrieval" ||
+      tab === "providers" ||
+      tab === "users"
+    )
+      setSettingsTab(tab);
   }, []);
-  const [activeRetrievalSection, setActiveRetrievalSection] = useState("retrieval-source");
+  const [activeRetrievalSection, setActiveRetrievalSection] =
+    useState("retrieval-source");
   const retrievalSections = [
     ["retrieval-source", "1", "Chọn nguồn tri thức"],
     ["retrieval-ranking", "2", "Xếp hạng kết quả"],
@@ -1619,12 +3962,24 @@ function SettingsScreen() {
   const [azureDeploymentVerified, setAzureDeploymentVerified] = useState(false);
   const [azureConfigured, setAzureConfigured] = useState(false);
   const [azureSaving, setAzureSaving] = useState(false);
-  const [savedProviders, setSavedProviders] = useState<Array<{ id: string; display_name: string; provider_type: string; is_enabled: boolean }>>([]);
-  const [selectedProviderId, setSelectedProviderId] = useState("");
+  const [savedProviders, setSavedProviders] = useState<
+    Array<{
+      id: string;
+      display_name: string;
+      provider_type: string;
+      is_enabled: boolean;
+      model?: string | null;
+      endpoint?: string | null;
+      deployment?: string | null;
+      api_version?: string | null;
+    }>
+  >([]);
   const [providerToggling, setProviderToggling] = useState(false);
 
   const scrollToRetrievalSection = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    document
+      .getElementById(id)
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
     setActiveRetrievalSection(id);
   };
 
@@ -1637,7 +3992,9 @@ function SettingsScreen() {
       (entries) => {
         const visible = entries
           .filter((entry) => entry.isIntersecting)
-          .sort((left, right) => right.intersectionRatio - left.intersectionRatio)[0];
+          .sort(
+            (left, right) => right.intersectionRatio - left.intersectionRatio,
+          )[0];
         if (visible) setActiveRetrievalSection(visible.target.id);
       },
       { rootMargin: "-18% 0px -64% 0px", threshold: [0.1, 0.35, 0.6] },
@@ -1654,11 +4011,8 @@ function SettingsScreen() {
         if (!isCurrent) return;
         const providers = body?.providers ?? [];
         setSavedProviders(providers);
-        const active = providers.find((item: { is_enabled?: boolean }) => item.is_enabled) ?? providers[0];
-        if (active) setSelectedProviderId(active.id);
         const provider = providers.find(
-          (item: { provider_type?: string; is_enabled?: boolean }) =>
-            item.provider_type === "gemini" && item.is_enabled,
+          (item: { provider_type?: string }) => item.provider_type === "gemini",
         );
         if (provider) {
           setName(provider.display_name ?? "Google Gemini");
@@ -1682,20 +4036,49 @@ function SettingsScreen() {
       isCurrent = false;
     };
   }, []);
-  const selectedProvider = savedProviders.find((provider) => provider.id === selectedProviderId);
-  const toggleProvider = async () => {
-    if (!selectedProvider) return;
+  const reloadProviders = async () => {
+    const response = await fetch("/api/providers");
+    if (!response.ok) throw new Error();
+    const body = await response.json();
+    const providers = body?.providers ?? [];
+    setSavedProviders(providers);
+  };
+  const toggleProvider = async (selectedProvider: {
+    id: string;
+    display_name: string;
+    is_enabled: boolean;
+  }) => {
     setProviderToggling(true);
     try {
       const isEnabled = !selectedProvider.is_enabled;
-      const response = await fetch("/api/providers", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ providerId: selectedProvider.id, isEnabled }) });
-      if (!response.ok) throw new Error();
-      setSavedProviders((current) => current.map((provider) => ({ ...provider, is_enabled: isEnabled ? provider.id === selectedProvider.id : false })));
-      setMessage(isEnabled ? `Đã bật Agent ${selectedProvider.display_name}.` : `Đã tắt Agent ${selectedProvider.display_name}. Kho kiến thức vẫn hoạt động ở chế độ gợi ý.`);
+      const response = await fetch("/api/providers", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ providerId: selectedProvider.id, isEnabled }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body.error);
+      await reloadProviders();
+      setMessage(
+        isEnabled
+          ? `Đã bật Agent ${selectedProvider.display_name}. Agent còn lại đã được tắt.`
+          : `Đã tắt Agent ${selectedProvider.display_name}. Kho kiến thức vẫn hoạt động ở chế độ gợi ý.`,
+      );
     } catch {
-      setMessage("Không thể thay đổi trạng thái Agent. Hãy thử lại.");
-    } finally { setProviderToggling(false); }
+      setMessage(
+        "Không thể thay đổi trạng thái Agent. Hãy kiểm tra cấu hình rồi thử lại.",
+      );
+    } finally {
+      setProviderToggling(false);
+    }
   };
+  const activeProvider = savedProviders.find((provider) => provider.is_enabled);
+  const geminiProvider = savedProviders.find(
+    (provider) => provider.provider_type === "gemini",
+  );
+  const azureProvider = savedProviders.find(
+    (provider) => provider.provider_type === "azure_openai",
+  );
 
   useEffect(() => {
     void fetch("/api/retrieval/settings")
@@ -1807,11 +4190,10 @@ function SettingsScreen() {
           displayName: name,
           apiKey: key,
           model,
-          isEnabled: true,
-          isDefault: true,
         }),
       });
       if (!response.ok) throw new Error();
+      await reloadProviders();
       setConfigured(true);
       setKey("");
       setVerified(false);
@@ -1891,16 +4273,15 @@ function SettingsScreen() {
           deployment: azureDeployment,
           model: azureModel,
           apiVersion: azureVersion,
-          isEnabled: true,
-          isDefault: true,
         }),
       });
       if (!response.ok) throw new Error();
+      await reloadProviders();
       setAzureConfigured(true);
       setAzureKey("");
       resetAzureVerification();
       setMessage(
-        "Đã lưu cấu hình Azure OpenAI. Agent Gemini đã được chuyển sang trạng thái không hoạt động.",
+        "Đã lưu cấu hình Azure OpenAI. Trạng thái Agent đang hoạt động không thay đổi.",
       );
     } catch {
       setMessage(
@@ -1924,6 +4305,7 @@ function SettingsScreen() {
           ["retrieval", "Tri thức & tìm kiếm"],
           ["providers", "Nhà cung cấp AI"],
           ["users", "Quản trị người dùng"],
+          ["logs", "Nhật ký vận hành"],
         ].map(([id, label]) => (
           <button
             key={id}
@@ -1935,645 +4317,869 @@ function SettingsScreen() {
         ))}
       </section>
       <section className="settings-content">
-      {settingsTab === "providers" && (
-        <>
-        <section className="provider-runtime-control" aria-label="Trạng thái Agent">
-          <div><span className={selectedProvider?.is_enabled ? "success-pill" : "info-pill"}>{selectedProvider?.is_enabled ? "Đang hoạt động" : "Đang tắt"}</span><b>{selectedProvider?.is_enabled ? "Agent đang xử lý phản hồi" : "Kho kiến thức đang ở chế độ gợi ý"}</b><small>{selectedProvider?.is_enabled ? `Đang dùng ${selectedProvider.display_name}.` : "Bật một Agent đã lưu để tạo phản hồi tổng hợp từ nguồn xác minh."}</small></div>
-          <div className="provider-runtime-actions">{selectedProvider?.is_enabled ? <span className="active-provider-name">{selectedProvider.display_name}</span> : <select value={selectedProviderId} onChange={(event) => setSelectedProviderId(event.target.value)} disabled={!savedProviders.length || providerToggling}>{savedProviders.map((provider) => <option key={provider.id} value={provider.id}>{provider.display_name}</option>)}</select>}<button className={selectedProvider?.is_enabled ? "ops-button danger" : "ops-button primary"} disabled={!selectedProvider || providerToggling} onClick={() => void toggleProvider()}>{providerToggling ? "Đang cập nhật…" : selectedProvider?.is_enabled ? "Tắt Agent" : "Bật Agent"}</button></div>
-        </section>
-        <div className="provider-cards-grid">
-          <section className="ops-panel provider-card provider-verification-card">
-            <div className="provider-title">
-              <span className="provider-logo">G</span>
-              <div>
-                <b>Google Gemini</b>
-                <small>Nhà cung cấp mặc định</small>
-              </div>
-              {configured && <span className="success-pill">Đã lưu</span>}
-            </div>
-            <div className="security-note">
-              API key được mã hóa ở máy chủ và không được trả về trình duyệt.
-            </div>
-            <label>
-              Tên hiển thị
-              <input
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-              />
-            </label>
-            <label>
-              Mô hình
-              <select
-                value={model}
-                onChange={(event) => setModel(event.target.value)}
-                disabled={!verified || checking}
-              >
-                <option value="">
-                  {checking
-                    ? "Đang tải model…"
-                    : verified
-                      ? "Chọn model được phép"
-                      : "Chưa có model khả dụng"}
-                </option>
-                {!verified && model && <option value={model}>{model}</option>}
-                {models.map((item) => (
-                  <option value={item.id} key={item.id}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
-              {verified && (
-                <small className="field-hint">
-                  {models.length} model khả dụng với API key này
-                </small>
-              )}
-            </label>
-            <label className="api-key-field">
-              API key
-              <input
-                type="password"
-                value={key}
-                onChange={(event) => {
-                  setKey(event.target.value);
-                  setVerified(false);
-                  setModels([]);
-                  setModel("");
-                  setLastChecked("");
-                }}
-                placeholder={
-                  configured
-                    ? "Khóa đã lưu an toàn — nhập khóa mới để thay thế"
-                    : "Nhập API key mới"
-                }
-              />
-            </label>
-            <div className="provider-verification-action">
-              <button
-                className="ops-button"
-                disabled={checking || !key.trim()}
-                onClick={() => void verify()}
-              >
-                {checking
-                  ? "Đang kiểm tra kết nối…"
-                  : verified
-                    ? "Kiểm tra lại"
-                    : "Kiểm tra API key"}
-              </button>
-              {verified ? (
-                <span className="success-pill">
-                  Kết nối thành công · {lastChecked}
-                </span>
-              ) : (
-                <span className="verification-hint">
-                  Model chỉ mở sau khi API key được xác thực.
-                </span>
-              )}
-            </div>
-            <button
-              className="ops-button primary"
-              disabled={!verified || !model || saving}
-              onClick={() => void save()}
+        {settingsTab === "providers" && (
+          <>
+            <section
+              className="provider-runtime-control"
+              aria-label="Trạng thái Agent"
             >
-              {saving ? "Đang lưu cấu hình…" : "Lưu cấu hình"}
-            </button>
-          </section>
-          <section className="ops-panel provider-card provider-verification-card azure-provider-card">
-            <div className="provider-title">
-              <span className="provider-logo azure">A</span>
               <div>
-                <b>Azure OpenAI</b>
-                <small>Agent dự phòng có thể cấu hình độc lập</small>
+                <span className={activeProvider ? "success-pill" : "info-pill"}>
+                  {activeProvider ? "Đang hoạt động" : "Cả hai đang tắt"}
+                </span>
+                <b>
+                  {activeProvider
+                    ? `${activeProvider.display_name} đang xử lý phản hồi`
+                    : "Kho kiến thức đang ở chế độ gợi ý"}
+                </b>
+                <small>
+                  {activeProvider
+                    ? "Bật Agent khác sẽ tự tắt Agent này."
+                    : "Lưu cấu hình độc lập, sau đó bật Agent tại card tương ứng."}
+                </small>
               </div>
-              <span className={azureConfigured ? "success-pill" : "info-pill"}>
-                {azureConfigured ? "Đã lưu" : "Chưa xác thực"}
-              </span>
+            </section>
+            <div className="provider-cards-grid">
+              <section className="ops-panel provider-card provider-verification-card">
+                <div className="provider-title">
+                  <span className="provider-logo">G</span>
+                  <div>
+                    <b>Google Gemini</b>
+                    <small>Nhà cung cấp mặc định</small>
+                  </div>
+                  <div className="provider-card-status">
+                    <span
+                      className={
+                        geminiProvider?.is_enabled
+                          ? "success-pill"
+                          : geminiProvider
+                            ? "info-pill"
+                            : "info-pill"
+                      }
+                    >
+                      {geminiProvider?.is_enabled
+                        ? "Đang hoạt động"
+                        : geminiProvider
+                          ? "Đã cấu hình · Đang tắt"
+                          : "Chưa cấu hình"}
+                    </span>
+                    {geminiProvider && (
+                      <button
+                        className={
+                          geminiProvider.is_enabled
+                            ? "ops-button danger"
+                            : "ops-button primary"
+                        }
+                        disabled={providerToggling}
+                        onClick={() => void toggleProvider(geminiProvider)}
+                      >
+                        {providerToggling
+                          ? "Đang cập nhật…"
+                          : geminiProvider.is_enabled
+                            ? "Tắt Agent"
+                            : "Bật Agent"}
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div className="security-note">
+                  API key được mã hóa ở máy chủ và không được trả về trình
+                  duyệt.
+                </div>
+                <label>
+                  Tên hiển thị
+                  <input
+                    value={name}
+                    onChange={(event) => setName(event.target.value)}
+                  />
+                </label>
+                <label>
+                  Mô hình
+                  <select
+                    value={model}
+                    onChange={(event) => setModel(event.target.value)}
+                    disabled={!verified || checking}
+                  >
+                    <option value="">
+                      {checking
+                        ? "Đang tải model…"
+                        : verified
+                          ? "Chọn model được phép"
+                          : "Chưa có model khả dụng"}
+                    </option>
+                    {!verified && model && (
+                      <option value={model}>{model}</option>
+                    )}
+                    {models.map((item) => (
+                      <option value={item.id} key={item.id}>
+                        {item.label}
+                      </option>
+                    ))}
+                  </select>
+                  {verified && (
+                    <small className="field-hint">
+                      {models.length} model khả dụng với API key này
+                    </small>
+                  )}
+                  {verified && !model && (
+                    <small className="field-hint warning">
+                      Chọn một model được phép trước khi lưu cấu hình.
+                    </small>
+                  )}
+                </label>
+                <label className="api-key-field">
+                  API key
+                  <input
+                    type="password"
+                    value={key}
+                    onChange={(event) => {
+                      setKey(event.target.value);
+                      setVerified(false);
+                      setModels([]);
+                      setModel("");
+                      setLastChecked("");
+                    }}
+                    placeholder={
+                      configured
+                        ? "Khóa đã lưu an toàn — nhập khóa mới để thay thế"
+                        : "Nhập API key mới"
+                    }
+                  />
+                </label>
+                <div className="provider-verification-action">
+                  <button
+                    className="ops-button"
+                    disabled={checking || !key.trim()}
+                    onClick={() => void verify()}
+                  >
+                    {checking
+                      ? "Đang kiểm tra kết nối…"
+                      : verified
+                        ? "Kiểm tra lại"
+                        : "Kiểm tra API key"}
+                  </button>
+                  {verified ? (
+                    <span className="success-pill">
+                      Kết nối thành công · {lastChecked}
+                    </span>
+                  ) : (
+                    <span className="verification-hint">
+                      Model chỉ mở sau khi API key được xác thực.
+                    </span>
+                  )}
+                </div>
+                <button
+                  className="ops-button primary"
+                  disabled={
+                    saving ||
+                    !model ||
+                    (!configured && (!key.trim() || !verified)) ||
+                    (Boolean(key.trim()) && !verified)
+                  }
+                  onClick={() => void save()}
+                >
+                  {saving ? "Đang lưu cấu hình…" : "Lưu cấu hình"}
+                </button>
+              </section>
+              <section className="ops-panel provider-card provider-verification-card azure-provider-card">
+                <div className="provider-title">
+                  <span className="provider-logo azure">A</span>
+                  <div>
+                    <b>Azure OpenAI</b>
+                    <small>Agent dự phòng có thể cấu hình độc lập</small>
+                  </div>
+                  <div className="provider-card-status">
+                    <span
+                      className={
+                        azureProvider?.is_enabled
+                          ? "success-pill"
+                          : azureProvider
+                            ? "info-pill"
+                            : "info-pill"
+                      }
+                    >
+                      {azureProvider?.is_enabled
+                        ? "Đang hoạt động"
+                        : azureProvider
+                          ? "Đã cấu hình · Đang tắt"
+                          : "Chưa cấu hình"}
+                    </span>
+                    {azureProvider && (
+                      <button
+                        className={
+                          azureProvider.is_enabled
+                            ? "ops-button danger"
+                            : "ops-button primary"
+                        }
+                        disabled={providerToggling}
+                        onClick={() => void toggleProvider(azureProvider)}
+                      >
+                        {providerToggling
+                          ? "Đang cập nhật…"
+                          : azureProvider.is_enabled
+                            ? "Tắt Agent"
+                            : "Bật Agent"}
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div className="security-note">
+                  Endpoint và API key được mã hóa ở máy chủ; chỉ một Agent được
+                  phép hoạt động tại một thời điểm.
+                </div>
+                <label>
+                  Azure OpenAI endpoint
+                  <input
+                    value={azureEndpoint}
+                    onChange={(event) => {
+                      setAzureEndpoint(event.target.value);
+                      resetAzureVerification();
+                    }}
+                    placeholder="https://ten-tai-nguyen.openai.azure.com"
+                  />
+                </label>
+                <label>
+                  Azure OpenAI API key
+                  <input
+                    type="password"
+                    value={azureKey}
+                    onChange={(event) => {
+                      setAzureKey(event.target.value);
+                      resetAzureVerification();
+                    }}
+                    placeholder={
+                      azureConfigured
+                        ? "Khóa đã lưu an toàn — nhập khóa mới để thay thế"
+                        : "Nhập Azure OpenAI API key"
+                    }
+                  />
+                </label>
+                <div className="provider-verification-action">
+                  <button
+                    className="ops-button"
+                    disabled={
+                      azureChecking || !azureEndpoint.trim() || !azureKey.trim()
+                    }
+                    onClick={() => void verifyAzure()}
+                  >
+                    {azureChecking
+                      ? "Đang tải cấu hình…"
+                      : azureDeployment.trim()
+                        ? "Kiểm tra & xác thực deployment"
+                        : "Kiểm tra & tải cấu hình"}
+                  </button>
+                  <span className="verification-hint">
+                    API version và model được tải sau khi xác thực endpoint +
+                    API key. Nhập deployment rồi kiểm tra lại trước khi lưu.
+                  </span>
+                </div>
+                <label>
+                  API version
+                  <select
+                    value={azureVersion}
+                    disabled={!azureVerified || azureChecking}
+                    onChange={(event) => setAzureVersion(event.target.value)}
+                  >
+                    <option value="">
+                      {azureChecking ? "Đang xác thực…" : "Chưa xác thực"}
+                    </option>
+                    {azureVerified && (
+                      <option value={azureVersion}>{azureVersion}</option>
+                    )}
+                  </select>
+                </label>
+                <label>
+                  Mô hình
+                  <select
+                    value={azureModel}
+                    disabled={!azureVerified || azureChecking}
+                    onChange={(event) => setAzureModel(event.target.value)}
+                  >
+                    <option value="">
+                      {azureChecking
+                        ? "Đang tải model…"
+                        : "Chưa có model khả dụng"}
+                    </option>
+                    {!azureVerified && azureModel && (
+                      <option value={azureModel}>{azureModel}</option>
+                    )}
+                    {azureModels.map((item) => (
+                      <option value={item.id} key={item.id}>
+                        {item.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="api-key-field">
+                  Deployment
+                  <input
+                    value={azureDeployment}
+                    onChange={(event) => {
+                      setAzureDeployment(event.target.value);
+                      setAzureDeploymentVerified(false);
+                    }}
+                    placeholder="Nhập tên deployment Azure"
+                  />
+                  <small className="field-hint neutral">
+                    Deployment không thể liệt kê bằng API key; nhập theo tên đã
+                    tạo trên Azure.
+                  </small>
+                </label>
+                <button
+                  className="ops-button primary"
+                  disabled={
+                    !azureDeployment.trim() ||
+                    !azureModel ||
+                    azureSaving ||
+                    (!azureConfigured &&
+                      (!azureKey.trim() ||
+                        !azureVerified ||
+                        !azureDeploymentVerified)) ||
+                    (Boolean(azureKey.trim()) &&
+                      (!azureVerified || !azureDeploymentVerified))
+                  }
+                  onClick={() => void saveAzure()}
+                >
+                  {azureSaving ? "Đang lưu cấu hình…" : "Lưu cấu hình Azure"}
+                </button>
+              </section>
+            </div>
+          </>
+        )}
+        {settingsTab === "users" && <UserManagementSettings />}
+        {settingsTab === "logs" && <OperationalLogSettings />}
+        {settingsTab === "agent" && (
+          <section className="ops-panel assistant-profile-card">
+            <div className="provider-title">
+              <span className="provider-logo persona">✦</span>
+              <div>
+                <b>Tính cách Trợ lý</b>
+                <small>
+                  Điều chỉnh cách nói, không thay đổi nguyên tắc trả lời có căn
+                  cứ.
+                </small>
+              </div>
             </div>
             <div className="security-note">
-              Endpoint và API key được mã hóa ở máy chủ; chỉ một Agent được phép
-              hoạt động tại một thời điểm.
+              Tính cách chỉ ảnh hưởng giọng điệu. Trợ lý vẫn chỉ khẳng định
+              thông tin có nguồn đã xác minh và sẽ chuyển chuyên gia khi cần.
+            </div>
+            <div className="profile-fields">
+              <label>
+                Tên Trợ lý
+                <input
+                  value={profileName}
+                  maxLength={60}
+                  onChange={(event) => setProfileName(event.target.value)}
+                />
+              </label>
+              <label>
+                Vai trò
+                <input
+                  value={profileRole}
+                  maxLength={300}
+                  onChange={(event) => setProfileRole(event.target.value)}
+                />
+              </label>
+              <label>
+                Giọng điệu
+                <select
+                  value={profileTone}
+                  onChange={(event) => setProfileTone(event.target.value)}
+                >
+                  <option value="professional">Chuyên nghiệp, ấm áp</option>
+                  <option value="friendly">Thân thiện, gần gũi</option>
+                  <option value="concise">Ngắn gọn, trực diện</option>
+                </select>
+              </label>
+              <label>
+                Độ dài phản hồi
+                <select
+                  value={profileLength}
+                  onChange={(event) => setProfileLength(event.target.value)}
+                >
+                  <option value="concise">Ngắn gọn</option>
+                  <option value="balanced">Cân bằng</option>
+                  <option value="detailed">Chi tiết</option>
+                </select>
+              </label>
+              <label>
+                Cách nói khi thiếu nguồn
+                <select
+                  value={profileFallback}
+                  onChange={(event) => setProfileFallback(event.target.value)}
+                >
+                  <option value="supportive">Nhẹ nhàng, hỗ trợ</option>
+                  <option value="direct">Trực tiếp, rõ ràng</option>
+                </select>
+              </label>
             </div>
             <label>
-              Azure OpenAI endpoint
-              <input
-                value={azureEndpoint}
-                onChange={(event) => {
-                  setAzureEndpoint(event.target.value);
-                  resetAzureVerification();
-                }}
-                placeholder="https://ten-tai-nguyen.openai.azure.com"
+              Hướng dẫn bổ sung
+              <textarea
+                className="profile-instructions"
+                value={profileInstructions}
+                maxLength={1500}
+                onChange={(event) => setProfileInstructions(event.target.value)}
+                placeholder="Ví dụ: xưng hô bạn/tôi, ưu tiên câu ngắn và dễ dùng lại khi tư vấn khách hàng."
               />
-            </label>
-            <label>
-              Azure OpenAI API key
-              <input
-                type="password"
-                value={azureKey}
-                onChange={(event) => {
-                  setAzureKey(event.target.value);
-                  resetAzureVerification();
-                }}
-                placeholder={
-                  azureConfigured
-                    ? "Khóa đã lưu an toàn — nhập khóa mới để thay thế"
-                    : "Nhập Azure OpenAI API key"
-                }
-              />
-            </label>
-            <div className="provider-verification-action">
-              <button
-                className="ops-button"
-                disabled={
-                  azureChecking || !azureEndpoint.trim() || !azureKey.trim()
-                }
-                onClick={() => void verifyAzure()}
-              >
-                {azureChecking
-                  ? "Đang tải cấu hình…"
-                  : azureDeployment.trim()
-                    ? "Kiểm tra & xác thực deployment"
-                    : "Kiểm tra & tải cấu hình"}
-              </button>
-              <span className="verification-hint">
-                API version và model được tải sau khi xác thực endpoint + API
-                key. Nhập deployment rồi kiểm tra lại trước khi lưu.
-              </span>
-            </div>
-            <label>
-              API version
-              <select
-                value={azureVersion}
-                disabled={!azureVerified || azureChecking}
-                onChange={(event) => setAzureVersion(event.target.value)}
-              >
-                <option value="">
-                  {azureChecking ? "Đang xác thực…" : "Chưa xác thực"}
-                </option>
-                {azureVerified && (
-                  <option value={azureVersion}>{azureVersion}</option>
-                )}
-              </select>
-            </label>
-            <label>
-              Mô hình
-              <select
-                value={azureModel}
-                disabled={!azureVerified || azureChecking}
-                onChange={(event) => setAzureModel(event.target.value)}
-              >
-                <option value="">
-                  {azureChecking ? "Đang tải model…" : "Chưa có model khả dụng"}
-                </option>
-                {!azureVerified && azureModel && (
-                  <option value={azureModel}>{azureModel}</option>
-                )}
-                {azureModels.map((item) => (
-                  <option value={item.id} key={item.id}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="api-key-field">
-              Deployment
-              <input
-                value={azureDeployment}
-                onChange={(event) => {
-                  setAzureDeployment(event.target.value);
-                  setAzureDeploymentVerified(false);
-                }}
-                placeholder="Nhập tên deployment Azure"
-              />
-              <small className="field-hint neutral">
-                Deployment không thể liệt kê bằng API key; nhập theo tên đã tạo
-                trên Azure.
+              <small className="field-hint">
+                {profileInstructions.length}/1.500 ký tự · Không thể dùng để bỏ
+                qua nguyên tắc an toàn hoặc yêu cầu tiết lộ thông tin bảo mật.
               </small>
             </label>
+            <div className="profile-preview">
+              <b>Xem trước</b>
+              <p>
+                “Chào bạn! Tôi là {profileName || "Trợ lý phản hồi"}. Tôi sẵn
+                sàng hỗ trợ tra cứu thông tin đã được xác minh.”
+              </p>
+            </div>
             <button
               className="ops-button primary"
               disabled={
-                !azureVerified ||
-                !azureDeploymentVerified ||
-                !azureDeployment.trim() ||
-                !azureModel ||
-                azureSaving
+                profileSaving ||
+                profileName.trim().length < 2 ||
+                profileRole.trim().length < 10
               }
-              onClick={() => void saveAzure()}
+              onClick={() => void saveProfile()}
             >
-              {azureSaving ? "Đang lưu cấu hình…" : "Lưu cấu hình Azure"}
+              {profileSaving ? "Đang lưu tính cách…" : "Lưu tính cách Trợ lý"}
             </button>
           </section>
-        </div></>
-      )}
-      {settingsTab === "users" && <UserManagementSettings />}
-      {settingsTab === "agent" && (
-        <section className="ops-panel assistant-profile-card">
-          <div className="provider-title">
-            <span className="provider-logo persona">✦</span>
-            <div>
-              <b>Tính cách Trợ lý</b>
-              <small>
-                Điều chỉnh cách nói, không thay đổi nguyên tắc trả lời có căn
-                cứ.
-              </small>
-            </div>
-          </div>
-          <div className="security-note">
-            Tính cách chỉ ảnh hưởng giọng điệu. Trợ lý vẫn chỉ khẳng định thông
-            tin có nguồn đã xác minh và sẽ chuyển chuyên gia khi cần.
-          </div>
-          <div className="profile-fields">
-            <label>
-              Tên Trợ lý
-              <input
-                value={profileName}
-                maxLength={60}
-                onChange={(event) => setProfileName(event.target.value)}
-              />
-            </label>
-            <label>
-              Vai trò
-              <input
-                value={profileRole}
-                maxLength={300}
-                onChange={(event) => setProfileRole(event.target.value)}
-              />
-            </label>
-            <label>
-              Giọng điệu
-              <select
-                value={profileTone}
-                onChange={(event) => setProfileTone(event.target.value)}
+        )}
+        {settingsTab === "retrieval" && (
+          <section className="settings-workspace">
+            <aside className="settings-section-nav">
+              <b>MỤC CẤU HÌNH TRANG NÀY</b>
+              {retrievalSections.map(([id, order, label]) => (
+                <button
+                  className={
+                    activeRetrievalSection === id ? "active" : undefined
+                  }
+                  key={id}
+                  onClick={() => scrollToRetrievalSection(id)}
+                  type="button"
+                >
+                  {order} <span>{label}</span>
+                </button>
+              ))}
+              <div className="decision-preview">
+                <b>MINH HỌA QUYẾT ĐỊNH</b>
+                <small>Live preview</small>
+                <p>“Cấu hình DNS CNAME trỏ về hệ thống?”</p>
+                <strong>Trả lời có nguồn</strong>
+                <span>
+                  Ngưỡng hiện tại:{" "}
+                  {Math.round(retrieval.autoAnswerThreshold * 100)}%
+                </span>
+              </div>
+            </aside>
+            <div className="retrieval-panels">
+              <div className="retrieval-intro">
+                <div>
+                  <h2>Chất lượng tìm kiếm & phản hồi</h2>
+                  <p>
+                    Điều chỉnh cách hệ thống chọn tài liệu, mức độ đa dạng nguồn
+                    và ngưỡng an toàn phản hồi.
+                  </p>
+                </div>
+                <span className="success-pill">
+                  ● Đang dùng cấu hình an toàn
+                </span>
+              </div>
+              <section
+                className="ops-panel retrieval-card"
+                id="retrieval-source"
               >
-                <option value="professional">Chuyên nghiệp, ấm áp</option>
-                <option value="friendly">Thân thiện, gần gũi</option>
-                <option value="concise">Ngắn gọn, trực diện</option>
-              </select>
-            </label>
-            <label>
-              Độ dài phản hồi
-              <select
-                value={profileLength}
-                onChange={(event) => setProfileLength(event.target.value)}
-              >
-                <option value="concise">Ngắn gọn</option>
-                <option value="balanced">Cân bằng</option>
-                <option value="detailed">Chi tiết</option>
-              </select>
-            </label>
-            <label>
-              Cách nói khi thiếu nguồn
-              <select
-                value={profileFallback}
-                onChange={(event) => setProfileFallback(event.target.value)}
-              >
-                <option value="supportive">Nhẹ nhàng, hỗ trợ</option>
-                <option value="direct">Trực tiếp, rõ ràng</option>
-              </select>
-            </label>
-          </div>
-          <label>
-            Hướng dẫn bổ sung
-            <textarea
-              className="profile-instructions"
-              value={profileInstructions}
-              maxLength={1500}
-              onChange={(event) => setProfileInstructions(event.target.value)}
-              placeholder="Ví dụ: xưng hô bạn/tôi, ưu tiên câu ngắn và dễ dùng lại khi tư vấn khách hàng."
-            />
-            <small className="field-hint">
-              {profileInstructions.length}/1.500 ký tự · Không thể dùng để bỏ
-              qua nguyên tắc an toàn hoặc yêu cầu tiết lộ thông tin bảo mật.
-            </small>
-          </label>
-          <div className="profile-preview">
-            <b>Xem trước</b>
-            <p>
-              “Chào bạn! Tôi là {profileName || "Trợ lý phản hồi"}. Tôi sẵn sàng
-              hỗ trợ tra cứu thông tin đã được xác minh.”
-            </p>
-          </div>
-          <button
-            className="ops-button primary"
-            disabled={
-              profileSaving ||
-              profileName.trim().length < 2 ||
-              profileRole.trim().length < 10
-            }
-            onClick={() => void saveProfile()}
-          >
-            {profileSaving ? "Đang lưu tính cách…" : "Lưu tính cách Trợ lý"}
-          </button>
-        </section>
-      )}
-      {settingsTab === "retrieval" && (
-        <section className="settings-workspace">
-          <aside className="settings-section-nav">
-            <b>MỤC CẤU HÌNH TRANG NÀY</b>
-            {retrievalSections.map(([id, order, label]) => (
-              <button className={activeRetrievalSection === id ? "active" : undefined} key={id} onClick={() => scrollToRetrievalSection(id)} type="button">
-                {order} <span>{label}</span>
-              </button>
-            ))}
-            <div className="decision-preview">
-              <b>MINH HỌA QUYẾT ĐỊNH</b>
-              <small>Live preview</small>
-              <p>“Cấu hình DNS CNAME trỏ về hệ thống?”</p>
-              <strong>Trả lời có nguồn</strong>
-              <span>
-                Ngưỡng hiện tại:{" "}
-                {Math.round(retrieval.autoAnswerThreshold * 100)}%
-              </span>
-            </div>
-          </aside>
-          <div className="retrieval-panels">
-            <div className="retrieval-intro">
-              <div>
-                <h2>Chất lượng tìm kiếm & phản hồi</h2>
+                <h3>1. Chọn nguồn tri thức</h3>
                 <p>
-                  Điều chỉnh cách hệ thống chọn tài liệu, mức độ đa dạng nguồn
-                  và ngưỡng an toàn phản hồi.
+                  Giới hạn các tài liệu đưa vào ngữ cảnh trước khi Agent trả
+                  lời.
                 </p>
-              </div>
-              <span className="success-pill">● Đang dùng cấu hình an toàn</span>
-            </div>
-            <section className="ops-panel retrieval-card" id="retrieval-source">
-              <h3>1. Chọn nguồn tri thức</h3>
-              <p>
-                Giới hạn các tài liệu đưa vào ngữ cảnh trước khi Agent trả lời.
-              </p>
-              <div className="settings-control-grid">
-                <label>
-                  Số kết quả thô hiển thị sau tìm kiếm
+                <div className="settings-control-grid">
+                  <label>
+                    Số kết quả thô hiển thị sau tìm kiếm
+                    <input
+                      type="range"
+                      min="3"
+                      max="30"
+                      value={retrieval.topK}
+                      onChange={(e) =>
+                        setRetrieval({
+                          ...retrieval,
+                          topK: Number(e.target.value),
+                        })
+                      }
+                    />
+                    <small>{retrieval.topK} kết quả</small>
+                  </label>
+                  <label>
+                    Số bài viết tối đa đưa vào prompt
+                    <input
+                      type="range"
+                      min="1"
+                      max="8"
+                      value={retrieval.maxArticles}
+                      onChange={(e) =>
+                        setRetrieval({
+                          ...retrieval,
+                          maxArticles: Number(e.target.value),
+                        })
+                      }
+                    />
+                    <small>{retrieval.maxArticles} bài viết</small>
+                  </label>
+                </div>
+                <label className="setting-switch">
                   <input
-                    type="range"
-                    min="3"
-                    max="30"
-                    value={retrieval.topK}
+                    type="checkbox"
+                    checked={retrieval.verifiedOnly}
                     onChange={(e) =>
                       setRetrieval({
                         ...retrieval,
-                        topK: Number(e.target.value),
+                        verifiedOnly: e.target.checked,
                       })
                     }
                   />
-                  <small>{retrieval.topK} kết quả</small>
+                  <span>
+                    <b>Ưu tiên bài đã được duyệt</b>
+                    <small>
+                      Chỉ dùng nguồn xuất bản và được phép vận hành.
+                    </small>
+                  </span>
                 </label>
-                <label>
-                  Số bài viết tối đa đưa vào prompt
+                <label className="setting-switch">
                   <input
-                    type="range"
-                    min="1"
-                    max="8"
-                    value={retrieval.maxArticles}
+                    type="checkbox"
+                    checked={retrieval.shadowMode}
                     onChange={(e) =>
                       setRetrieval({
                         ...retrieval,
-                        maxArticles: Number(e.target.value),
+                        shadowMode: e.target.checked,
                       })
                     }
                   />
-                  <small>{retrieval.maxArticles} bài viết</small>
+                  <span>
+                    <b>Chạy đánh giá song song</b>
+                    <small>
+                      So sánh AI re-ranking với tìm kiếm thường trong log; không
+                      đổi câu trả lời gửi cho nhân viên.
+                    </small>
+                  </span>
                 </label>
-              </div>
-              <label className="setting-switch">
-                <input
-                  type="checkbox"
-                  checked={retrieval.verifiedOnly}
-                  onChange={(e) =>
-                    setRetrieval({
-                      ...retrieval,
-                      verifiedOnly: e.target.checked,
-                    })
-                  }
-                />
-                <span>
-                  <b>Ưu tiên bài đã được duyệt</b>
-                  <small>Chỉ dùng nguồn xuất bản và được phép vận hành.</small>
-                </span>
-              </label>
-              <label className="setting-switch">
-                <input type="checkbox" checked={retrieval.shadowMode} onChange={(e) => setRetrieval({ ...retrieval, shadowMode: e.target.checked })} />
-                <span><b>Chạy đánh giá song song</b><small>So sánh AI re-ranking với tìm kiếm thường trong log; không đổi câu trả lời gửi cho nhân viên.</small></span>
-              </label>
-              <label className="setting-switch">
-                <input
-                  type="checkbox"
-                  checked={retrieval.excludeReplaced}
-                  onChange={(e) =>
-                    setRetrieval({
-                      ...retrieval,
-                      excludeReplaced: e.target.checked,
-                    })
-                  }
-                />
-                <span>
-                  <b>Loại bài đã bị thay thế hoặc lưu trữ</b>
-                  <small>Không đưa nguồn lỗi thời vào câu trả lời.</small>
-                </span>
-              </label>
-            </section>
-            <section className="ops-panel retrieval-card" id="retrieval-ranking">
-              <h3>2. Xếp hạng kết quả</h3>
-              <p>Điểm tìm kiếm không phải là độ tin cậy của câu trả lời.</p>
-              <div className="settings-control-grid">
-                <label>
-                  Từ khóa
+                <label className="setting-switch">
                   <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={Math.round(retrieval.keywordWeight * 100)}
-                    onChange={(e) => {
-                      const keywordWeight = Number(e.target.value) / 100;
-                      setRetrieval({
-                        ...retrieval,
-                        keywordWeight,
-                        semanticWeight: 1 - keywordWeight,
-                      });
-                    }}
-                  />
-                  <small>{Math.round(retrieval.keywordWeight * 100)}%</small>
-                </label>
-                <label>
-                  AI đánh giá mức phù hợp
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={Math.round(retrieval.semanticWeight * 100)}
-                    onChange={(e) => {
-                      const semanticWeight = Number(e.target.value) / 100;
-                      setRetrieval({
-                        ...retrieval,
-                        semanticWeight,
-                        keywordWeight: 1 - semanticWeight,
-                      });
-                    }}
-                  />
-                  <small>{Math.round(retrieval.semanticWeight * 100)}% trọng số sau khi AI rà soát</small>
-                </label>
-                <label>
-                  Đa dạng nguồn
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={Math.round(retrieval.diversityWeight * 100)}
+                    type="checkbox"
+                    checked={retrieval.excludeReplaced}
                     onChange={(e) =>
                       setRetrieval({
                         ...retrieval,
-                        diversityWeight: Number(e.target.value) / 100,
+                        excludeReplaced: e.target.checked,
                       })
                     }
                   />
-                  <small>{Math.round(retrieval.diversityWeight * 100)}%</small>
+                  <span>
+                    <b>Loại bài đã bị thay thế hoặc lưu trữ</b>
+                    <small>Không đưa nguồn lỗi thời vào câu trả lời.</small>
+                  </span>
                 </label>
-              </div>
-            </section>
-            <section className="ops-panel retrieval-card" id="retrieval-decision">
-              <h3>3. Quyết định phản hồi & chủ đề nhạy cảm</h3>
-              <p>Thiết lập ngưỡng trả lời an toàn và các chủ đề phải dùng ngưỡng nghiêm ngặt hơn.</p>
-              <div className="threshold-grid">
-                <label>
-                  Tự trả lời
-                  <input
-                    type="number"
-                    min="50"
-                    max="100"
-                    value={Math.round(retrieval.autoAnswerThreshold * 100)}
-                    onChange={(e) =>
-                      setRetrieval({
-                        ...retrieval,
-                        autoAnswerThreshold: Number(e.target.value) / 100,
-                      })
-                    }
-                  />
-                  <small>% đủ căn cứ</small>
-                </label>
-                <label>
-                  Ngưỡng chủ đề nhạy cảm
-                  <input
-                    type="number"
-                    min="70"
-                    max="100"
-                    value={Math.round(retrieval.sensitiveThreshold * 100)}
-                    onChange={(e) =>
-                      setRetrieval({
-                        ...retrieval,
-                        sensitiveThreshold: Number(e.target.value) / 100,
-                      })
-                    }
-                  />
-                  <small>% bắt buộc tối thiểu</small>
-                </label>
-              </div>
-              <label className="sensitive-topics-field">
-                Chủ đề nhạy cảm
-                <input
-                  value={retrieval.sensitiveTopics.join(", ")}
-                  onChange={(e) =>
-                    setRetrieval({
-                      ...retrieval,
-                      sensitiveTopics: e.target.value
-                        .split(",")
-                        .map((v) => v.trim())
-                        .filter(Boolean),
-                    })
-                  }
-                />
-                <small>Phân tách bằng dấu phẩy, ví dụ: Giá & báo giá, Hợp đồng, Bảo mật, SLA.</small>
-              </label>
-            </section>
-            <section className="ops-panel retrieval-card" id="retrieval-merge">
-              <h3>4. Gộp bài viết tương tự</h3>
-              <p>
-                Các giá trị này chỉ áp dụng cho đợt gộp mới. Mỗi đợt sẽ lưu lại
-                tiêu chí đã dùng để bạn đối soát kết quả về sau.
-              </p>
-              <div className="settings-control-grid">
-                <label>
-                  Ngưỡng sàng lọc {Math.round(retrieval.mergePrefilterThreshold * 100)}%
-                  <input type="range" min="20" max="80" value={Math.round(retrieval.mergePrefilterThreshold * 100)} onChange={(e) => setRetrieval({ ...retrieval, mergePrefilterThreshold: Number(e.target.value) / 100 })} />
-                  <small>Chỉ đưa các bài có dấu hiệu liên quan từ mức này vào Agent. Thấp hơn sẽ tìm rộng hơn nhưng tốn thời gian hơn.</small>
-                </label>
-                <label>
-                  Ngưỡng đề xuất gộp {Math.round(retrieval.mergeSuggestionThreshold * 100)}%
-                  <input type="range" min="50" max="98" value={Math.round(retrieval.mergeSuggestionThreshold * 100)} onChange={(e) => setRetrieval({ ...retrieval, mergeSuggestionThreshold: Number(e.target.value) / 100 })} />
-                  <small>Agent chỉ đề xuất khi hai bài đủ gần nhau. Ví dụ TXT record và Bản ghi TXT thường cần được đối chiếu.</small>
-                </label>
-                <label>
-                  Nội dung riêng tối đa {Math.round(retrieval.mergeUniqueCoverageThreshold * 100)}%
-                  <input type="range" min="5" max="80" value={Math.round(retrieval.mergeUniqueCoverageThreshold * 100)} onChange={(e) => setRetrieval({ ...retrieval, mergeUniqueCoverageThreshold: Number(e.target.value) / 100 })} />
-                  <small>Nếu một bài có phần riêng từ mức này, Agent sẽ đề xuất gộp một phần để không làm mất tri thức.</small>
-                </label>
-              </div>
-              <label className="settings-textarea-label">
-                Từ đồng nghĩa phục vụ gộp bài
-                <textarea value={retrieval.mergeSynonyms.join("\n")} onChange={(e) => setRetrieval({ ...retrieval, mergeSynonyms: e.target.value.split("\n").map((item) => item.trim()).filter(Boolean) })} placeholder="txt record = bản ghi txt" />
-                <small>Mỗi dòng một cặp theo dạng <b>cụm từ A = cụm từ B</b>. Hệ thống kiểm tra hai chiều; ví dụ trên giúp nhận ra “TXT record” và “bản ghi TXT” dù khác câu chữ.</small>
-              </label>
-            </section>
-            <div className="settings-save-row">
-              <button
-                className="ops-button"
-                onClick={() =>
-                  setRetrieval({
-                    topK: 10,
-                    maxArticles: 3,
-                    keywordWeight: 0.4,
-                    semanticWeight: 0.6,
-                    diversityWeight: 0.3,
-                    autoAnswerThreshold: 0.8,
-                    sensitiveThreshold: 0.9,
-                    sensitiveTopics: [
-                      "Giá & báo giá",
-                      "Hợp đồng",
-                      "Bảo mật",
-                      "SLA",
-                    ],
-                    verifiedOnly: true,
-                    excludeReplaced: true,
-                    shadowMode: false,
-                    mergePrefilterThreshold: 0.4,
-                    mergeSuggestionThreshold: 0.78,
-                    mergeUniqueCoverageThreshold: 0.25,
-                    mergeSynonyms: ["record = bản ghi", "txt record = bản ghi txt"],
-                  })
-                }
+              </section>
+              <section
+                className="ops-panel retrieval-card"
+                id="retrieval-ranking"
               >
-                Khôi phục mặc định
-              </button>
-              <button
-                className="ops-button primary"
-                disabled={retrievalSaving}
-                onClick={() => void saveRetrieval()}
+                <h3>2. Xếp hạng kết quả</h3>
+                <p>Điểm tìm kiếm không phải là độ tin cậy của câu trả lời.</p>
+                <div className="settings-control-grid">
+                  <label>
+                    Từ khóa
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={Math.round(retrieval.keywordWeight * 100)}
+                      onChange={(e) => {
+                        const keywordWeight = Number(e.target.value) / 100;
+                        setRetrieval({
+                          ...retrieval,
+                          keywordWeight,
+                          semanticWeight: 1 - keywordWeight,
+                        });
+                      }}
+                    />
+                    <small>{Math.round(retrieval.keywordWeight * 100)}%</small>
+                  </label>
+                  <label>
+                    AI đánh giá mức phù hợp
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={Math.round(retrieval.semanticWeight * 100)}
+                      onChange={(e) => {
+                        const semanticWeight = Number(e.target.value) / 100;
+                        setRetrieval({
+                          ...retrieval,
+                          semanticWeight,
+                          keywordWeight: 1 - semanticWeight,
+                        });
+                      }}
+                    />
+                    <small>
+                      {Math.round(retrieval.semanticWeight * 100)}% trọng số sau
+                      khi AI rà soát
+                    </small>
+                  </label>
+                  <label>
+                    Đa dạng nguồn
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={Math.round(retrieval.diversityWeight * 100)}
+                      onChange={(e) =>
+                        setRetrieval({
+                          ...retrieval,
+                          diversityWeight: Number(e.target.value) / 100,
+                        })
+                      }
+                    />
+                    <small>
+                      {Math.round(retrieval.diversityWeight * 100)}%
+                    </small>
+                  </label>
+                </div>
+              </section>
+              <section
+                className="ops-panel retrieval-card"
+                id="retrieval-decision"
               >
-                {retrievalSaving ? "Đang lưu…" : "Lưu cấu hình tri thức"}
-              </button>
+                <h3>3. Quyết định phản hồi & chủ đề nhạy cảm</h3>
+                <p>
+                  Thiết lập ngưỡng trả lời an toàn và các chủ đề phải dùng
+                  ngưỡng nghiêm ngặt hơn.
+                </p>
+                <div className="threshold-grid">
+                  <label>
+                    Tự trả lời
+                    <input
+                      type="number"
+                      min="50"
+                      max="100"
+                      value={Math.round(retrieval.autoAnswerThreshold * 100)}
+                      onChange={(e) =>
+                        setRetrieval({
+                          ...retrieval,
+                          autoAnswerThreshold: Number(e.target.value) / 100,
+                        })
+                      }
+                    />
+                    <small>% đủ căn cứ</small>
+                  </label>
+                  <label>
+                    Ngưỡng chủ đề nhạy cảm
+                    <input
+                      type="number"
+                      min="70"
+                      max="100"
+                      value={Math.round(retrieval.sensitiveThreshold * 100)}
+                      onChange={(e) =>
+                        setRetrieval({
+                          ...retrieval,
+                          sensitiveThreshold: Number(e.target.value) / 100,
+                        })
+                      }
+                    />
+                    <small>% bắt buộc tối thiểu</small>
+                  </label>
+                </div>
+                <label className="sensitive-topics-field">
+                  Chủ đề nhạy cảm
+                  <input
+                    value={retrieval.sensitiveTopics.join(", ")}
+                    onChange={(e) =>
+                      setRetrieval({
+                        ...retrieval,
+                        sensitiveTopics: e.target.value
+                          .split(",")
+                          .map((v) => v.trim())
+                          .filter(Boolean),
+                      })
+                    }
+                  />
+                  <small>
+                    Phân tách bằng dấu phẩy, ví dụ: Giá & báo giá, Hợp đồng, Bảo
+                    mật, SLA.
+                  </small>
+                </label>
+              </section>
+              <section
+                className="ops-panel retrieval-card"
+                id="retrieval-merge"
+              >
+                <h3>4. Gộp bài viết tương tự</h3>
+                <p>
+                  Các giá trị này chỉ áp dụng cho đợt gộp mới. Mỗi đợt sẽ lưu
+                  lại tiêu chí đã dùng để bạn đối soát kết quả về sau.
+                </p>
+                <div className="settings-control-grid">
+                  <label>
+                    Ngưỡng sàng lọc{" "}
+                    {Math.round(retrieval.mergePrefilterThreshold * 100)}%
+                    <input
+                      type="range"
+                      min="20"
+                      max="80"
+                      value={Math.round(
+                        retrieval.mergePrefilterThreshold * 100,
+                      )}
+                      onChange={(e) =>
+                        setRetrieval({
+                          ...retrieval,
+                          mergePrefilterThreshold: Number(e.target.value) / 100,
+                        })
+                      }
+                    />
+                    <small>
+                      Chỉ đưa các bài có dấu hiệu liên quan từ mức này vào
+                      Agent. Thấp hơn sẽ tìm rộng hơn nhưng tốn thời gian hơn.
+                    </small>
+                  </label>
+                  <label>
+                    Ngưỡng đề xuất gộp{" "}
+                    {Math.round(retrieval.mergeSuggestionThreshold * 100)}%
+                    <input
+                      type="range"
+                      min="50"
+                      max="98"
+                      value={Math.round(
+                        retrieval.mergeSuggestionThreshold * 100,
+                      )}
+                      onChange={(e) =>
+                        setRetrieval({
+                          ...retrieval,
+                          mergeSuggestionThreshold:
+                            Number(e.target.value) / 100,
+                        })
+                      }
+                    />
+                    <small>
+                      Agent chỉ đề xuất khi hai bài đủ gần nhau. Ví dụ TXT
+                      record và Bản ghi TXT thường cần được đối chiếu.
+                    </small>
+                  </label>
+                  <label>
+                    Nội dung riêng tối đa{" "}
+                    {Math.round(retrieval.mergeUniqueCoverageThreshold * 100)}%
+                    <input
+                      type="range"
+                      min="5"
+                      max="80"
+                      value={Math.round(
+                        retrieval.mergeUniqueCoverageThreshold * 100,
+                      )}
+                      onChange={(e) =>
+                        setRetrieval({
+                          ...retrieval,
+                          mergeUniqueCoverageThreshold:
+                            Number(e.target.value) / 100,
+                        })
+                      }
+                    />
+                    <small>
+                      Nếu một bài có phần riêng từ mức này, Agent sẽ đề xuất gộp
+                      một phần để không làm mất tri thức.
+                    </small>
+                  </label>
+                </div>
+                <label className="settings-textarea-label">
+                  Từ đồng nghĩa phục vụ gộp bài
+                  <textarea
+                    value={retrieval.mergeSynonyms.join("\n")}
+                    onChange={(e) =>
+                      setRetrieval({
+                        ...retrieval,
+                        mergeSynonyms: e.target.value
+                          .split("\n")
+                          .map((item) => item.trim())
+                          .filter(Boolean),
+                      })
+                    }
+                    placeholder="txt record = bản ghi txt"
+                  />
+                  <small>
+                    Mỗi dòng một cặp theo dạng <b>cụm từ A = cụm từ B</b>. Hệ
+                    thống kiểm tra hai chiều; ví dụ trên giúp nhận ra “TXT
+                    record” và “bản ghi TXT” dù khác câu chữ.
+                  </small>
+                </label>
+              </section>
+              <div className="settings-save-row">
+                <button
+                  className="ops-button"
+                  onClick={() =>
+                    setRetrieval({
+                      topK: 10,
+                      maxArticles: 3,
+                      keywordWeight: 0.4,
+                      semanticWeight: 0.6,
+                      diversityWeight: 0.3,
+                      autoAnswerThreshold: 0.8,
+                      sensitiveThreshold: 0.9,
+                      sensitiveTopics: [
+                        "Giá & báo giá",
+                        "Hợp đồng",
+                        "Bảo mật",
+                        "SLA",
+                      ],
+                      verifiedOnly: true,
+                      excludeReplaced: true,
+                      shadowMode: false,
+                      mergePrefilterThreshold: 0.4,
+                      mergeSuggestionThreshold: 0.78,
+                      mergeUniqueCoverageThreshold: 0.25,
+                      mergeSynonyms: [
+                        "record = bản ghi",
+                        "txt record = bản ghi txt",
+                      ],
+                    })
+                  }
+                >
+                  Khôi phục mặc định
+                </button>
+                <button
+                  className="ops-button primary"
+                  disabled={retrievalSaving}
+                  onClick={() => void saveRetrieval()}
+                >
+                  {retrievalSaving ? "Đang lưu…" : "Lưu cấu hình tri thức"}
+                </button>
+              </div>
             </div>
-          </div>
-        </section>
-      )}
+          </section>
+        )}
       </section>
     </Shell>
   );
 }
 
 export default function OperationsScreen({ screen }: { screen: Screen }) {
-  const content = screen === "assistant" ? (
-    <AssistantScreen />
-  ) : screen === "conversations" ? (
-    <ConversationsScreen />
-  ) : screen === "knowledge" ? (
-    <KnowledgeScreen />
-  ) : screen === "queue" ? (
-    <QueueScreen />
-  ) : screen === "review" ? (
-    <ReviewScreen />
-  ) : screen === "profile" ? (
-    <ProfileScreen />
-  ) : (
-    <SettingsScreen />
-  );
+  const content =
+    screen === "assistant" ? (
+      <AssistantScreen />
+    ) : screen === "conversations" ? (
+      <ConversationsScreen />
+    ) : screen === "knowledge" ? (
+      <KnowledgeScreen />
+    ) : screen === "queue" ? (
+      <QueueScreen />
+    ) : screen === "review" ? (
+      <ReviewScreen />
+    ) : screen === "profile" ? (
+      <ProfileScreen />
+    ) : (
+      <SettingsScreen />
+    );
   return <AppFeedbackProvider>{content}</AppFeedbackProvider>;
 }

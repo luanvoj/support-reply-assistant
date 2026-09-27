@@ -17,9 +17,13 @@
 - Plan đang triển khai: [hợp nhất luồng Yêu cầu chuyên gia](plans/2026-09-27-expert-request-workflow.md) — Agent hai nhánh và workspace một route đã áp dụng; còn nghiệm thu role/browser, assignment và phản hồi riêng.
 - Plan mới: [gộp yêu cầu chuyên gia trùng lặp](plans/2026-09-27-expert-request-deduplication.md) — thiết kế group/occurrence để nhiều người báo cùng vấn đề không tạo phiếu trùng; chưa triển khai.
 - Plan đang nghiệm thu: [rà hồi quy hành vi toàn bộ Cài đặt](plans/2026-09-27-settings-behavior-regression-audit.md) — contract Agent/Tri thức đã chuẩn hóa; còn browser/provider/RBAC end-to-end.
+- Plan đã triển khai: [tách cấu hình và bật/tắt Agent theo từng nhà cung cấp](plans/2026-09-27-provider-configuration-and-activation-ux.md) — Gemini/Azure được lưu độc lập, card tự bật/tắt và database bảo đảm chỉ 0 hoặc 1 Agent hoạt động; chờ nghiệm thu browser theo trạng thái/viewport.
 - Plan mới: [kết nối Vibe Host MCP và triển khai ứng dụng](plans/2026-09-27-vibehost-mcp-and-deployment.md) — chờ rotate token, xác minh schema MCP và chốt exposure trước khi cấu hình/deploy.
 - Plan đã triển khai: [chuẩn hóa màn hình đăng nhập](plans/2026-09-27-login-auth-surface.md) — ẩn SSO/Okta chưa có contract, đồng bộ input và nâng minh họa luồng phản hồi; chờ nghiệm thu browser/viewport.
-- Plan đang triển khai: [quản trị người dùng, hồ sơ cá nhân và 2FA](plans/2026-09-27-user-management-identity-and-2fa.md) — lifecycle, RBAC và avatar local đã có; recovery code/Admin reset 2FA còn mở, avatar chờ nghiệm thu browser.
+- Plan đang triển khai: [quản trị người dùng, hồ sơ cá nhân và 2FA](plans/2026-09-27-user-management-identity-and-2fa.md) — lifecycle, RBAC, avatar local và Admin recovery đã có; avatar chờ nghiệm thu browser.
+- Plan đã triển khai: [Quản trị viên khôi phục bảo mật tài khoản người dùng](plans/2026-09-27-admin-user-security-recovery.md) — reset mật khẩu/tắt 2FA có audit, thu hồi phiên và modal Điều chỉnh đã được chuẩn hóa; chờ nghiệm thu browser theo trạng thái/viewport.
+- Plan đang triển khai: [tách vô hiệu hóa, khôi phục và xóa tài khoản có người kế thừa](plans/2026-09-28-user-disable-delete-successor-lifecycle.md) — thay lifecycle cũ để khóa đăng nhập có thể đảo ngược, xóa yêu cầu kế thừa theo hierarchy và không còn retention mơ hồ.
+- Plan mới: [xóa hẳn tài khoản và nhật ký vận hành có thời hạn](plans/2026-09-28-hard-delete-and-operational-log.md) — hard-delete cần migration FK/audit riêng; thêm Log cấu hình/tri thức/login không bao gồm chat, retention configurable; chờ chốt policy chat và triển khai.
 - Plan đã triển khai: [đổi mật khẩu realtime và 2FA](plans/2026-09-27-profile-password-and-mfa-ux.md) — policy 8 ký tự/hoa/thường/ký tự đặc biệt, checklist realtime, TOTP setup/tắt và MFA login challenge đã hoàn tất; chờ nghiệm thu thủ công.
 - Case study: [chuẩn hóa UX/UI Kho kiến thức](../UX-UI-CASE-STUDY-KNOWLEDGE.md).
 - Plan trước: [chuẩn hóa bố cục và tác vụ Kho kiến thức](plans/knowledge-workspace-layout-and-actions.md) — đã triển khai, chờ nghiệm thu UI thủ công.
@@ -42,6 +46,8 @@
 | App shell | Dùng chung sidebar/header/RBAC/menu tài khoản cho toàn bộ route protected | [app-shell](modules/app-shell.md) |
 
 ## Việc mở có hiệu lực
+
+- Plan mới: [lọc thời gian và phân trang Nhật ký vận hành](plans/2026-09-28-operational-log-time-filter-pagination.md) — filter server-side theo khoảng thời gian/category, footer phân trang rõ ràng và không ảnh hưởng retention.
 
 1. Chốt provider/model embedding và nghiệm thu semantic vector retrieval.
 2. Quyết định target production, secrets, TLS, backup, monitoring và release authorization.

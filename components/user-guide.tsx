@@ -27,8 +27,8 @@ const roleCopy: Record<Role, { label: string; intro: string; actions: Array<[str
 const settingRows = [
   ["Cấu hình Agent", "Giọng điệu, vai trò và hướng dẫn bổ sung", "Thay đổi cách Agent diễn đạt; không được dùng để bỏ qua quy tắc an toàn."],
   ["Tri thức & tìm kiếm", "Nguồn, xếp hạng, ngưỡng phản hồi và chủ đề nhạy cảm", "Quyết định tài liệu nào được dùng và khi nào phải chuyển chuyên gia."],
-  ["Nhà cung cấp AI", "Bật hoặc tắt Agent đã cấu hình", "Tắt Agent vẫn cho phép tra cứu nguồn xác minh, nhưng không tạo phản hồi tổng hợp hoặc quét gộp bài."],
-  ["Quản trị người dùng", "Tài khoản và vai trò", "Quyết định ai được vận hành Kho tri thức, Yêu cầu chuyên gia và Cài đặt."],
+  ["Nhà cung cấp AI", "Lưu cấu hình riêng và bật/tắt ngay trên từng Agent", "Gemini và Azure có thể cùng được lưu, nhưng chỉ một Agent được bật. Tắt cả hai vẫn cho phép tra cứu nguồn xác minh, nhưng không tạo phản hồi tổng hợp hoặc quét gộp bài."],
+  ["Quản trị người dùng", "Tài khoản, vai trò và khôi phục bảo mật", "Quyết định ai được vận hành Kho tri thức, Yêu cầu chuyên gia và Cài đặt. Quản trị viên có thể đặt lại mật khẩu hoặc tắt 2FA của tài khoản đang hoạt động; các phiên cũ sẽ bị thu hồi."],
 ];
 
 export default function UserGuide() {

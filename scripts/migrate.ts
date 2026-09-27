@@ -47,11 +47,14 @@ async function main() {
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       user_id UUID NOT NULL REFERENCES users(id),
       actor_id UUID REFERENCES users(id),
-      event_type TEXT NOT NULL CHECK (event_type IN ('created', 'updated', 'disabled', 'restored', 'ownership_transferred', 'purged', 'mfa_disabled')),
+      event_type TEXT NOT NULL CHECK (event_type IN ('created', 'updated', 'disabled', 'restored', 'ownership_transferred', 'purged', 'mfa_disabled', 'password_reset_by_admin')),
       details JSONB NOT NULL DEFAULT '{}'::jsonb,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
     CREATE INDEX IF NOT EXISTS user_lifecycle_events_user_idx ON user_lifecycle_events(user_id, created_at DESC);
+    ALTER TABLE user_lifecycle_events DROP CONSTRAINT IF EXISTS user_lifecycle_events_event_type_check;
+    ALTER TABLE user_lifecycle_events ADD CONSTRAINT user_lifecycle_events_event_type_check
+      CHECK (event_type IN ('created', 'updated', 'disabled', 'restored', 'ownership_transferred', 'purged', 'mfa_disabled', 'password_reset_by_admin'));
     ALTER TABLE conversations ADD COLUMN IF NOT EXISTS classification TEXT NOT NULL DEFAULT 'normal';
     ALTER TABLE conversations ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ NOT NULL DEFAULT (now() + interval '90 days');
     ALTER TABLE conversations ADD COLUMN IF NOT EXISTS archived_at TIMESTAMPTZ;
@@ -267,6 +270,31 @@ async function main() {
     UPDATE conversations
       SET last_message_at = COALESCE((SELECT max(created_at) FROM messages WHERE conversation_id = conversations.id), updated_at),
           expires_at = COALESCE(expires_at, updated_at + interval '90 days');
+    WITH ranked_enabled_providers AS (
+      SELECT id, row_number() OVER (ORDER BY is_default DESC, updated_at DESC, id) AS position
+      FROM ai_provider_settings
+      WHERE is_enabled = true
+    )
+    UPDATE ai_provider_settings AS provider
+      SET is_enabled = false, is_default = false, updated_at = now()
+      FROM ranked_enabled_providers AS ranked
+      WHERE provider.id = ranked.id AND ranked.position > 1;
+    CREATE UNIQUE INDEX IF NOT EXISTS ai_provider_settings_single_enabled_idx
+      ON ai_provider_settings ((is_enabled)) WHERE is_enabled = true;
+    CREATE TABLE IF NOT EXISTS operational_log_settings (
+      id BOOLEAN PRIMARY KEY DEFAULT true CHECK (id), retention_days INTEGER NOT NULL DEFAULT 90 CHECK (retention_days BETWEEN 7 AND 3650),
+      updated_by UUID REFERENCES users(id) ON DELETE SET NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    INSERT INTO operational_log_settings(id) VALUES(true) ON CONFLICT (id) DO NOTHING;
+    CREATE TABLE IF NOT EXISTS operational_logs (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(), category TEXT NOT NULL CHECK (category IN ('account','authentication','knowledge','configuration')),
+      action TEXT NOT NULL, summary TEXT NOT NULL, actor_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+      actor_snapshot JSONB NOT NULL DEFAULT '{}'::jsonb, target_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+      target_snapshot JSONB NOT NULL DEFAULT '{}'::jsonb, details JSONB NOT NULL DEFAULT '{}'::jsonb,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS operational_logs_created_idx ON operational_logs(created_at DESC);
+    CREATE INDEX IF NOT EXISTS operational_logs_category_idx ON operational_logs(category,created_at DESC);
   `);
 
   console.log(

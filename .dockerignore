@@ -1,0 +1,12 @@
+.git
+.next
+node_modules
+.env
+.env.*
+!.env.example
+storage
+*.log
+dataset_*.xlsx
+*.zip
+pg.txt
+skills.zip
