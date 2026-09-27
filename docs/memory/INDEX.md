@@ -6,6 +6,8 @@
 - Ứng dụng local đã build/restart/health-check thành công; Supabase PostgreSQL hoạt động.
 - Luồng Trợ lý đã đồng bộ: tên Agent lấy từ profile đang hoạt động, lịch sử dùng thứ tự message ổn định, và yêu cầu chuyên gia gắn duy nhất với phản hồi.
 - Plan active: [audit và chuẩn hóa design system toàn ứng dụng](plans/application-design-system-audit.md) — baseline đã triển khai, chờ nghiệm thu UI thủ công.
+- Plan mới: [kết nối Vibe Host MCP và triển khai ứng dụng](plans/2026-09-27-vibehost-mcp-and-deployment.md) — chờ rotate token, xác minh schema MCP và chốt exposure trước khi cấu hình/deploy.
+- Plan đã triển khai: [chuẩn hóa màn hình đăng nhập](plans/2026-09-27-login-auth-surface.md) — ẩn SSO/Okta chưa có contract, đồng bộ input và nâng minh họa luồng phản hồi; chờ nghiệm thu browser/viewport.
 - Plan đang triển khai: [quản trị người dùng, hồ sơ cá nhân và 2FA](plans/2026-09-27-user-management-identity-and-2fa.md) — lifecycle, RBAC và avatar local đã có; recovery code/Admin reset 2FA còn mở, avatar chờ nghiệm thu browser.
 - Plan đã triển khai: [đổi mật khẩu realtime và 2FA](plans/2026-09-27-profile-password-and-mfa-ux.md) — policy 8 ký tự/hoa/thường/ký tự đặc biệt, checklist realtime, TOTP setup/tắt và MFA login challenge đã hoàn tất; chờ nghiệm thu thủ công.
 - Case study: [chuẩn hóa UX/UI Kho kiến thức](../UX-UI-CASE-STUDY-KNOWLEDGE.md).
