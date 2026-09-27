@@ -19,7 +19,6 @@
     "knowledge:import-demo": "tsx scripts/import-knowledge-demo.ts",
     "knowledge:import-smoke": "tsx scripts/knowledge-import-smoke.ts",
     "db:seed": "tsx scripts/seed.ts",
-    "db:seed-admin": "tsx scripts/seed-admin.ts",
     "conversations:retention": "tsx scripts/retention.ts",
     "users:retention": "tsx scripts/user-retention.ts"
   },
