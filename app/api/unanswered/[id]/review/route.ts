@@ -47,8 +47,8 @@ export async function POST(
       [
         id,
         session.userId,
-        input.draftAnswer,
-        input.finalAnswer,
+        input.publish ? null : input.draftAnswer,
+        input.publish ? null : input.finalAnswer,
         input.publish ? "published" : "approved",
       ],
     );

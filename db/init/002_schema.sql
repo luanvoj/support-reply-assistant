@@ -45,7 +45,7 @@ CREATE TABLE knowledge_articles (
   review_due_at TIMESTAMPTZ,
   source_priority INTEGER NOT NULL DEFAULT 0 CHECK (source_priority BETWEEN 0 AND 100),
   replaced_at TIMESTAMPTZ,
-  replaced_by UUID REFERENCES knowledge_articles(id),
+  replaced_by UUID REFERENCES knowledge_articles(id) ON DELETE SET NULL,
   created_by UUID NOT NULL REFERENCES users(id),
   reviewed_by UUID REFERENCES users(id),
   published_at TIMESTAMPTZ,
@@ -127,7 +127,7 @@ CREATE TABLE question_reviews (
   draft_answer TEXT,
   final_answer TEXT,
   status TEXT NOT NULL DEFAULT 'draft',
-  published_article_id UUID REFERENCES knowledge_articles(id),
+  published_article_id UUID REFERENCES knowledge_articles(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );

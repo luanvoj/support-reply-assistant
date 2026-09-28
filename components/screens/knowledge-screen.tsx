@@ -316,12 +316,15 @@ export function KnowledgeScreen() {
       return;
     const response = await fetch(
       `/api/knowledge/articles/${item.id}?permanent=true`,
-      { method: "DELETE" },
+      { method: "DELETE", headers: { "content-type": "application/json" }, body: JSON.stringify({ confirm: true }) },
     );
     const body = await response.json().catch(() => ({}));
     if (response.ok) {
       notify("Đã xóa vĩnh viễn bài viết.", "success");
-      void load();
+      setArticles((current) => current.filter((article) => article.id !== item.id));
+      setArticleTotal((current) => Math.max(0, current - 1));
+      if (articles.length === 1 && articlePage > 1) setArticlePage(articlePage - 1);
+      else void load();
     } else {
       notify(body.error ?? "Không thể xóa vĩnh viễn bài viết.", "error");
     }

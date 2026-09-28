@@ -4,6 +4,7 @@ import { z } from "zod";
 import { requirePermission } from "@/lib/auth/guard";
 import { query, withTransaction } from "@/lib/db";
 import { articleSchema, containsUnsupportedMedia, replaceArticleChunks } from "@/lib/knowledge/article";
+import { getUserLogSnapshot, writeOperationalLog } from "@/lib/operational-log";
 
 const idSchema = z.string().uuid();
 
@@ -45,8 +46,41 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     if (archived.rows[0]) await query("INSERT INTO knowledge_article_audits (article_id, actor_id, action, version) VALUES ($1,$2,'archived',(SELECT version FROM knowledge_articles WHERE id=$1))", [id, session.userId]);
     return archived.rows[0] ? NextResponse.json({ status: "archived" }) : NextResponse.json({ error: "Không tìm thấy bài viết." }, { status: 404 });
   }
-  const cited = await query<{ id: string }>("SELECT id FROM messages WHERE retrieval_summary @> jsonb_build_array(jsonb_build_object('articleId',$1::text)) LIMIT 1", [id]);
-  if (cited.rows[0]) return NextResponse.json({ error: "Bài viết đã được trích dẫn; hãy lưu trữ để bảo toàn lịch sử." }, { status: 409 });
-  const deleted = await query("DELETE FROM knowledge_articles WHERE id=$1 RETURNING id", [id]);
-  return deleted.rows[0] ? NextResponse.json({ status: "deleted" }) : NextResponse.json({ error: "Không tìm thấy bài viết." }, { status: 404 });
+  const confirmation = await request.json().catch(() => null);
+  if (confirmation?.confirm !== true) return NextResponse.json({ error: "Cần xác nhận xóa vĩnh viễn bài viết." }, { status: 400 });
+  try {
+    const result = await withTransaction(async (client) => {
+      const article = await client.query<{ id: string; title: string; status: string }>(
+        "SELECT id,title,status FROM knowledge_articles WHERE id=$1 FOR UPDATE", [id],
+      );
+      const target = article.rows[0];
+      if (!target) return "missing";
+      if (target.status !== "archived") return "not_archived";
+
+      // Remove references in the same transaction. No linked history may veto a confirmed purge.
+      await client.query("UPDATE question_reviews SET published_article_id=NULL,draft_answer=NULL,final_answer=NULL,updated_at=now() WHERE published_article_id=$1", [id]);
+      await client.query("UPDATE knowledge_import_rows SET article_id=NULL,payload='{}'::jsonb WHERE article_id=$1", [id]);
+      await client.query("UPDATE knowledge_articles SET replaced_by=NULL,replaced_at=NULL WHERE replaced_by=$1", [id]);
+      await client.query("DELETE FROM knowledge_merge_errors WHERE item_id IN (SELECT id FROM knowledge_merge_batch_items WHERE article_ids @> jsonb_build_array($1::text))", [id]);
+      await client.query("DELETE FROM knowledge_merge_batch_items WHERE article_ids @> jsonb_build_array($1::text)", [id]);
+      await client.query("DELETE FROM knowledge_merge_sources WHERE article_id=$1", [id]);
+      await client.query("UPDATE knowledge_merge_batch_items SET merge_run_id=NULL WHERE merge_run_id IN (SELECT id FROM knowledge_merge_runs WHERE merged_article_id=$1)", [id]);
+      await client.query("DELETE FROM knowledge_merge_runs WHERE merged_article_id=$1", [id]);
+      await client.query("DELETE FROM knowledge_articles WHERE id=$1", [id]);
+      const actorSnapshot = await getUserLogSnapshot(session.userId, client);
+      await writeOperationalLog({
+        category: "knowledge", action: "knowledge_article_hard_deleted",
+        summary: `${actorSnapshot.username} đã xóa vĩnh viễn bài viết`,
+        actorUserId: session.userId, actorSnapshot,
+        details: { articleId: id, title: target.title },
+      }, client);
+      return "deleted";
+    });
+    if (result === "missing") return NextResponse.json({ status: "deleted" });
+    if (result === "not_archived") return NextResponse.json({ error: "Hãy lưu trữ bài viết trước khi xóa vĩnh viễn." }, { status: 409 });
+    return NextResponse.json({ status: "deleted" });
+  } catch (error) {
+    console.error("[knowledge.article.delete]", error);
+    return NextResponse.json({ error: "Không thể xóa bài viết. Vui lòng thử lại hoặc liên hệ quản trị viên." }, { status: 500 });
+  }
 }

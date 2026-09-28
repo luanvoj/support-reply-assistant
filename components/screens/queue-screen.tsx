@@ -56,7 +56,7 @@ export function QueueScreen() {
 
   const load = async () => {
     setLoading(true);
-    const params = new URLSearchParams({ page: String(page), pageSize: "20" });
+    const params = new URLSearchParams({ page: String(page), pageSize: "20", status: "open" });
     if (query.trim()) params.set("search", query.trim());
     if (selectedId) params.set("id", selectedId);
     const response = await fetch(`/api/unanswered?${params.toString()}`).catch(
@@ -71,11 +71,12 @@ export function QueueScreen() {
     const questions = body.questions ?? [];
     setTickets(questions);
     setPagination(body.pagination ?? { page: 1, pageSize: 20, total: 0 });
-    setSelectedTicket(
-      body.selected ??
-        questions.find((item: Ticket) => item.id === selectedId) ??
-        null
-    );
+    const selected = body.selected ?? questions.find((item: Ticket) => item.id === selectedId);
+    if (selectedId && selected && selected.status !== "new" && selected.status !== "in_review") {
+      setSelectedId(null);
+      router.replace(`/unanswered?page=${page}`);
+    }
+    setSelectedTicket(selected?.status === "new" || selected?.status === "in_review" ? selected : null);
   };
 
   useEffect(() => {
@@ -128,15 +129,21 @@ export function QueueScreen() {
     switch (status) {
       case "new":
         return "Mới";
+      case "in_review":
       case "in_progress":
       case "open":
         return "Đang xử lý";
+      case "answered":
       case "resolved":
         return "Đã giải quyết";
+      case "published":
+        return "Đã xuất bản";
+      case "rejected":
+        return "Đã từ chối";
       case "closed":
         return "Đã đóng";
       default:
-        return status;
+        return "Không xác định";
     }
   };
 
@@ -156,6 +163,19 @@ export function QueueScreen() {
     router.replace(`/unanswered?page=${page}`);
   };
 
+  const removeCompletedTicket = (id: string) => {
+    const nextTotal = Math.max(0, pagination.total - 1);
+    const nextPage = Math.min(page, Math.max(1, Math.ceil(nextTotal / pagination.pageSize)));
+    setTickets((items) => items.filter((item) => item.id !== id));
+    setPagination((current) => ({ ...current, total: nextTotal }));
+    setSelectedId(null);
+    setSelectedTicket(null);
+    setTitle("");
+    setAnswer("");
+    setPage(nextPage);
+    router.replace(`/unanswered?page=${nextPage}`);
+  };
+
   const deleteNewTicket = async () => {
     if (!selectedTicket || selectedTicket.status !== "new") return;
     if (!window.confirm("Xóa vĩnh viễn yêu cầu mới này? Thao tác không thể hoàn tác."))
@@ -171,8 +191,7 @@ export function QueueScreen() {
       return;
     }
     notify("Đã xóa vĩnh viễn yêu cầu mới.", "success");
-    close();
-    await load();
+    removeCompletedTicket(selectedTicket.id);
   };
 
   const publish = async () => {
@@ -200,7 +219,7 @@ export function QueueScreen() {
       return;
     }
     notify("Đã bổ sung tri thức đã xác minh và đóng yêu cầu.", "success");
-    close();
+    removeCompletedTicket(selectedTicket.id);
   };
 
   const totalPages = Math.max(1, Math.ceil(pagination.total / pagination.pageSize));
@@ -220,7 +239,7 @@ export function QueueScreen() {
         <div className="ui-card ui-card-subtle" style={{ padding: "var(--space-3)" }}>
           <small className="bento-table-sub" style={{ textTransform: "uppercase", fontWeight: 700 }}>Trạng thái</small>
           <Badge
-            variant={selectedTicket.status === "resolved" ? "success" : "warning"}
+            variant={selectedTicket.status === "answered" || selectedTicket.status === "published" ? "success" : "warning"}
             size="sm"
             style={{ marginTop: "4px" }}
           >
@@ -383,9 +402,9 @@ export function QueueScreen() {
                         <TableCell>
                           <Badge
                             variant={
-                              item.status === "new" || item.status === "open"
+                              item.status === "new"
                                 ? "warning"
-                                : item.status === "resolved"
+                                : item.status === "answered" || item.status === "published"
                                 ? "success"
                                 : "neutral"
                             }

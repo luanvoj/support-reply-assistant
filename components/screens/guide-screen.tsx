@@ -397,7 +397,7 @@ export function GuideScreen() {
                 <span className="bento-node-tag">ĐỐI SOÁT TRI THỨC</span>
                 <h4 className="bento-node-title">Truy xuất RAG từ Kho đã duyệt</h4>
                 <p className="bento-node-text">
-                  Thực hiện Vector Search kết hợp đối chiếu từ khóa trong các bài viết đã xuất bản (`published`). Chỉ lấy các bài viết còn hiệu lực và được gắn cờ thẩm định.
+                  Tìm kiếm theo ngữ nghĩa kết hợp đối chiếu từ khóa trong các bài viết đã xuất bản. Chỉ lấy các bài viết còn hiệu lực và được gắn cờ thẩm định.
                 </p>
               </div>
             </div>

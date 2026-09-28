@@ -26,9 +26,9 @@
 | **Hướng dẫn sử dụng** | Giải thích theo vai trò về luồng Agent, điểm căn cứ, yêu cầu chuyên gia, gộp bài viết và ý nghĩa từng cấu hình. |
 | **Trợ lý** | Tiếp nhận câu hỏi, tìm nguồn trong Kho tri thức và trình bày phản hồi phù hợp với căn cứ hiện có. |
 | **Hội thoại** | Lưu và tra cứu lịch sử trao đổi theo thứ tự ổn định; dữ liệu được giữ mặc định 90 ngày. |
-| **Kho tri thức** | Tạo, nhập, chỉnh sửa, xuất bản, lưu trữ và khôi phục tài liệu văn bản; chỉ nội dung phù hợp chính sách mới được dùng để tra cứu. |
+| **Kho tri thức** | Tạo, nhập, chỉnh sửa, xuất bản, lưu trữ, khôi phục hoặc xóa vĩnh viễn tài liệu văn bản đã lưu trữ; chỉ nội dung phù hợp chính sách mới được dùng để tra cứu. |
 | **Gộp bài viết** | Giúp phát hiện các bài có khả năng trùng lặp, tạo bản nháp gộp để người có quyền rà soát trước khi xuất bản. |
-| **Yêu cầu chuyên gia** | Là workspace xử lý các câu hỏi mà hệ thống chưa thể phản hồi an toàn; có tìm kiếm, phân trang và liên kết trực tiếp đến yêu cầu đang chọn. |
+| **Yêu cầu chuyên gia** | Là hàng đợi các câu hỏi chưa xử lý xong; yêu cầu đã xuất bản hoặc đóng không còn hiện trong danh sách cần xử lý. Có tìm kiếm, phân trang và liên kết trực tiếp đến yêu cầu đang chọn. |
 | **Cài đặt** | Cấu hình cách Agent diễn đạt, nguồn/cách xếp hạng tri thức, ngưỡng phản hồi, chủ đề nhạy cảm, nhà cung cấp AI và người dùng. |
 | **Thông tin người dùng** | Cho phép người dùng đổi mật khẩu, quản lý xác thực hai bước và ảnh đại diện của chính mình. |
 

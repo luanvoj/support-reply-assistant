@@ -95,7 +95,7 @@ export default function Dashboard() {
   useEffect(() => {
     void Promise.all([
       fetch("/api/dashboard/summary"),
-      fetch("/api/unanswered"),
+      fetch("/api/unanswered?status=open"),
     ])
       .then(async ([summaryResponse, queueResponse]) => {
         if (summaryResponse.ok)
@@ -119,7 +119,7 @@ export default function Dashboard() {
       case "low_confidence":
         return "Độ tin cậy thấp";
       default:
-        return reasonCode;
+        return "Nguyên nhân chưa xác định";
     }
   };
 
@@ -129,13 +129,19 @@ export default function Dashboard() {
       case "open":
         return "Chờ xử lý";
       case "in_progress":
+      case "in_review":
         return "Đang xử lý";
+      case "answered":
       case "resolved":
         return "Đã giải quyết";
+      case "published":
+        return "Đã xuất bản";
+      case "rejected":
+        return "Đã từ chối";
       case "closed":
         return "Đã đóng";
       default:
-        return status;
+        return "Không xác định";
     }
   };
 

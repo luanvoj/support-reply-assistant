@@ -305,6 +305,24 @@ async function main() {
       PRIMARY KEY (scope, key_hash)
     );
     CREATE INDEX IF NOT EXISTS auth_rate_limit_buckets_expiry_idx ON auth_rate_limit_buckets(updated_at);
+    -- A confirmed permanent deletion must not be blocked by historical links.
+    ALTER TABLE question_reviews DROP CONSTRAINT IF EXISTS question_reviews_published_article_id_fkey;
+    ALTER TABLE question_reviews ADD CONSTRAINT question_reviews_published_article_id_fkey
+      FOREIGN KEY (published_article_id) REFERENCES knowledge_articles(id) ON DELETE SET NULL;
+    ALTER TABLE knowledge_articles DROP CONSTRAINT IF EXISTS knowledge_articles_replaced_by_fkey;
+    ALTER TABLE knowledge_articles ADD CONSTRAINT knowledge_articles_replaced_by_fkey
+      FOREIGN KEY (replaced_by) REFERENCES knowledge_articles(id) ON DELETE SET NULL;
+    ALTER TABLE knowledge_import_rows DROP CONSTRAINT IF EXISTS knowledge_import_rows_article_id_fkey;
+    ALTER TABLE knowledge_import_rows ADD CONSTRAINT knowledge_import_rows_article_id_fkey
+      FOREIGN KEY (article_id) REFERENCES knowledge_articles(id) ON DELETE SET NULL;
+    ALTER TABLE knowledge_merge_runs DROP CONSTRAINT IF EXISTS knowledge_merge_runs_merged_article_id_fkey;
+    ALTER TABLE knowledge_merge_runs ADD CONSTRAINT knowledge_merge_runs_merged_article_id_fkey
+      FOREIGN KEY (merged_article_id) REFERENCES knowledge_articles(id) ON DELETE SET NULL;
+    ALTER TABLE knowledge_merge_sources DROP CONSTRAINT IF EXISTS knowledge_merge_sources_article_id_fkey;
+    ALTER TABLE knowledge_merge_sources ADD CONSTRAINT knowledge_merge_sources_article_id_fkey
+      FOREIGN KEY (article_id) REFERENCES knowledge_articles(id) ON DELETE CASCADE;
+    UPDATE question_reviews SET draft_answer=NULL,final_answer=NULL,updated_at=now()
+      WHERE published_article_id IS NOT NULL AND (draft_answer IS NOT NULL OR final_answer IS NOT NULL);
   `);
 
   console.log(

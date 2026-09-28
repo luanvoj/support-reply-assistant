@@ -2,6 +2,8 @@
 
 ## Snapshot
 
+- Đang nghiệm thu: [xóa vĩnh viễn tri thức và đóng hàng đợi chuyên gia](plans/2026-09-28-knowledge-hard-delete-and-expert-queue.md) — migration đã áp dụng, xóa article theo transaction, queue chỉ chứa ticket mở và trạng thái được Việt hóa; còn kiểm thử API/browser với phiên đăng nhập.
+
 - Plan mới: [bố cục xử lý Yêu cầu chuyên gia theo Kho kiến thức](plans/2026-09-28-expert-request-top-editor-layout.md) — editor một cột mở trên danh sách khi chọn ticket, giữ deep link/API/RBAC hiện có và bỏ panel xử lý bên phải.
 
 - Plan đang triển khai: [xóa vĩnh viễn yêu cầu chuyên gia mới](plans/2026-09-28-delete-new-expert-requests.md) — Chuyên gia/Admin chỉ xóa ticket `new` chưa review; đồng bộ classification hội thoại và không giữ log chứa nội dung ticket.
