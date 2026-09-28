@@ -1,5 +1,5 @@
-import OperationsScreen from "@/components/operations";
+import { ProfileScreen } from "@/components/screens/profile-screen";
 
 export default function ProfilePage() {
-  return <OperationsScreen screen="profile" />;
+  return <ProfileScreen />;
 }

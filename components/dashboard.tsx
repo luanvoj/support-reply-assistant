@@ -2,8 +2,27 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { NavigationIcon } from "@/components/navigation-icon";
 import { AppShell } from "@/components/app-shell";
+import { NavigationIcon } from "@/components/navigation-icon";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  Button,
+  Badge,
+  Input,
+  Tabs,
+  TableWrapper,
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+  EmptyState,
+} from "@/components/ui";
 
 type QueueItem = {
   id: string;
@@ -17,40 +36,48 @@ type QueueItem = {
 
 function TrendChart({ period }: { period: string }) {
   return (
-    <div className="chart" aria-label="Biểu đồ hoạt động">
+    <div className="bento-trend-chart-wrap" aria-label="Biểu đồ hoạt động">
       <svg
-        viewBox="0 0 720 190"
+        viewBox="0 0 720 180"
         role="img"
+        className="bento-svg-chart"
         aria-label="Xu hướng câu trả lời có căn cứ"
       >
         <defs>
-          <linearGradient id="area" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="#2563eb" stopOpacity=".22" />
-            <stop offset="100%" stopColor="#2563eb" stopOpacity="0" />
+          <linearGradient id="bento-area-gradient" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.28" />
+            <stop offset="100%" stopColor="#4f46e5" stopOpacity="0.0" />
           </linearGradient>
         </defs>
+
+        {/* Vùng đổ màu Gradient dưới đường biểu đồ chính */}
         <path
-          d="M0 148 C50 137 80 145 120 128 S190 118 225 125 S285 112 320 100 S390 108 430 82 S495 88 535 60 S610 68 720 30 L720 190 L0 190Z"
-          fill="url(#area)"
+          d="M0 140 C60 130 90 138 140 120 S210 110 250 118 S310 102 350 90 S420 98 460 72 S520 78 570 50 S640 58 720 20 L720 180 L0 180Z"
+          fill="url(#bento-area-gradient)"
         />
+
+        {/* Đường biểu đồ Phản hồi có căn cứ (Chính) */}
         <path
-          d="M0 148 C50 137 80 145 120 128 S190 118 225 125 S285 112 320 100 S390 108 430 82 S495 88 535 60 S610 68 720 30"
+          d="M0 140 C60 130 90 138 140 120 S210 110 250 118 S310 102 350 90 S420 98 460 72 S520 78 570 50 S640 58 720 20"
           fill="none"
-          stroke="#2563eb"
-          strokeWidth="3"
+          stroke="#4f46e5"
+          strokeWidth="3.5"
           strokeLinecap="round"
         />
+
+        {/* Đường biểu đồ Chuyển chuyên gia (Phụ) */}
         <path
-          d="M0 173 C70 168 115 172 165 158 S245 166 300 148 S385 153 430 132 S510 143 560 117 S640 128 720 101"
+          d="M0 165 C80 160 130 164 180 150 S270 158 320 140 S410 145 460 125 S540 135 600 110 S670 120 720 95"
           fill="none"
           stroke="#94a3b8"
           strokeWidth="2"
-          strokeDasharray="5 6"
+          strokeDasharray="4 6"
         />
       </svg>
-      <div className="chart-axis">
-        <span>{period === "Ngày" ? "6 ngày trước" : "00:00"}</span>
-        <span>…</span>
+
+      <div className="bento-chart-axis">
+        <span>{period === "Ngày" ? "6 ngày trước" : period === "Giờ" ? "00:00" : "4 tuần trước"}</span>
+        <span>Khoảng thời gian {period.toLowerCase()}</span>
         <span>Hôm nay</span>
       </div>
     </div>
@@ -77,7 +104,7 @@ export default function Dashboard() {
           setQueue((await queueResponse.json()).questions ?? []);
       })
       .catch(() =>
-        setNotice("Không thể tải số liệu mới. Hãy kiểm tra kết nối hệ thống."),
+        setNotice("Không thể tải số liệu mới. Hãy kiểm tra kết nối hệ thống.")
       );
   }, []);
 
@@ -86,351 +113,351 @@ export default function Dashboard() {
       queue.filter((item) =>
         `${item.original_question} ${item.creator} ${item.reason_code}`
           .toLowerCase()
-          .includes(search.toLowerCase()),
+          .includes(search.toLowerCase())
       ),
-    [queue, search],
+    [queue, search]
   );
+
   return (
     <AppShell screen="overview">
-      <div className="dashboard-content">
-        <section className="page-heading">
+      <div className="bento-overview-container">
+        {/* Tiêu Đề Trang & Nút Hành Động Nhanh */}
+        <div className="bento-page-header">
           <div>
-            <div className="eyebrow">TỔNG QUAN</div>
-            <h1>Vận hành kho kiến thức</h1>
-            <p>
-              Theo dõi phản hồi có căn cứ, hoạt động nhóm và vòng lặp kiến thức.
+            <span className="bento-eyebrow">TỔNG QUAN HỆ THỐNG</span>
+            <h1 className="bento-page-title">Vận hành kho kiến thức</h1>
+            <p className="bento-page-desc">
+              Theo dõi chất lượng phản hồi có căn cứ, chỉ số độ tin cậy và hàng đợi chuyển giao chuyên gia.
             </p>
           </div>
-          <div className="heading-actions">
-            <button
-              className="button secondary"
+          <div className="bento-header-actions">
+            <Button
+              variant="secondary"
+              size="md"
               onClick={() => router.push("/assistant")}
             >
               Hỏi trợ lý ↗
-            </button>
-            <button
-              className="button primary"
+            </Button>
+            <Button
+              variant="primary"
+              size="md"
               onClick={() => router.push("/knowledge-base?new=1")}
             >
-              + Thêm tài liệu
-            </button>
+              + Thêm tài liệu mới
+            </Button>
           </div>
-        </section>
+        </div>
+
+        {/* Thông báo nếu có lỗi */}
         {notice && (
-          <div className="status-banner">
-            <span className="pulse" /> {notice}
-            <button className="text-button" onClick={() => setNotice("")}>
+          <div className="bento-alert-banner">
+            <span className="bento-alert-dot" />
+            <span>{notice}</span>
+            <button
+              type="button"
+              className="bento-alert-close"
+              onClick={() => setNotice("")}
+            >
               Đóng
             </button>
           </div>
         )}
-        <div className="status-banner">
-          <span className="pulse" /> Đồng bộ tri thức AI{" "}
-          <strong>Đang hoạt động</strong>
-          <span className="divider" /> Kho dữ liệu sẵn sàng{" "}
+
+        {/* Banner trạng thái đồng bộ */}
+        <div className="bento-sync-banner">
+          <Badge variant="success" dot pulse size="sm">
+            AI Đang hoạt động
+          </Badge>
+          <span className="bento-banner-divider">|</span>
+          <span className="bento-sync-text">
+            Đồng bộ tri thức thời gian thực: <strong>Kho tài liệu sẵn sàng</strong>
+          </span>
         </div>
-        <section className="kpi-grid">
-          <article className="kpi-card">
-            <div className="kpi-top">
-              <span>Hội thoại 30 ngày</span>
-              <span className="kpi-icon blue"><NavigationIcon name="conversations" /></span>
+
+        {/* Lưới 4 Thẻ Bento KPI */}
+        <div className="bento-kpi-grid">
+          <Card hoverable className="bento-kpi-card">
+            <div className="bento-kpi-top">
+              <span className="bento-kpi-label">Hội thoại 30 ngày</span>
+              <div className="bento-kpi-icon bento-icon-blue">
+                <NavigationIcon name="conversations" />
+              </div>
             </div>
-            <strong>{summary.conversations_30d ?? "—"}</strong>
-            <div className="kpi-foot positive">
-              Dữ liệu thực <span>từ hệ thống</span>
+            <strong className="bento-kpi-value">
+              {summary.conversations_30d ?? "—"}
+            </strong>
+            <div className="bento-kpi-foot">
+              <Badge variant="brand" size="sm">Dữ liệu thực</Badge>
+              <span>từ các phiên hỗ trợ</span>
             </div>
-            <small>Đã đồng bộ dashboard</small>
-          </article>
-          <article className="kpi-card">
-            <div className="kpi-top">
-              <span>Phản hồi trợ lý</span>
-              <span className="kpi-icon green"><NavigationIcon name="assistant" /></span>
+          </Card>
+
+          <Card hoverable className="bento-kpi-card">
+            <div className="bento-kpi-top">
+              <span className="bento-kpi-label">Phản hồi trợ lý</span>
+              <div className="bento-kpi-icon bento-icon-green">
+                <NavigationIcon name="assistant" />
+              </div>
             </div>
-            <strong>{summary.assistant_messages_30d ?? "—"}</strong>
-            <div className="kpi-foot positive">
-              Có nguồn tham chiếu <span>khi đủ độ tin cậy</span>
+            <strong className="bento-kpi-value">
+              {summary.assistant_messages_30d ?? "—"}
+            </strong>
+            <div className="bento-kpi-foot">
+              <Badge variant="success" size="sm">Đã đối chiếu</Badge>
+              <span>nguồn tham chiếu</span>
             </div>
-            <small>Trong 30 ngày gần nhất</small>
-          </article>
-          <article className="kpi-card">
-            <div className="kpi-top">
-              <span>Chờ chuyên gia xử lý</span>
-              <span className="kpi-icon amber"><NavigationIcon name="queue" /></span>
+          </Card>
+
+          <Card hoverable className="bento-kpi-card">
+            <div className="bento-kpi-top">
+              <span className="bento-kpi-label">Chờ chuyên gia xử lý</span>
+              <div className="bento-kpi-icon bento-icon-amber">
+                <NavigationIcon name="queue" />
+              </div>
             </div>
-            <strong>{summary.unanswered_open ?? "—"}</strong>
-            <div className="kpi-foot warning">
-              Cần rà soát <span>câu hỏi chưa có căn cứ</span>
+            <strong className="bento-kpi-value">
+              {summary.unanswered_open ?? "—"}
+            </strong>
+            <div className="bento-kpi-foot">
+              <Badge variant="warning" size="sm">Cần rà soát</Badge>
+              <span>câu hỏi thiếu căn cứ</span>
             </div>
-            <small>Đi tới hàng đợi để xử lý</small>
-          </article>
-          <article className="kpi-card">
-            <div className="kpi-top">
-              <span>Độ căn cứ trung bình</span>
-              <span className="kpi-icon purple"><NavigationIcon name="knowledge" /></span>
+          </Card>
+
+          <Card hoverable className="bento-kpi-card">
+            <div className="bento-kpi-top">
+              <span className="bento-kpi-label">Độ căn cứ trung bình</span>
+              <div className="bento-kpi-icon bento-icon-purple">
+                <NavigationIcon name="knowledge" />
+              </div>
             </div>
-            <strong>{summary.avg_evidence_30d !== undefined && summary.avg_evidence_30d !== null ? `${Math.round(Number(summary.avg_evidence_30d) * 100)}%` : "—"}</strong>
-            <div className="kpi-foot positive">
-              Có căn cứ <span>{summary.grounded_answers_30d ?? 0} lượt trong 30 ngày</span>
+            <strong className="bento-kpi-value">
+              {summary.avg_evidence_30d !== undefined && summary.avg_evidence_30d !== null
+                ? `${Math.round(Number(summary.avg_evidence_30d) * 100)}%`
+                : "—"}
+            </strong>
+            <div className="bento-kpi-foot">
+              <Badge variant="info" size="sm">
+                {summary.grounded_answers_30d ?? 0} có căn cứ
+              </Badge>
+              <span>/ {summary.escalated_answers_30d ?? 0} chuyển tiếp</span>
             </div>
-            <small>{summary.escalated_answers_30d ?? 0} lượt cần chuyên gia</small>
-          </article>
-        </section>
-        <section className="content-grid">
-          <article className="panel trend-panel">
-            <div className="panel-heading">
+          </Card>
+        </div>
+
+        {/* Lưới Nội Dung Bento: Biểu đồ & Tác vụ ưu tiên */}
+        <div className="bento-main-grid">
+          {/* Biểu đồ xu hướng */}
+          <Card className="bento-chart-panel">
+            <CardHeader className="bento-panel-header">
               <div>
-                <h2>Xu hướng hoạt động & độ tin cậy</h2>
-                <p>So sánh câu hỏi với phản hồi được xác minh</p>
+                <CardTitle>Xu hướng hoạt động & độ tin cậy</CardTitle>
+                <CardDescription>
+                  So sánh tỷ lệ câu trả lời có căn cứ đối chiếu với câu hỏi cần chuyên gia
+                </CardDescription>
               </div>
-              <div className="segmented">
-                {["Giờ", "Ngày", "Tuần"].map((value) => (
-                  <button
-                    className={period === value ? "selected" : ""}
-                    onClick={() => setPeriod(value)}
-                    key={value}
-                  >
-                    {value}
-                  </button>
-                ))}
+              <Tabs
+                variant="segmented"
+                size="sm"
+                activeKey={period}
+                onChange={setPeriod}
+                items={[
+                  { key: "Giờ", label: "Giờ" },
+                  { key: "Ngày", label: "Ngày" },
+                  { key: "Tuần", label: "Tuần" },
+                ]}
+              />
+            </CardHeader>
+            <CardContent>
+              <TrendChart period={period} />
+              <div className="bento-chart-legend">
+                <div className="bento-legend-item">
+                  <span className="bento-legend-dot bento-dot-primary" />
+                  <span>Phản hồi có căn cứ</span>
+                </div>
+                <div className="bento-legend-item">
+                  <span className="bento-legend-dot bento-dot-muted" />
+                  <span>Chuyển chuyên gia</span>
+                </div>
+                <div className="bento-legend-summary">
+                  <span>Khoảng thời gian:</span>
+                  <strong>{period}</strong>
+                </div>
               </div>
-            </div>
-            <TrendChart period={period} />
-            <div className="chart-legend">
-              <span>
-                <i className="legend-blue" /> Phản hồi có căn cứ
-              </span>
-              <span>
-                <i className="legend-gray" /> Chuyển chuyên gia
-              </span>
-              <strong>
-                Đang theo dõi <small>theo {period.toLowerCase()}</small>
-              </strong>
-            </div>
-          </article>
-          <article className="panel">
-            <div className="panel-heading">
+            </CardContent>
+          </Card>
+
+          {/* Tác vụ cần ưu tiên */}
+          <Card className="bento-priority-panel">
+            <CardHeader className="bento-panel-header">
               <div>
-                <h2>Tác vụ cần ưu tiên</h2>
-                <p>Các đường tắt để vận hành tri thức</p>
+                <CardTitle>Tác vụ cần ưu tiên</CardTitle>
+                <CardDescription>
+                  Đường tắt nhanh đến các màn hình vận hành chính
+                </CardDescription>
               </div>
-              <button
-                className="text-button"
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => router.push("/knowledge-base")}
               >
-                Mở kho kiến thức →
-              </button>
-            </div>
-            <div className="topic-list">
+                Mở kho →
+              </Button>
+            </CardHeader>
+            <CardContent className="bento-shortcuts-list">
               <button
-                className="topic"
+                type="button"
+                className="bento-shortcut-item"
                 onClick={() => router.push("/unanswered")}
               >
-                <span className="topic-number">01</span>
-                <div className="topic-copy">
+                <div className="bento-shortcut-idx">01</div>
+                <div className="bento-shortcut-body">
                   <strong>Hàng đợi chưa trả lời</strong>
-                  <span>{summary.unanswered_open ?? 0} câu hỏi cần xử lý</span>
+                  <span>{summary.unanswered_open ?? 0} câu hỏi cần chuyên gia giải quyết</span>
                 </div>
-                <span className="tag tag-technical">Mở</span>
+                <Badge variant="warning" size="sm">Cần xử lý</Badge>
               </button>
+
               <button
-                className="topic"
+                type="button"
+                className="bento-shortcut-item"
                 onClick={() => router.push("/assistant")}
               >
-                <span className="topic-number">02</span>
-                <div className="topic-copy">
+                <div className="bento-shortcut-idx">02</div>
+                <div className="bento-shortcut-body">
                   <strong>Đặt câu hỏi cho trợ lý</strong>
-                  <span>Nhận phản hồi dựa trên tài liệu đã xuất bản</span>
+                  <span>Truy xuất và kiểm tra câu trả lời có dẫn chứng</span>
                 </div>
-                <span className="tag tag-support">Hỏi</span>
+                <Badge variant="brand" size="sm">Thử nghiệm</Badge>
               </button>
+
               <button
-                className="topic"
+                type="button"
+                className="bento-shortcut-item"
                 onClick={() => router.push("/settings")}
               >
-                <span className="topic-number">03</span>
-                <div className="topic-copy">
-                  <strong>Cấu hình nhà cung cấp AI</strong>
-                  <span>
-                    {summary.enabled_providers ?? 0} nhà cung cấp đang bật
-                  </span>
+                <div className="bento-shortcut-idx">03</div>
+                <div className="bento-shortcut-body">
+                  <strong>Cấu hình & Nhật ký hệ thống</strong>
+                  <span>Kiểm tra provider AI, độ tương đồng và audit logs</span>
                 </div>
-                <span className="tag tag-admin">Cài đặt</span>
+                <Badge variant="neutral" size="sm">Quản trị</Badge>
               </button>
-            </div>
-          </article>
-        </section>
-        <section className="panel queue-panel">
-          <div className="panel-heading queue-heading">
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Hàng Đợi Câu Hỏi Mới Cần Xử Lý */}
+        <Card className="bento-queue-section">
+          <CardHeader className="bento-panel-header">
             <div>
-              <h2>
-                Hàng đợi chưa trả lời{" "}
-                <span className="count-badge">{filteredQueue.length}</span>
-              </h2>
-              <p>Câu hỏi đang chờ câu trả lời kỹ thuật đã xác minh</p>
+              <div className="bento-title-with-badge">
+                <CardTitle>Hàng đợi chuyên gia cần xử lý</CardTitle>
+                <Badge variant="warning" size="sm">
+                  {queue.length} câu hỏi
+                </Badge>
+              </div>
+              <CardDescription>
+                Các câu hỏi mà trợ lý chưa đủ độ tin cậy để tự động phản hồi
+              </CardDescription>
             </div>
-            <div className="range-actions">
-              <button
-                className="button secondary small"
-                onClick={() => router.push("/unanswered")}
-              >
-                Mở hàng đợi →
-              </button>
-            </div>
-          </div>
-          <div className="filter-row">
-            <label className="dashboard-queue-search">
-              <span>Tìm trong hàng đợi</span>
-              <input
+            <div className="bento-queue-toolbar">
+              <Input
+                placeholder="Tìm câu hỏi, người tạo, mã lý do…"
                 value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Tìm câu hỏi, người gửi hoặc nguyên nhân"
+                onChange={(e) => setSearch(e.target.value)}
+                className="bento-search-input"
               />
-            </label>
-            <button className="filter active">
-              Tất cả <span>{queue.length}</span>
-            </button>
-            <button
-              className="filter"
-              onClick={() => router.push("/unanswered?status=new")}
-            >
-              Mới{" "}
-              <span>
-                {queue.filter((item) => item.status === "new").length}
-              </span>
-            </button>
-            <button
-              className="filter"
-              onClick={() => router.push("/unanswered?status=in_review")}
-            >
-              Đang xử lý
-            </button>
-          </div>
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Câu hỏi / phiếu</th>
-                  <th>Người gửi</th>
-                  <th>Độ tin cậy</th>
-                  <th>Nguyên nhân</th>
-                  <th>Trạng thái</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {filteredQueue.length ? (
-                  filteredQueue.map((item) => (
-                    <tr key={item.id}>
-                      <td>
-                        <strong>{item.original_question}</strong>
-                        <span className="ticket-id">
-                          {item.id.slice(0, 8)} ·{" "}
-                          {new Date(item.created_at).toLocaleString("vi-VN")}
-                        </span>
-                      </td>
-                      <td>{item.creator}</td>
-                      <td>
-                        <span className="confidence">
-                          {Math.round((item.retrieval_score ?? 0) * 100)}%
-                        </span>
-                      </td>
-                      <td>
-                        <span className="category">
-                          {item.reason_code === "missing_knowledge"
-                            ? "Thiếu tài liệu"
-                            : "Độ tin cậy thấp"}
-                        </span>
-                      </td>
-                      <td>
-                        <span className="status status-amber">
-                          {item.status === "new" ? "Mới" : item.status}
-                        </span>
-                      </td>
-                      <td>
-                        <button
-                          className="row-action"
-                          onClick={() => router.push(`/review?id=${item.id}`)}
-                        >
-                          Rà soát →
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={6}>Chưa có câu hỏi nào trong hàng đợi.</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
-        <section className="panel articles-panel">
-          <div className="panel-heading">
-            <div>
-              <h2>Kho kiến thức</h2>
-              <p>Tạo, rà soát và xuất bản nguồn cho trợ lý</p>
-            </div>
-            <button
-              className="text-button"
-              onClick={() => router.push("/knowledge-base")}
-            >
-              Duyệt bài viết →
-            </button>
-          </div>
-          <div className="article-grid">
-            <article className="article-card">
-              <div className="article-icon"><NavigationIcon name="knowledge" /></div>
-              <div>
-                <strong>Thêm bài viết mới</strong>
-                <span>Chia nhỏ và lập chỉ mục tự động</span>
-                <small>
-                  Sẵn sàng tạo <b>•</b> Có phân quyền
-                </small>
-              </div>
-              <button
-                onClick={() => router.push("/knowledge-base?new=1")}
-                aria-label="Thêm bài viết"
-              >
-                ↗
-              </button>
-            </article>
-            <article className="article-card">
-              <div className="article-icon"><NavigationIcon name="queue" /></div>
-              <div>
-                <strong>Rà soát câu hỏi chờ</strong>
-                <span>Xuất bản câu trả lời đã được duyệt</span>
-                <small>
-                  {summary.unanswered_open ?? 0} tác vụ <b>•</b> Cần xử lý
-                </small>
-              </div>
-              <button
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={() => router.push("/unanswered")}
-                aria-label="Mở hàng đợi"
               >
-                ↗
-              </button>
-            </article>
-            <article className="article-card">
-              <div className="article-icon"><NavigationIcon name="settings" /></div>
-              <div>
-                <strong>Nhà cung cấp AI</strong>
-                <span>Quản lý kết nối và chuyển đổi dự phòng</span>
-                <small>{summary.enabled_providers ?? 0} đang bật</small>
-              </div>
-              <button
-                onClick={() => router.push("/settings")}
-                aria-label="Mở cài đặt"
-              >
-                ↗
-              </button>
-            </article>
-          </div>
-        </section>
-        <footer className="footer-note">
-          <span>Trợ lý phản hồi v0.1</span>
-          <span>Kho tri thức được lập chỉ mục tự động</span>
-        </footer>
+                Xem tất cả →
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent style={{ padding: 0 }}>
+            {filteredQueue.length === 0 ? (
+              <EmptyState
+                title="Không có câu hỏi nào trong hàng đợi"
+                description={
+                  search
+                    ? "Không tìm thấy câu hỏi khớp với từ khóa tìm kiếm."
+                    : "Hệ thống đang hoạt động hoàn hảo, mọi câu hỏi đều có căn cứ."
+                }
+              />
+            ) : (
+              <TableWrapper>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Câu hỏi gốc</TableHead>
+                      <TableHead>Người tạo</TableHead>
+                      <TableHead>Lý do</TableHead>
+                      <TableHead>Độ tương đồng</TableHead>
+                      <TableHead>Trạng thái</TableHead>
+                      <TableHead style={{ textAlign: "right" }}>Thao tác</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredQueue.slice(0, 5).map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell>
+                          <strong className="bento-table-lead">
+                            {item.original_question}
+                          </strong>
+                          <small className="bento-table-sub">
+                            Mã: {item.id.slice(0, 8)} • Ngày tạo:{" "}
+                            {new Date(item.created_at).toLocaleDateString("vi-VN")}
+                          </small>
+                        </TableCell>
+                        <TableCell>{item.creator}</TableCell>
+                        <TableCell>
+                          <Badge variant="neutral" size="sm">
+                            {item.reason_code}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {item.retrieval_score !== null
+                            ? `${Math.round(item.retrieval_score * 100)}%`
+                            : "—"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              item.status === "open"
+                                ? "warning"
+                                : item.status === "resolved"
+                                ? "success"
+                                : "neutral"
+                            }
+                            size="sm"
+                          >
+                            {item.status === "open"
+                              ? "Chờ xử lý"
+                              : item.status === "resolved"
+                              ? "Đã giải quyết"
+                              : item.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell style={{ textAlign: "right" }}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => router.push(`/unanswered`)}
+                          >
+                            Xử lý
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableWrapper>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </AppShell>
   );

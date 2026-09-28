@@ -1,2 +1,5 @@
-import OperationsScreen from "@/components/operations";
-export default function KnowledgeBasePage() { return <OperationsScreen screen="knowledge" />; }
+import { KnowledgeScreen } from "@/components/screens/knowledge-screen";
+
+export default function KnowledgeBasePage() {
+  return <KnowledgeScreen />;
+}

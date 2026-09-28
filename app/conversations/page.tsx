@@ -1,2 +1,5 @@
-import OperationsScreen from "@/components/operations";
-export default function ConversationsPage() { return <OperationsScreen screen="conversations" />; }
+import { ConversationsScreen } from "@/components/screens/conversations-screen";
+
+export default function ConversationsPage() {
+  return <ConversationsScreen />;
+}

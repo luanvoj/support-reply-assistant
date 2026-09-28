@@ -1,2 +1,5 @@
-import OperationsScreen from "@/components/operations";
-export default function SettingsPage() { return <OperationsScreen screen="settings" />; }
+import { SettingsScreen } from "@/components/screens/settings-screen";
+
+export default function SettingsPage() {
+  return <SettingsScreen />;
+}
