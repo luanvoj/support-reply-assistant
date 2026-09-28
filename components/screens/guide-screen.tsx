@@ -13,6 +13,10 @@ import {
   IconRoleAdmin,
   IconDataProtection,
   IconTipLight,
+  IconPillarAssistant,
+  IconPillarRetrieval,
+  IconPillarProviders,
+  IconPillarSecurity,
 } from "@/components/ui/guide-icons";
 
 type Role = "sales" | "technical" | "admin";
@@ -34,7 +38,7 @@ const roleData: Record<Role, RoleDetails> = {
   sales: {
     label: "Nhân viên hỗ trợ & Tư vấn",
     badge: "Người dùng nghiệp vụ",
-    tagline: "Tra cứu chuẩn xác — Phản hồi tự tin dựa trên tri thức đã kiểm duyệt",
+    tagline: "Tra cứu chuẩn xác, phản hồi tự tin dựa trên tri thức đã kiểm duyệt",
     description:
       "Bạn sử dụng Trợ lý AI để nhanh chóng tìm câu trả lời có căn cứ xác thực từ kho bài viết nội bộ, xem rõ nguồn trích dẫn và theo dõi tiến độ các câu hỏi được chuyển giao chuyên gia.",
     steps: [
@@ -64,7 +68,7 @@ const roleData: Record<Role, RoleDetails> = {
   technical: {
     label: "Chuyên gia kỹ thuật & Thẩm định",
     badge: "Chuyên gia nghiệp vụ",
-    tagline: "Giải quyết ca khó — Đóng gói kinh nghiệm thành tri thức tái sử dụng",
+    tagline: "Giải quyết ca khó, đóng gói kinh nghiệm thành tri thức tái sử dụng",
     description:
       "Ngoài việc sử dụng Trợ lý, bạn là người tiếp nhận các câu hỏi mà AI chưa đủ căn cứ tự tin phản hồi, thẩm định câu trả lời chuyên sâu và đưa vào kho tri thức để nhân bản năng lực cho toàn đội ngũ.",
     steps: [
@@ -94,7 +98,7 @@ const roleData: Record<Role, RoleDetails> = {
   admin: {
     label: "Quản trị viên hệ thống",
     badge: "Toàn quyền vận hành",
-    tagline: "Thiết lập ranh giới an toàn — Kiểm soát toàn bộ vòng lặp AI & Tri thức",
+    tagline: "Thiết lập ranh giới an toàn, kiểm soát toàn bộ vòng lặp AI & Tri thức",
     description:
       "Bạn là người định hình quy chuẩn vận hành của toàn bộ hệ thống: kiểm soát nhà cung cấp AI, thiết lập ngưỡng an toàn chống bịa đặt, quản lý kho bài viết và phân quyền bảo mật tài khoản.",
     steps: [
@@ -125,29 +129,45 @@ const roleData: Record<Role, RoleDetails> = {
 
 const settingSpecs = [
   {
+    id: "assistant",
     category: "Cấu hình Trợ lý AI",
     badge: "Persona & Prompting",
+    color: "blue",
+    badgeVariant: "info" as const,
+    Icon: IconPillarAssistant,
     focus: "Giọng điệu, vai trò và hướng dẫn bổ sung",
     impact:
       "Điều chỉnh phong cách giao tiếp chuyên nghiệp, cách xưng hô và các lưu ý đặc thù của doanh nghiệp. Lưu ý: Không thể dùng cấu hình này để ép AI bỏ qua quy tắc đối soát an toàn.",
   },
   {
+    id: "retrieval",
     category: "Tri thức & Tìm kiếm (RAG)",
     badge: "Retrieval & Policy",
+    color: "emerald",
+    badgeVariant: "success" as const,
+    Icon: IconPillarRetrieval,
     focus: "Kho nguồn, xếp hạng đoạn trích, ngưỡng phản hồi và từ khóa nhạy cảm",
     impact:
       "Quyết định bài viết nào đủ điều kiện trích xuất, mức điểm tương đồng tối thiểu để AI được phép trả lời, và những chủ đề nào phải lập tức chuyển giao cho chuyên gia.",
   },
   {
+    id: "providers",
     category: "Nhà cung cấp AI (LLM Provider)",
     badge: "Dual-Engine Switching",
+    color: "purple",
+    badgeVariant: "brand" as const,
+    Icon: IconPillarProviders,
     focus: "Lưu cấu hình riêng biệt và bật/tắt an toàn cho từng Engine",
     impact:
       "Hỗ trợ cả Google Gemini và Azure OpenAI. Cả hai có thể cùng lưu cấu hình, nhưng tại một thời điểm chỉ một Engine được hoạt động. Tắt cả hai hệ thống vẫn tra cứu tài liệu bình thường.",
   },
   {
+    id: "users",
     category: "Quản trị người dùng & Bảo mật",
     badge: "RBAC & 2FA Security",
+    color: "amber",
+    badgeVariant: "warning" as const,
+    Icon: IconPillarSecurity,
     focus: "Phân cấp tài khoản, phân quyền thao tác và thu hồi phiên",
     impact:
       "Phân quyền chính xác: Sales (chỉ xem & tra cứu), Technical (xử lý ticket, sửa kho tri thức), Admin (toàn quyền hệ thống). Quản trị viên có thể đặt lại mật khẩu và cưỡng chế thu hồi phiên.",
@@ -186,7 +206,7 @@ export function GuideScreen() {
               <span className="bento-pulse-dot" /> CẨM NANG VẬN HÀNH & NGUYÊN TẮC AN TOÀN
             </div>
             <h1 className="bento-guide-hero-title">
-              Hiểu rõ căn cứ trước khi phản hồi khách hàng.
+              Hiểu rõ căn cứ trước khi phản hồi.
             </h1>
             <p className="bento-guide-hero-subtitle">
               Trợ lý phản hồi hoạt động dựa trên cơ chế <strong>Grounding đối soát tri thức</strong>:
@@ -337,7 +357,7 @@ export function GuideScreen() {
         <section className="bento-guide-section" id="luong-ai">
           <div className="bento-section-head">
             <span className="bento-section-step">PHẦN 02</span>
-            <h2 className="bento-section-title">Sơ đồ Luồng AI Grounding: Trợ lý xử lý câu hỏi như thế nào?</h2>
+            <h2 className="bento-section-title">Trợ lý xử lý câu hỏi như thế nào?</h2>
             <p className="bento-section-desc">
               AI không tự do đoán mò thông tin. Mọi câu hỏi đều phải trải qua chu trình kiểm chứng 3 bước độc lập dưới đây:
             </p>
@@ -407,7 +427,6 @@ export function GuideScreen() {
 
           {/* 3 Kịch bản đầu ra thực tế — Lưới Bento 3 Card song song đồng nhất với Phần 1 và Phần 3 */}
           <div className="bento-outcomes-section-header">
-            <span className="bento-outcomes-sub-kicker">3 KỊCH BẢN ĐẦU RA THỰC TẾ</span>
             <h3 className="bento-outcomes-sub-title">Trợ lý phân nhánh kết quả như thế nào?</h3>
             <p className="bento-outcomes-sub-desc">
               Dựa trên kết quả đối soát tri thức và ngưỡng an toàn, hệ thống sẽ trả về một trong ba trạng thái minh bạch dưới đây:
@@ -525,7 +544,7 @@ export function GuideScreen() {
         <section className="bento-guide-section" id="thang-diem">
           <div className="bento-section-head">
             <span className="bento-section-step">PHẦN 03</span>
-            <h2 className="bento-section-title">Điểm căn cứ: Hiểu đúng bản chất để ra quyết định</h2>
+            <h2 className="bento-section-title">Hiểu đúng bản chất để ra quyết định</h2>
             <p className="bento-section-desc">
               Điểm số cao thể hiện <em>mức độ phù hợp của bằng chứng tài liệu</em>, không có nghĩa là “đúng tuyệt đối” trong mọi hoàn cảnh.
             </p>
@@ -607,28 +626,65 @@ export function GuideScreen() {
           </div>
 
           <div className="bento-merge-lifecycle">
-            <div className="bento-lifecycle-step">
-              <div className="bento-lifecycle-badge">01. LỌC PHẠM VI</div>
+            {/* Bước 1 */}
+            <div className="bento-lifecycle-step step-1">
+              <div className="bento-lifecycle-top">
+                <div className="bento-lifecycle-badge">
+                  <span className="bento-lifecycle-dot" /> 01. LỌC PHẠM VI
+                </div>
+              </div>
               <h4>Chọn nhóm bài viết cần rà soát</h4>
               <p>
                 Chọn nhóm dịch vụ (ví dụ: DNS, Hosting, Email), đặt số lượng bài viết tối đa và ngưỡng tương đồng để bắt đầu quét.
               </p>
             </div>
 
-            <div className="bento-lifecycle-arrow" aria-hidden="true">→</div>
+            {/* Connector 1 */}
+            <div className="bento-lifecycle-connector connector-1" aria-hidden="true">
+              <div className="bento-lifecycle-line">
+                <span className="bento-lifecycle-particle" />
+              </div>
+              <div className="bento-lifecycle-arrow-circle">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 12h14" />
+                  <path d="m12 5 7 7-7 7" />
+                </svg>
+              </div>
+            </div>
 
-            <div className="bento-lifecycle-step">
-              <div className="bento-lifecycle-badge">02. AI QUÉT & ĐỐI CHIẾU</div>
+            {/* Bước 2 */}
+            <div className="bento-lifecycle-step step-2">
+              <div className="bento-lifecycle-top">
+                <div className="bento-lifecycle-badge">
+                  <span className="bento-lifecycle-dot" /> 02. AI QUÉT & ĐỐI CHIẾU
+                </div>
+              </div>
               <h4>Phát hiện các bài trùng nội dung</h4>
               <p>
                 Agent tự động so khớp ngữ nghĩa giữa các bài, phát hiện nội dung cùng ý nhưng khác câu chữ và tạo bản nháp gộp.
               </p>
             </div>
 
-            <div className="bento-lifecycle-arrow" aria-hidden="true">→</div>
+            {/* Connector 2 */}
+            <div className="bento-lifecycle-connector connector-2" aria-hidden="true">
+              <div className="bento-lifecycle-line">
+                <span className="bento-lifecycle-particle delay" />
+              </div>
+              <div className="bento-lifecycle-arrow-circle">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 12h14" />
+                  <path d="m12 5 7 7-7 7" />
+                </svg>
+              </div>
+            </div>
 
-            <div className="bento-lifecycle-step">
-              <div className="bento-lifecycle-badge">03. DUYỆT BẢN GỘP</div>
+            {/* Bước 3 */}
+            <div className="bento-lifecycle-step step-3">
+              <div className="bento-lifecycle-top">
+                <div className="bento-lifecycle-badge">
+                  <span className="bento-lifecycle-dot" /> 03. DUYỆT BẢN GỘP
+                </div>
+              </div>
               <h4>Con người kiểm duyệt trước khi lưu</h4>
               <p>
                 Chuyên gia hoặc Quản trị viên xem bảng đối chiếu (Diff), kiểm tra nội dung trước khi bấm duyệt xuất bản bài mới.
@@ -652,27 +708,38 @@ export function GuideScreen() {
         <section className="bento-guide-section" id="cai-dat">
           <div className="bento-section-head">
             <span className="bento-section-step">PHẦN 05</span>
-            <h2 className="bento-section-title">Danh mục tác động của các Cấu hình Quản trị</h2>
+            <h2 className="bento-section-title">Cấu hình Quản trị</h2>
             <p className="bento-section-desc">
               Chỉ Quản trị viên hệ thống có quyền truy cập và thay đổi các cấu hình này. Mỗi tham số đều tác động trực tiếp đến hành vi của Trợ lý:
             </p>
           </div>
 
           <div className="bento-settings-cards-grid">
-            {settingSpecs.map((item) => (
-              <div className="bento-setting-spec-card" key={item.category}>
-                <div className="bento-spec-head">
-                  <Badge variant="neutral" size="sm">
-                    {item.badge}
-                  </Badge>
-                  <h4 className="bento-spec-title">{item.category}</h4>
+            {settingSpecs.map((item) => {
+              const PillarIcon = item.Icon;
+              return (
+                <div
+                  className={`bento-setting-spec-card pillar-${item.color}`}
+                  key={item.id}
+                >
+                  <div className="bento-spec-head">
+                    <div className="bento-spec-badge-group">
+                      <span className={`bento-pillar-icon-box ${item.color}`}>
+                        <PillarIcon size={18} />
+                      </span>
+                      <Badge variant={item.badgeVariant} size="sm">
+                        {item.badge}
+                      </Badge>
+                    </div>
+                    <h4 className="bento-spec-title">{item.category}</h4>
+                  </div>
+                  <div className="bento-spec-focus">
+                    <strong>Trọng tâm:</strong> {item.focus}
+                  </div>
+                  <p className="bento-spec-impact">{item.impact}</p>
                 </div>
-                <div className="bento-spec-focus">
-                  <strong>Trọng tâm:</strong> {item.focus}
-                </div>
-                <p className="bento-spec-impact">{item.impact}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {canManageSettings && (
@@ -693,9 +760,8 @@ export function GuideScreen() {
             ==================================================================== */}
         <footer className="bento-guide-closing-banner">
           <div className="bento-closing-text">
-            <span className="bento-badge-eyebrow">TỔNG KẾT VẬN HÀNH</span>
             <h3 className="bento-closing-title">
-              Minh bạch với điều bạn biết — và có trách nhiệm với điều cần xác nhận.
+              Minh bạch với điều bạn biết và có trách nhiệm với điều cần xác nhận.
             </h3>
             <p className="bento-closing-desc">
               Mọi tính năng trong bản hướng dẫn này đều phản ánh chính xác trạng thái hoạt động thực tế của Trợ lý. Quyền hạn tài khoản của bạn sẽ quyết định những tác vụ có thể thực thi.

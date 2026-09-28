@@ -331,3 +331,187 @@ export function IconTipLight({ size = 14, className, ...props }: IconProps) {
     </svg>
   );
 }
+
+/** Icon Trụ cột 01: Cấu hình Trợ lý AI (Persona & Prompting) */
+export function IconPillarAssistant({ size = 20, className, ...props }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      aria-hidden="true"
+      {...props}
+    >
+      <rect
+        x="3"
+        y="5"
+        width="14"
+        height="14"
+        rx="3.5"
+        fill="currentColor"
+        fillOpacity="0.15"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+      <circle cx="7.5" cy="11.5" r="1.25" fill="currentColor" />
+      <circle cx="12.5" cy="11.5" r="1.25" fill="currentColor" />
+      <path
+        d="M8 15C8.8 15.6 11.2 15.6 12 15"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+      {/* AI Sparkle */}
+      <path
+        d="M19 2L19.8 4.2L22 5L19.8 5.8L19 8L18.2 5.8L16 5L18.2 4.2L19 2Z"
+        fill="currentColor"
+      />
+      <path
+        d="M2 12H3M17 12H18M10 2V5"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+/** Icon Trụ cột 02: Tri thức & Tìm kiếm RAG (Retrieval & Policy) */
+export function IconPillarRetrieval({ size = 20, className, ...props }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      aria-hidden="true"
+      {...props}
+    >
+      <ellipse
+        cx="11"
+        cy="5.5"
+        rx="7"
+        ry="2.5"
+        fill="currentColor"
+        fillOpacity="0.2"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+      <path
+        d="M4 5.5V11.5C4 12.88 7.13 14 11 14C11.5 14 11.98 13.98 12.44 13.94"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+      <path
+        d="M4 11.5V17.5C4 18.88 7.13 20 11 20C11.8 20 12.57 19.95 13.27 19.85"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+      {/* Kính lúp tìm kiếm RAG */}
+      <circle
+        cx="17"
+        cy="15"
+        r="3.5"
+        fill="currentColor"
+        fillOpacity="0.25"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+      <path
+        d="M19.5 17.5L22 20"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+/** Icon Trụ cột 03: Nhà cung cấp AI (Dual-Engine LLM Provider) */
+export function IconPillarProviders({ size = 20, className, ...props }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      aria-hidden="true"
+      {...props}
+    >
+      {/* Chipset Core 1 */}
+      <rect
+        x="3"
+        y="6"
+        width="11"
+        height="11"
+        rx="2.5"
+        fill="currentColor"
+        fillOpacity="0.2"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+      {/* Chipset Core 2 (Overlay Dual Engine) */}
+      <rect
+        x="10"
+        y="7"
+        width="11"
+        height="11"
+        rx="2.5"
+        fill="currentColor"
+        fillOpacity="0.35"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+      {/* Chân tiếp xúc CPU */}
+      <path
+        d="M6 3V6M10 3V6M6 17V20M10 17V20M1 9H3M1 13H3M21 10H23M21 14H23M14 4V7M18 4V7M14 18V21M18 18V21"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+      {/* Điểm nhân xử lý */}
+      <circle cx="15.5" cy="12.5" r="1.5" fill="currentColor" />
+    </svg>
+  );
+}
+
+/** Icon Trụ cột 04: Quản trị người dùng & Bảo mật (RBAC & 2FA) */
+export function IconPillarSecurity({ size = 20, className, ...props }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      aria-hidden="true"
+      {...props}
+    >
+      {/* Khiên bảo mật */}
+      <path
+        d="M12 3L4 6.5V11.5C4 16.5 7.4 20.8 12 22C16.6 20.8 20 16.5 20 11.5V6.5L12 3Z"
+        fill="currentColor"
+        fillOpacity="0.18"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      {/* Dấu tích xác thực 2FA */}
+      <path
+        d="M8.5 12.5L10.8 14.8L15.5 10"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
