@@ -124,6 +124,22 @@ export function QueueScreen() {
       ? "Yêu cầu hỗ trợ thêm"
       : "Độ tin cậy thấp";
 
+  const statusLabel = (status: string) => {
+    switch (status) {
+      case "new":
+        return "Mới";
+      case "in_progress":
+      case "open":
+        return "Đang xử lý";
+      case "resolved":
+        return "Đã giải quyết";
+      case "closed":
+        return "Đã đóng";
+      default:
+        return status;
+    }
+  };
+
   const open = (ticket: Ticket) => {
     setSelectedId(ticket.id);
     setSelectedTicket(ticket);
@@ -203,8 +219,12 @@ export function QueueScreen() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "var(--space-3)", marginBottom: "var(--space-5)" }}>
         <div className="ui-card ui-card-subtle" style={{ padding: "var(--space-3)" }}>
           <small className="bento-table-sub" style={{ textTransform: "uppercase", fontWeight: 700 }}>Trạng thái</small>
-          <Badge variant="warning" size="sm" style={{ marginTop: "4px" }}>
-            {selectedTicket.status === "new" ? "Mới" : selectedTicket.status}
+          <Badge
+            variant={selectedTicket.status === "resolved" ? "success" : "warning"}
+            size="sm"
+            style={{ marginTop: "4px" }}
+          >
+            {statusLabel(selectedTicket.status)}
           </Badge>
         </div>
         <div className="ui-card ui-card-subtle" style={{ padding: "var(--space-3)" }}>
@@ -343,11 +363,35 @@ export function QueueScreen() {
                             {Math.round((item.retrieval_score ?? 0) * 100)}%
                           </Badge>
                         </TableCell>
-                        <TableCell>{reasonLabel(item)}</TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              item.reason_code === "expert_required"
+                                ? "brand"
+                                : item.reason_code === "missing_knowledge"
+                                ? "danger"
+                                : item.reason_code === "expert_requested"
+                                ? "info"
+                                : "warning"
+                            }
+                            size="sm"
+                          >
+                            {reasonLabel(item)}
+                          </Badge>
+                        </TableCell>
                         <TableCell>{item.creator}</TableCell>
                         <TableCell>
-                          <Badge variant="neutral" size="sm">
-                            {item.status === "new" ? "Mới" : item.status}
+                          <Badge
+                            variant={
+                              item.status === "new" || item.status === "open"
+                                ? "warning"
+                                : item.status === "resolved"
+                                ? "success"
+                                : "neutral"
+                            }
+                            size="sm"
+                          >
+                            {statusLabel(item.status)}
                           </Badge>
                         </TableCell>
                         <TableCell style={{ textAlign: "right" }}>

@@ -2106,7 +2106,15 @@ function LegacyQueueScreen() {
                     <td>{item.creator}</td>
                     <td>
                       <span className="warning-pill">
-                        {item.status === "new" ? "Mới" : item.status}
+                        {item.status === "new"
+                          ? "Mới"
+                          : item.status === "in_progress" || item.status === "open"
+                          ? "Đang xử lý"
+                          : item.status === "resolved"
+                          ? "Đã giải quyết"
+                          : item.status === "closed"
+                          ? "Đã đóng"
+                          : item.status}
                       </span>
                     </td>
                     <td>
@@ -2349,7 +2357,7 @@ function QueueScreen() {
         <button className="ops-button" onClick={close}>Đóng xử lý</button>
       </header>
       <div className="expert-request-meta" aria-label="Thông tin yêu cầu">
-        <div><small>Trạng thái</small><span className="warning-pill">{selectedTicket.status === "new" ? "Mới" : selectedTicket.status}</span></div>
+        <div><small>Trạng thái</small><span className="warning-pill">{selectedTicket.status === "new" ? "Mới" : selectedTicket.status === "in_progress" || selectedTicket.status === "open" ? "Đang xử lý" : selectedTicket.status === "resolved" ? "Đã giải quyết" : selectedTicket.status === "closed" ? "Đã đóng" : selectedTicket.status}</span></div>
         <div><small>Độ tin cậy</small><strong>{Math.round((selectedTicket.retrieval_score ?? 0) * 100)}%</strong></div>
         <div><small>Người tạo</small><strong>{selectedTicket.creator}</strong></div>
         <div><small>Thời điểm tạo</small><strong>{new Date(selectedTicket.created_at).toLocaleString("vi-VN")}</strong></div>
@@ -2454,7 +2462,15 @@ function QueueScreen() {
                       <td>{item.creator}</td>
                       <td>
                         <span className="warning-pill">
-                          {item.status === "new" ? "Mới" : item.status}
+                          {item.status === "new"
+                            ? "Mới"
+                            : item.status === "in_progress" || item.status === "open"
+                            ? "Đang xử lý"
+                            : item.status === "resolved"
+                            ? "Đã giải quyết"
+                            : item.status === "closed"
+                            ? "Đã đóng"
+                            : item.status}
                         </span>
                       </td>
                       <td>

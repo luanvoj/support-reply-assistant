@@ -108,13 +108,46 @@ export default function Dashboard() {
       );
   }, []);
 
+  const getReasonLabel = (reasonCode: string) => {
+    switch (reasonCode) {
+      case "missing_knowledge":
+        return "Thiếu tài liệu";
+      case "expert_required":
+        return "Cần chuyên gia xác nhận";
+      case "expert_requested":
+        return "Yêu cầu hỗ trợ thêm";
+      case "low_confidence":
+        return "Độ tin cậy thấp";
+      default:
+        return reasonCode;
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "new":
+      case "open":
+        return "Chờ xử lý";
+      case "in_progress":
+        return "Đang xử lý";
+      case "resolved":
+        return "Đã giải quyết";
+      case "closed":
+        return "Đã đóng";
+      default:
+        return status;
+    }
+  };
+
   const filteredQueue = useMemo(
     () =>
-      queue.filter((item) =>
-        `${item.original_question} ${item.creator} ${item.reason_code}`
+      queue.filter((item) => {
+        const reasonText = getReasonLabel(item.reason_code);
+        const statusText = getStatusLabel(item.status);
+        return `${item.original_question} ${item.creator} ${item.reason_code} ${reasonText} ${statusText}`
           .toLowerCase()
-          .includes(search.toLowerCase())
-      ),
+          .includes(search.toLowerCase());
+      }),
     [queue, search]
   );
 
@@ -414,8 +447,19 @@ export default function Dashboard() {
                         </TableCell>
                         <TableCell>{item.creator}</TableCell>
                         <TableCell>
-                          <Badge variant="neutral" size="sm">
-                            {item.reason_code}
+                          <Badge
+                            variant={
+                              item.reason_code === "expert_required"
+                                ? "brand"
+                                : item.reason_code === "missing_knowledge"
+                                ? "danger"
+                                : item.reason_code === "expert_requested"
+                                ? "info"
+                                : "warning"
+                            }
+                            size="sm"
+                          >
+                            {getReasonLabel(item.reason_code)}
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -426,7 +470,7 @@ export default function Dashboard() {
                         <TableCell>
                           <Badge
                             variant={
-                              item.status === "open"
+                              item.status === "open" || item.status === "new"
                                 ? "warning"
                                 : item.status === "resolved"
                                 ? "success"
@@ -434,11 +478,7 @@ export default function Dashboard() {
                             }
                             size="sm"
                           >
-                            {item.status === "open"
-                              ? "Chờ xử lý"
-                              : item.status === "resolved"
-                              ? "Đã giải quyết"
-                              : item.status}
+                            {getStatusLabel(item.status)}
                           </Badge>
                         </TableCell>
                         <TableCell style={{ textAlign: "right" }}>

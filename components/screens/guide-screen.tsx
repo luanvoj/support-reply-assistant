@@ -77,7 +77,7 @@ const roleData: Record<Role, RoleDetails> = {
         title: "Tiếp nhận & Phân loại yêu cầu tồn đọng",
         description:
           "Truy cập Hàng đợi chuyên gia, ưu tiên các câu hỏi có mức độ khẩn cấp, câu hỏi chưa có tài liệu trong kho hoặc có chính sách bắt buộc chuyên gia xác nhận.",
-        tip: "Mẹo: Xem nguyên nhân (reason_code) để biết hệ thống thiếu dữ liệu hay do điểm tin cậy thấp.",
+        tip: "Mẹo: Xem lý do phân loại để biết hệ thống thiếu tài liệu hay do điểm tin cậy thấp.",
       },
       {
         number: "02",
@@ -519,7 +519,7 @@ export function GuideScreen() {
               </div>
 
               <p className="bento-outcome-text">
-                Khi điểm tương đồng dưới ngưỡng, câu hỏi thuộc chủ đề nhạy cảm (như bảo mật, thanh toán), hoặc bài viết có cờ <code>expert_required</code>, hệ thống giải thích lý do cụ thể và lập yêu cầu trong Hàng đợi để chuyên gia xử lý.
+                Khi điểm tương đồng dưới ngưỡng, câu hỏi thuộc chủ đề nhạy cảm (như bảo mật, thanh toán), hoặc bài viết có chính sách <strong>Cần chuyên gia xác nhận</strong>, hệ thống giải thích lý do cụ thể và lập yêu cầu trong Hàng đợi để chuyên gia xử lý.
               </p>
 
               <div className="bento-outcome-mock warning-mock">
