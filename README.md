@@ -76,12 +76,12 @@ Quy trình gộp bài viết cũng giữ nguyên nguyên tắc này: Agent chỉ
 
 ## Công nghệ và kiến trúc mã nguồn
 
-- **Giao diện và máy chủ ứng dụng:** Next.js 15, React 19, TypeScript.
+- **Giao diện và máy chủ ứng dụng:** Next.js 16, React 19, TypeScript.
 - **Cơ sở dữ liệu:** PostgreSQL tương thích, hỗ trợ triển khai với Supabase qua biến môi trường.
 - **AI provider:** Google Gemini hoặc Azure OpenAI; tại một thời điểm chỉ một Agent được bật.
 - **Tìm kiếm tri thức:** truy xuất theo từ khóa/hybrid, xếp hạng lại khi Agent sẵn sàng, ưu tiên tài liệu đã xác minh, còn hiệu lực và đúng chính sách.
-- **Bảo mật:** phiên đăng nhập `httpOnly`, phân quyền theo vai trò ở server, mật khẩu băm, khóa provider mã hóa ở server, TOTP tùy chọn và ảnh đại diện được kiểm tra/chuẩn hóa. Quản trị viên có thể khôi phục quyền truy cập cho tài khoản đang hoạt động bằng cách đặt lại mật khẩu hoặc tắt 2FA; mỗi thao tác đều thu hồi phiên cũ và được lưu vết, không lộ mật khẩu hay mã TOTP.
-- **Nhập dữ liệu:** CSV/XLSX cho nội dung văn bản; không lập chỉ mục tệp hình ảnh hoặc tài liệu đa phương tiện.
+- **Bảo mật:** phiên đăng nhập `httpOnly`, phân quyền theo vai trò ở server, mật khẩu băm, khóa provider mã hóa ở server, TOTP tùy chọn và ảnh đại diện được kiểm tra/chuẩn hóa. Login/MFA được rate limit trong PostgreSQL để chống dò mật khẩu và OTP; `TRUST_PROXY=true` chỉ dùng khi reverse proxy kiểm soát forwarding header.
+- **Nhập dữ liệu:** CSV/XLSX cho nội dung văn bản, giới hạn 5 MB và 200 dòng mỗi lần, chỉ đọc worksheet đầu tiên; không lập chỉ mục tệp hình ảnh hoặc tài liệu đa phương tiện.
 
 Các thành phần chính trong mã nguồn:
 
@@ -97,6 +97,7 @@ docs/         API, triển khai, bảo mật và tài liệu vận hành
 ## Bảo mật và vận hành
 
 - Khóa API của provider được mã hóa ở máy chủ và không trả về trình duyệt.
+- Login và MFA trả `429` kèm `Retry-After` khi vượt giới hạn; production vẫn cần edge/WAF rate limit bổ sung.
 - Quyền giao diện chỉ hỗ trợ trải nghiệm; mọi endpoint quan trọng vẫn kiểm tra quyền ở server.
 - Ảnh đại diện chỉ chủ tài khoản được đọc, được kiểm tra nội dung và chuẩn hóa thành WebP trước khi lưu.
 - Tài khoản bị vô hiệu hóa có thời gian lưu giữ trước khi làm sạch; dữ liệu tri thức và yêu cầu đang mở phải được chuyển giao trước đó.
@@ -110,4 +111,4 @@ Sau khi đăng nhập, mở **Hướng dẫn sử dụng** ở sidebar (ngay dư
 
 - [Hợp đồng API](docs/API.md)
 - [Hướng dẫn triển khai](docs/DEPLOYMENT.md)
-- [Báo cáo bảo mật](docs/SECURITY-REPORT-2026-09-27.md)
+- [Báo cáo bảo mật](docs/SECURITY-REPORT-2026-09-28.md)

@@ -54,6 +54,8 @@
 3. Xử lý/accept dependency advisory PostCSS/Next; chủ sở hữu rotate/revoke credential Stitch legacy.
 4. Cân nhắc UI cho `verified-only`, kích thước nhóm gộp và retry batch rõ ràng hơn.
 
+- Plan mới: [hardening xác thực và import tri thức](plans/2026-09-28-auth-throttling-and-import-hardening.md) — khép rate limit login/MFA và thay parser `xlsx` có advisory; Admin MFA vẫn optional trong MVP.
+
 ## Evidence legacy
 
 - [Nhật ký phát triển cũ](../archive/2026-09/legacy-development-log.md) có lịch sử nghiệm thu và checklist stale; không dùng làm nguồn tiến độ mới.

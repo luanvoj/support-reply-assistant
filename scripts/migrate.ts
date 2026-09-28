@@ -295,6 +295,16 @@ async function main() {
     );
     CREATE INDEX IF NOT EXISTS operational_logs_created_idx ON operational_logs(created_at DESC);
     CREATE INDEX IF NOT EXISTS operational_logs_category_idx ON operational_logs(category,created_at DESC);
+    CREATE TABLE IF NOT EXISTS auth_rate_limit_buckets (
+      scope TEXT NOT NULL,
+      key_hash TEXT NOT NULL,
+      window_started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      attempt_count INTEGER NOT NULL DEFAULT 0 CHECK (attempt_count >= 0),
+      blocked_until TIMESTAMPTZ,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      PRIMARY KEY (scope, key_hash)
+    );
+    CREATE INDEX IF NOT EXISTS auth_rate_limit_buckets_expiry_idx ON auth_rate_limit_buckets(updated_at);
   `);
 
   console.log(

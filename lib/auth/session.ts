@@ -1,4 +1,5 @@
 import { SignJWT, jwtVerify } from "jose";
+import { createHmac } from "node:crypto";
 import { cookies } from "next/headers";
 
 import { env } from "@/lib/env";
@@ -49,6 +50,11 @@ export async function getMfaPendingSession(): Promise<SessionPayload | null> {
 }
 
 export async function clearMfaPendingSession() { (await cookies()).delete(MFA_PENDING_COOKIE); }
+
+export async function getMfaPendingSessionFingerprint() {
+  const token = (await cookies()).get(MFA_PENDING_COOKIE)?.value;
+  return token ? createHmac("sha256", env.AUTH_SECRET).update(token).digest("base64url") : null;
+}
 
 export async function getSession(): Promise<SessionPayload | null> {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;

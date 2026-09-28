@@ -27,6 +27,7 @@ Set these values in the Vibe Host secret/environment manager, never in Git:
 | `SECRETS_ENCRYPTION_KEY` | Yes | 32-byte base64 key used for encrypted provider credentials. |
 | `APP_URL` | Yes | Final HTTPS application URL. |
 | `USER_STORAGE_DIR` | Yes | Mount this path to persistent storage; default image path is `/var/lib/support-reply-assistant/users`. |
+| `TRUST_PROXY` | Conditional | Set `true` only behind a trusted proxy that strips and rewrites forwarded-IP headers. |
 | `PORT` | Platform | Defaults to `3000`; Vibe Host may inject it. |
 
 Configure the platform health probe as `GET /api/health` on port `3000` (or its injected `PORT`). Attach the persistent volume at `/var/lib/support-reply-assistant/users` so avatars remain after redeploys. The app container must have one release/migration runner at a time; if Vibe Host supports a **pre-deploy/release command**, prefer `npm run deploy:release` there and use `npm run deploy:start` as the web start command.
@@ -38,6 +39,14 @@ npm run operational-logs:retention -- --apply
 ```
 
 It is safe to run repeatedly and only deletes log rows older than the Admin-configured retention period.
+
+Schedule this separate cleanup task daily after the application migration has run:
+
+```sh
+npm run auth-rate-limits:retention -- --apply
+```
+
+The application enforces login and MFA limits in PostgreSQL, so all web instances share the same counters. Keep an edge/WAF limit as a second layer; do not trust client-supplied forwarding headers unless `TRUST_PROXY=true` is configured with a verified proxy contract.
 
 ## Release checklist
 

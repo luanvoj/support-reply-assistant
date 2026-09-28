@@ -22,21 +22,22 @@
     "knowledge:import-smoke": "tsx scripts/knowledge-import-smoke.ts",
     "db:seed": "tsx scripts/seed.ts",
     "conversations:retention": "tsx scripts/retention.ts",
-    "operational-logs:retention": "tsx scripts/operational-log-retention.ts"
+    "operational-logs:retention": "tsx scripts/operational-log-retention.ts",
+    "auth-rate-limits:retention": "tsx scripts/auth-rate-limit-retention.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.10.4",
     "@types/pg": "^8.11.11",
     "bcryptjs": "^2.4.3",
+    "exceljs": "^4.4.0",
     "jose": "^6.1.0",
-    "next": "^15.5.4",
+    "next": "^16.3.6",
     "otpauth": "^9.4.1",
     "pg": "^8.16.3",
     "qrcode": "^1.5.4",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "sharp": "^0.35.4",
-    "xlsx": "^0.18.5",
     "zod": "^4.1.11"
   },
   "devDependencies": {
@@ -46,5 +47,8 @@
     "@types/react-dom": "^19.1.2",
     "tsx": "^4.19.4",
     "typescript": "^5.8.3"
+  },
+  "overrides": {
+    "uuid": "11.1.1"
   }
 }
