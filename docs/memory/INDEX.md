@@ -2,6 +2,10 @@
 
 ## Snapshot
 
+- Plan mới: [bố cục xử lý Yêu cầu chuyên gia theo Kho kiến thức](plans/2026-09-28-expert-request-top-editor-layout.md) — editor một cột mở trên danh sách khi chọn ticket, giữ deep link/API/RBAC hiện có và bỏ panel xử lý bên phải.
+
+- Plan đang triển khai: [xóa vĩnh viễn yêu cầu chuyên gia mới](plans/2026-09-28-delete-new-expert-requests.md) — Chuyên gia/Admin chỉ xóa ticket `new` chưa review; đồng bộ classification hội thoại và không giữ log chứa nội dung ticket.
+
 - Plan đã triển khai: [landing page Hướng dẫn sử dụng](plans/2026-09-27-user-guide-landing-page.md) — thêm hướng dẫn theo vai trò, sơ đồ Agent/điểm căn cứ/gộp bài và diễn giải Cài đặt theo tác động thực tế; chờ nghiệm thu browser/RBAC.
 
 - Plan đã triển khai: [chuẩn hóa workspace Yêu cầu chuyên gia](plans/2026-09-27-expert-request-master-detail-pagination.md) — tách danh sách/chi tiết thành master–detail độc lập, thêm phân trang và tìm kiếm server-side; chờ nghiệm thu browser/RBAC.

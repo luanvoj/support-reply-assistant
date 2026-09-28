@@ -2198,6 +2198,8 @@ function QueueScreen() {
   });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const processingEditorRef = useRef<HTMLElement | null>(null);
+  const processingTitleRef = useRef<HTMLInputElement | null>(null);
   const [title, setTitle] = useState("");
   const [answer, setAnswer] = useState("");
   const [loading, setLoading] = useState(false);
@@ -2241,6 +2243,19 @@ function QueueScreen() {
   useEffect(() => {
     if (initialized) void load();
   }, [initialized, page, query, selectedId]);
+  useEffect(() => {
+    if (!selectedTicket) return;
+    const frame = window.requestAnimationFrame(() => {
+      processingEditorRef.current?.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
+        block: "start",
+      });
+      processingTitleRef.current?.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [selectedTicket?.id]);
 
   const reasonText = (ticket: Ticket) =>
     ticket.reason_code === "missing_knowledge"
@@ -2271,6 +2286,23 @@ function QueueScreen() {
     setTitle("");
     setAnswer("");
     router.replace(`/unanswered?page=${page}`);
+  };
+  const deleteNewTicket = async () => {
+    if (!selectedTicket || selectedTicket.status !== "new") return;
+    if (!window.confirm("Xóa vĩnh viễn yêu cầu mới này? Thao tác không thể hoàn tác.")) return;
+    const response = await fetch(`/api/unanswered/${selectedTicket.id}`, {
+      method: "DELETE",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ confirm: true }),
+    }).catch(() => null);
+    const body = await response?.json().catch(() => ({}));
+    if (!response?.ok) {
+      notify(body?.error ?? "Không thể xóa yêu cầu chuyên gia.", "error");
+      return;
+    }
+    notify("Đã xóa vĩnh viễn yêu cầu mới.", "success");
+    close();
+    await load();
   };
   const publish = async () => {
     if (!selectedTicket || title.trim().length < 3 || answer.trim().length < 20)
@@ -2306,6 +2338,51 @@ function QueueScreen() {
     1,
     Math.ceil(pagination.total / pagination.pageSize),
   );
+  const processingEditor = selectedTicket ? (
+    <section className="ops-panel review-form expert-request-detail" ref={processingEditorRef}>
+      <header className="expert-request-detail-header">
+        <div>
+          <small>YÊU CẦU ĐANG XỬ LÝ</small>
+          <h2>{selectedTicket.original_question}</h2>
+          <p>{reasonText(selectedTicket)}</p>
+        </div>
+        <button className="ops-button" onClick={close}>Đóng xử lý</button>
+      </header>
+      <div className="expert-request-meta" aria-label="Thông tin yêu cầu">
+        <div><small>Trạng thái</small><span className="warning-pill">{selectedTicket.status === "new" ? "Mới" : selectedTicket.status}</span></div>
+        <div><small>Độ tin cậy</small><strong>{Math.round((selectedTicket.retrieval_score ?? 0) * 100)}%</strong></div>
+        <div><small>Người tạo</small><strong>{selectedTicket.creator}</strong></div>
+        <div><small>Thời điểm tạo</small><strong>{new Date(selectedTicket.created_at).toLocaleString("vi-VN")}</strong></div>
+      </div>
+      <div className="expert-request-context">
+        <small>LÝ DO CẦN XỬ LÝ</small>
+        <p>{reasonText(selectedTicket)}</p>
+      </div>
+      <div className="expert-request-form">
+        <div>
+          <h3>Bổ sung vào Kho kiến thức</h3>
+          <p>Nội dung được xuất bản sẽ là câu trả lời đã xác minh để Trợ lý có thể dùng lại.</p>
+        </div>
+        <label>
+          Tiêu đề tri thức mới
+          <input ref={processingTitleRef} value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Dùng khi nội dung có thể tái sử dụng" />
+        </label>
+        <label>
+          Câu trả lời đã được chuyên gia xác nhận
+          <textarea className="large-textarea" value={answer} onChange={(event) => setAnswer(event.target.value)} placeholder="Viết câu trả lời để Trợ lý có thể dùng lại…" />
+        </label>
+      </div>
+      <footer className="review-actions expert-request-actions">
+        <small>Yêu cầu sẽ được đóng sau khi nội dung được xuất bản.</small>
+        <div className="expert-request-action-buttons">
+          {selectedTicket.status === "new" && <button className="ops-button danger" onClick={() => void deleteNewTicket()}>Xóa yêu cầu</button>}
+          <button className="ops-button primary" disabled={title.trim().length < 3 || answer.trim().length < 20} onClick={() => void publish()}>
+            Bổ sung tri thức & đóng yêu cầu
+          </button>
+        </div>
+      </footer>
+    </section>
+  ) : null;
 
   return (
     <Shell screen="queue">
@@ -2323,9 +2400,8 @@ function QueueScreen() {
           </button>
         }
       />
-      <div
-        className={`expert-request-workspace${selectedTicket ? " has-selection" : ""}`}
-      >
+      <div className="expert-request-workspace">
+        {processingEditor}
         <section className="ops-panel expert-request-list">
           <div className="panel-heading expert-request-list-heading">
             <div>
@@ -2347,7 +2423,7 @@ function QueueScreen() {
             />
           </div>
           <div className="ops-table">
-            <table>
+            <table className="expert-request-table">
               <thead>
                 <tr>
                   <th>Câu hỏi</th>
@@ -2355,7 +2431,7 @@ function QueueScreen() {
                   <th>Nguyên nhân</th>
                   <th>Người tạo</th>
                   <th>Trạng thái</th>
-                  <th />
+                  <th>Hành động</th>
                 </tr>
               </thead>
               <tbody>
@@ -2366,10 +2442,10 @@ function QueueScreen() {
                       key={item.id}
                     >
                       <td>
-                        <b>{item.original_question}</b>
-                        <small>
-                          {new Date(item.created_at).toLocaleString("vi-VN")}
-                        </small>
+                        <b title={item.original_question}>{item.original_question}</b>
+                        <div className="expert-request-row-meta">
+                          <small>{new Date(item.created_at).toLocaleString("vi-VN")}</small>
+                        </div>
                       </td>
                       <td className="warning-text">
                         {Math.round((item.retrieval_score ?? 0) * 100)}%
@@ -2383,7 +2459,8 @@ function QueueScreen() {
                       </td>
                       <td>
                         <button
-                          className="link-button"
+                          className="link-button expert-request-open"
+                          aria-label={`Xử lý yêu cầu: ${item.original_question}`}
                           onClick={() => open(item)}
                         >
                           {item.id === selectedId ? "Đang xem" : "Xử lý →"}
@@ -2425,99 +2502,6 @@ function QueueScreen() {
             </div>
           )}
         </section>
-        {selectedTicket ? (
-          <section className="ops-panel review-form expert-request-detail">
-            <header className="expert-request-detail-header">
-              <div>
-                <small>YÊU CẦU ĐANG XỬ LÝ</small>
-                <h2>{selectedTicket.original_question}</h2>
-                <p>{reasonText(selectedTicket)}</p>
-              </div>
-              <button className="ops-button" onClick={close}>
-                Đóng
-              </button>
-            </header>
-            <div className="expert-request-meta" aria-label="Thông tin yêu cầu">
-              <div>
-                <small>Trạng thái</small>
-                <span className="warning-pill">
-                  {selectedTicket.status === "new"
-                    ? "Mới"
-                    : selectedTicket.status}
-                </span>
-              </div>
-              <div>
-                <small>Độ tin cậy</small>
-                <strong>
-                  {Math.round((selectedTicket.retrieval_score ?? 0) * 100)}%
-                </strong>
-              </div>
-              <div>
-                <small>Người tạo</small>
-                <strong>{selectedTicket.creator}</strong>
-              </div>
-              <div>
-                <small>Thời điểm tạo</small>
-                <strong>
-                  {new Date(selectedTicket.created_at).toLocaleString("vi-VN")}
-                </strong>
-              </div>
-            </div>
-            <div className="expert-request-context">
-              <small>LÝ DO CẦN XỬ LÝ</small>
-              <p>{reasonText(selectedTicket)}</p>
-            </div>
-            <div className="expert-request-form">
-              <div>
-                <h3>Bổ sung vào Kho kiến thức</h3>
-                <p>
-                  Nội dung được xuất bản sẽ là câu trả lời đã xác minh để Trợ lý
-                  có thể dùng lại.
-                </p>
-              </div>
-              <label>
-                Tiêu đề tri thức mới
-                <input
-                  value={title}
-                  onChange={(event) => setTitle(event.target.value)}
-                  placeholder="Dùng khi nội dung có thể tái sử dụng"
-                />
-              </label>
-              <label>
-                Câu trả lời đã được chuyên gia xác nhận
-                <textarea
-                  className="large-textarea"
-                  value={answer}
-                  onChange={(event) => setAnswer(event.target.value)}
-                  placeholder="Viết câu trả lời để Trợ lý có thể dùng lại…"
-                />
-              </label>
-            </div>
-            <footer className="review-actions expert-request-actions">
-              <small>
-                Yêu cầu sẽ được đóng sau khi nội dung được xuất bản.
-              </small>
-              <button
-                className="ops-button primary"
-                disabled={title.trim().length < 3 || answer.trim().length < 20}
-                onClick={() => void publish()}
-              >
-                Bổ sung tri thức & đóng yêu cầu
-              </button>
-            </footer>
-          </section>
-        ) : (
-          <aside className="ops-panel expert-request-empty">
-            <div>
-              <small>CHI TIẾT XỬ LÝ</small>
-              <h2>Chọn một yêu cầu</h2>
-              <p>
-                Chọn “Xử lý” từ danh sách để xem ngữ cảnh và bổ sung tri thức đã
-                xác minh.
-              </p>
-            </div>
-          </aside>
-        )}
       </div>
     </Shell>
   );

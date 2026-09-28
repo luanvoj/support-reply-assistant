@@ -90,18 +90,6 @@ export default function Dashboard() {
       ),
     [queue, search],
   );
-  const exportReport = () => {
-    const content = `Báo cáo Trợ lý phản hồi\nNgày xuất: ${new Date().toLocaleString("vi-VN")}\nHội thoại 30 ngày: ${summary.conversations_30d ?? 0}\nCâu hỏi chưa xử lý: ${summary.unanswered_open ?? 0}\nBài viết đã xuất bản: ${summary.published_articles ?? 0}\n`;
-    const url = URL.createObjectURL(
-      new Blob([content], { type: "text/plain;charset=utf-8" }),
-    );
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "bao-cao-tro-ly-phan-hoi.txt";
-    link.click();
-    URL.revokeObjectURL(url);
-  };
-
   return (
     <AppShell screen="overview">
       <div className="dashboard-content">
@@ -119,9 +107,6 @@ export default function Dashboard() {
               onClick={() => router.push("/assistant")}
             >
               Hỏi trợ lý ↗
-            </button>
-            <button className="button secondary" onClick={exportReport}>
-              Xuất báo cáo
             </button>
             <button
               className="button primary"

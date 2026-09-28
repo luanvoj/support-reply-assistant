@@ -86,6 +86,7 @@ All API routes are same-origin Next.js routes. Except for `GET /api/health` and 
 | `POST` | `/api/providers/gemini/validate` | Validate Gemini credentials and retrieve usable models. |
 | `POST` | `/api/providers/azure/validate` | Validate Azure endpoint/key and retrieve available configuration. |
 | `GET` | `/api/unanswered` | List expert requests for review, with server-side search and pagination. |
+| `DELETE` | `/api/unanswered/:id` | Permanently delete a new expert request that has no review (technical/admin). Requires `{ confirm: true }`. |
 | `POST` | `/api/unanswered/:id/review` | Publish or resolve an unanswered-question review. |
 | `GET` | `/api/dashboard/summary` | Read dashboard metrics permitted to current user. |
 
@@ -102,6 +103,8 @@ All API routes are same-origin Next.js routes. Except for `GET /api/health` and 
 `DELETE /api/users/:id` requires `successorId`. The server validates the active successor hierarchy (sales → technical → admin; technical → admin; admin → admin), transfers operating ownership of knowledge articles and open expert requests, then anonymizes the deleted account's PII, credential, avatar and 2FA. Historical audit records and private conversations remain attached to the tombstone. The last active administrator cannot be deleted.
 
 `GET /api/unanswered` accepts `page`, `pageSize` (10-100), optional `search` (question or creator, limited to 100 characters), optional `status` (`new`, `in_review`, `answered`, `published`, `rejected`), and optional `id` (UUID). Its response contains `questions`, `pagination`, and `selected`; `selected` supports a deep link even when that request is outside the requested page.
+
+`DELETE /api/unanswered/:id` is intentionally narrow: the server locks the request and deletes it only when its status is `new` and it has no review. It returns `409` for processed, missing, or no-longer-eligible requests. When this was the final open request of an `escalated` conversation, that conversation returns to `normal`; messages and any unrelated requests remain unchanged.
 
 `POST /api/providers` saves or updates configuration only. A new provider is saved inactive; updating one preserves its current runtime state. An omitted API key for an existing provider retains the encrypted key already stored on the server.
 
