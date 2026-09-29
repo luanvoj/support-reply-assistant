@@ -104,6 +104,7 @@ docs/         API, triển khai, bảo mật và tài liệu vận hành
 - Mọi phản hồi thiếu căn cứ đều được ưu tiên minh bạch lý do hơn là tạo nội dung không được kiểm chứng.
 - **Nhật ký vận hành & Kiểm toán hệ thống:** Tự động ghi vết toàn bộ hoạt động đăng nhập, phân quyền, cấu hình AI và vòng đời bài viết tri thức (bao gồm chi tiết bài viết bị xóa vĩnh viễn, người dùng tác động). Hỗ trợ chính sách lưu trữ linh hoạt (7–3650 ngày), giao diện Bento Box chi tiết và kết xuất báo cáo Excel chuyên nghiệp (.xlsx) với định dạng bảng tính cao cấp.
 - **Thành phần giao diện Bento:** Hệ thống dropdown tùy biến (`BentoSelect`) thay thế hoàn toàn native select của trình duyệt, cung cấp menu xổ xuống bo góc tròn trịa, hiệu ứng kính mờ (frosted glass), bóng đổ Bento phân lớp và dấu kiểm (checkmark) trực quan chuẩn UI/UX.
+- **Tiêu chuẩn kiểm tra mật khẩu doanh nghiệp:** Tích hợp bộ quy tắc và checklist trực quan thời gian thực (tối thiểu 8 ký tự, chữ hoa, chữ thường, ký tự đặc biệt, huy hiệu độ mạnh mật khẩu và so khớp mật khẩu) đồng bộ trên cả trang Hồ sơ cá nhân lẫn hộp thoại Tạo/Chỉnh sửa tài khoản người dùng của Quản trị viên.
 
 ## Bắt đầu sử dụng
 
@@ -113,4 +114,5 @@ Sau khi đăng nhập, mở **Hướng dẫn sử dụng** ở sidebar (ngay dư
 
 - [Hợp đồng API](docs/API.md)
 - [Hướng dẫn triển khai](docs/DEPLOYMENT.md)
-- [Báo cáo bảo mật](docs/SECURITY-REPORT-2026-09-28.md)
+- [Báo cáo bảo mật mới nhất (2026-09-29)](docs/SECURITY-REPORT-2026-09-29.md)
+- [Báo cáo bảo mật (2026-09-28)](docs/SECURITY-REPORT-2026-09-28.md)

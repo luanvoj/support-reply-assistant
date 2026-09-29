@@ -3565,54 +3565,68 @@ details[open] .bento-log-chevron {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  width: 100%;
 }
 
 .bento-select-label {
-  font-size: 11.5px;
-  font-weight: 700;
-  color: #475569;
+  display: block;
+  font-size: var(--text-xs, 12px);
+  font-weight: 600;
+  color: var(--text-secondary, #475569);
   letter-spacing: 0.01em;
+  margin-bottom: 2px;
 }
 
 .bento-select-trigger {
-  height: 38px;
+  height: 40px;
+  min-height: 40px;
   padding: 0 12px;
-  background: #ffffff;
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-lg);
+  background: var(--bg-surface, #ffffff);
+  border: 1px solid var(--border-default, #e2e8f0);
+  border-radius: var(--radius-md, 8px);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
   cursor: pointer;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  box-shadow: var(--shadow-xs, 0 1px 2px rgba(15, 23, 42, 0.04));
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   text-align: left;
   user-select: none;
   width: 100%;
+  font-family: inherit;
+  box-sizing: border-box;
 }
 
 .bento-select-trigger:hover:not(:disabled) {
   border-color: #cbd5e1;
-  background: #f8fafc;
+  background: var(--bg-surface-subtle, #f8fafc);
 }
 
 .bento-select-trigger.open {
-  border-color: #6366f1;
-  background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15), 0 1px 2px rgba(15, 23, 42, 0.05);
+  border-color: var(--brand-primary, #6366f1);
+  background: var(--bg-surface, #ffffff);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15), var(--shadow-xs);
+}
+
+.bento-select-trigger.error {
+  border-color: var(--danger-solid, #ef4444);
+}
+
+.bento-select-trigger.error.open {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
 }
 
 .bento-select-trigger:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-  background: #f1f5f9;
+  background: var(--bg-surface-subtle, #f1f5f9);
 }
 
 .bento-select-value {
-  font-size: 13px;
-  font-weight: 600;
-  color: #0f172a;
+  font-size: var(--text-sm, 13px);
+  font-weight: 500;
+  color: var(--text-primary, #0f172a);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3623,32 +3637,32 @@ details[open] .bento-log-chevron {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #94a3b8;
+  color: var(--text-placeholder, #94a3b8);
   transition: transform 0.2s ease, color 0.2s ease;
   flex-shrink: 0;
 }
 
 .bento-select-chevron.open {
   transform: rotate(180deg);
-  color: #6366f1;
+  color: var(--brand-primary, #6366f1);
 }
 
-/* Menu Dropdown xổ xuống bo góc, có viền kính mờ và shadow bento */
+/* Menu Dropdown xổ xuống bo góc, có viền kính mờ và shadow bento cao cấp */
 .bento-select-dropdown {
   position: absolute;
-  top: calc(100% + 6px);
+  top: calc(100% + 5px);
   left: 0;
   width: 100%;
   min-width: 180px;
-  z-index: 100;
+  z-index: 1050;
   background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(226, 232, 240, 0.95);
-  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-default, rgba(226, 232, 240, 0.95));
+  border-radius: var(--radius-xl, 14px);
   box-shadow: 
-    0 12px 30px -5px rgba(15, 23, 42, 0.12),
-    0 8px 12px -6px rgba(15, 23, 42, 0.08);
+    0 16px 36px -4px rgba(15, 23, 42, 0.16),
+    0 8px 16px -4px rgba(15, 23, 42, 0.08);
   padding: 6px;
   animation: bentoSelectDropIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   box-sizing: border-box;
@@ -3680,27 +3694,29 @@ details[open] .bento-log-chevron {
   justify-content: space-between;
   gap: 8px;
   padding: 8px 12px;
-  border-radius: var(--radius-md);
-  font-size: 13px;
+  border-radius: var(--radius-md, 8px);
+  font-size: var(--text-sm, 13px);
   font-weight: 500;
-  color: #334155;
+  color: var(--text-secondary, #334155);
   text-align: left;
   border: none;
   background: transparent;
   cursor: pointer;
   transition: all 0.15s ease;
   width: 100%;
+  font-family: inherit;
+  box-sizing: border-box;
 }
 
 .bento-select-option:hover {
-  background: #f1f5f9;
-  color: #0f172a;
+  background: var(--bg-surface-subtle, #f1f5f9);
+  color: var(--text-primary, #0f172a);
   font-weight: 600;
 }
 
 .bento-select-option.selected {
-  background: rgba(99, 102, 241, 0.08);
-  color: #4338ca;
+  background: rgba(99, 102, 241, 0.09);
+  color: var(--brand-primary, #4338ca);
   font-weight: 700;
 }
 
@@ -3716,14 +3732,15 @@ details[open] .bento-log-chevron {
 .bento-select-option-icon {
   display: flex;
   align-items: center;
-  color: #6366f1;
+  color: var(--brand-primary, #6366f1);
 }
 
 .bento-select-checkmark {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #4f46e5;
+  color: var(--brand-primary, #4f46e5);
   flex-shrink: 0;
 }
+
 

@@ -1,4 +1,5 @@
 import { createHmac } from "node:crypto";
+import { isIP } from "node:net";
 
 import { query, withTransaction } from "@/lib/db";
 import { env } from "@/lib/env";
@@ -46,28 +47,41 @@ async function record(limit: Limit): Promise<RateLimitResult> {
 
 async function clear(limit: Limit) { await query("DELETE FROM auth_rate_limit_buckets WHERE scope=$1 AND key_hash=$2", [limit.scope, keyHash(limit.key)]); }
 export function normalizedIdentity(identity: string) { return identity.trim().toLowerCase(); }
-export function requestClientKey(request: Request) {
-  if (process.env.TRUST_PROXY !== "true") return "unknown";
-  return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || request.headers.get("x-real-ip")?.trim() || "unknown";
+export function requestClientKey(request: Request): string | null {
+  if (process.env.TRUST_PROXY !== "true") return null;
+  const candidate = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+    || request.headers.get("x-real-ip")?.trim();
+  return candidate && isIP(candidate) ? candidate.toLowerCase() : null;
 }
 
 export async function checkLoginRequest(request: Request, identity: string) {
-  for (const limit of [loginGlobal, loginIp(requestClientKey(request)), loginIdentity(normalizedIdentity(identity))]) {
+  const clientKey = requestClientKey(request);
+  const limits = [loginGlobal, ...(clientKey ? [loginIp(clientKey)] : []), loginIdentity(normalizedIdentity(identity))];
+  for (const limit of limits) {
     const status = await isBlocked(limit); if (!status.allowed) return status;
   }
   return record(loginGlobal);
 }
 export async function recordLoginFailure(request: Request, identity: string) {
-  const results = await Promise.all([record(loginIp(requestClientKey(request))), record(loginIdentity(normalizedIdentity(identity)))]);
+  const clientKey = requestClientKey(request);
+  const results = await Promise.all([...(clientKey ? [record(loginIp(clientKey))] : []), record(loginIdentity(normalizedIdentity(identity)))]);
   return results.find((result) => !result.allowed) ?? { allowed: true, retryAfterSeconds: 0 };
 }
-export async function clearLoginFailures(request: Request, identity: string) { await Promise.all([clear(loginIp(requestClientKey(request))), clear(loginIdentity(normalizedIdentity(identity)))]); }
+export async function clearLoginFailuresForIdentity(identity: string) {
+  await clear(loginIdentity(normalizedIdentity(identity)));
+}
+export async function clearLoginFailures(request: Request, identity: string) {
+  const clientKey = requestClientKey(request);
+  await Promise.all([...(clientKey ? [clear(loginIp(clientKey))] : []), clearLoginFailuresForIdentity(identity)]);
+}
 export async function checkMfaRequest(request: Request, fingerprint: string) {
-  for (const limit of [mfaIp(requestClientKey(request)), mfaChallenge(fingerprint)]) { const status = await isBlocked(limit); if (!status.allowed) return status; }
+  const clientKey = requestClientKey(request);
+  for (const limit of [...(clientKey ? [mfaIp(clientKey)] : []), mfaChallenge(fingerprint)]) { const status = await isBlocked(limit); if (!status.allowed) return status; }
   return { allowed: true, retryAfterSeconds: 0 };
 }
 export async function recordMfaFailure(request: Request, fingerprint: string) {
-  const results = await Promise.all([record(mfaIp(requestClientKey(request))), record(mfaChallenge(fingerprint))]);
+  const clientKey = requestClientKey(request);
+  const results = await Promise.all([...(clientKey ? [record(mfaIp(clientKey))] : []), record(mfaChallenge(fingerprint))]);
   return results.find((result) => !result.allowed) ?? { allowed: true, retryAfterSeconds: 0 };
 }
-export async function clearMfaFailures(request: Request, fingerprint: string) { await Promise.all([clear(mfaIp(requestClientKey(request))), clear(mfaChallenge(fingerprint))]); }
+export async function clearMfaFailures(request: Request, fingerprint: string) { const clientKey = requestClientKey(request); await Promise.all([...(clientKey ? [clear(mfaIp(clientKey))] : []), clear(mfaChallenge(fingerprint))]); }

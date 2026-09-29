@@ -319,18 +319,19 @@ function UserManagementSection() {
               </p>
             </div>
             <div className="ui-modal-body">
-              <Select
+              <BentoSelect
                 label="Chọn tài khoản kế thừa"
                 value={successorId}
-                onChange={(e) => setSuccessorId(e.target.value)}
-              >
-                <option value="">Chọn người nhận bàn giao…</option>
-                {deleteCandidates.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.fullName} ({c.roleLabel})
-                  </option>
-                ))}
-              </Select>
+                placeholder="Chọn người nhận bàn giao…"
+                options={[
+                  { value: "", label: "Chọn người nhận bàn giao…" },
+                  ...deleteCandidates.map((c) => ({
+                    value: c.id,
+                    label: `${c.fullName} (${c.roleLabel})`,
+                  })),
+                ]}
+                onChange={(val) => setSuccessorId(val)}
+              />
             </div>
             <div className="ui-modal-footer">
               <div className="ui-modal-actions">
@@ -382,54 +383,110 @@ function UserManagementSection() {
                     setForm({ ...form, email: e.target.value });
                   }}
                 />
-                <Select
+                <BentoSelect
                   label="Vai trò hệ thống"
                   value={form.role}
-                  onChange={(e) => setForm({ ...form, role: e.target.value })}
-                >
-                  <option value="sales">Người dùng (Tư vấn viên)</option>
-                  <option value="technical">Chuyên gia (Kiểm định viên)</option>
-                  <option value="admin">Quản trị viên hệ thống</option>
-                </Select>
+                  options={[
+                    { value: "sales", label: "Người dùng (Tư vấn viên)" },
+                    { value: "technical", label: "Chuyên gia (Kiểm định viên)" },
+                    { value: "admin", label: "Quản trị viên hệ thống" },
+                  ]}
+                  onChange={(val) => setForm({ ...form, role: val as "sales" | "technical" | "admin" })}
+                />
               </div>
 
               {!editingId && (
                 <div style={{ borderTop: "1px solid var(--color-border-subtle)", paddingTop: "1rem" }}>
                   <strong style={{ display: "block", marginBottom: "0.75rem" }}>Thiết lập mật khẩu khởi tạo</strong>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "0.75rem" }}>
                     <Input
                       label="Mật khẩu"
                       type="password"
+                      autoComplete="new-password"
+                      placeholder="Nhập mật khẩu"
                       value={form.password}
                       onChange={(e) => setForm({ ...form, password: e.target.value })}
                     />
                     <Input
                       label="Nhập lại mật khẩu"
                       type="password"
+                      autoComplete="new-password"
+                      placeholder="Nhập lại mật khẩu"
                       value={form.passwordConfirmation}
+                      hint={form.passwordConfirmation ? (newUserPasswordsMatch ? "✓ Hai mật khẩu trùng khớp" : "✕ Mật khẩu chưa trùng khớp") : undefined}
                       onChange={(e) => setForm({ ...form, passwordConfirmation: e.target.value })}
                     />
                   </div>
+
+                  <ul className="password-checklist" aria-label="Điều kiện mật khẩu">
+                    {[
+                      [newUserPasswordRules.minimumLength, "Tối thiểu 8 ký tự"],
+                      [newUserPasswordRules.uppercase, "Có ít nhất 1 chữ IN HOA"],
+                      [newUserPasswordRules.lowercase, "Có ít nhất 1 chữ thường"],
+                      [newUserPasswordRules.specialCharacter, "Có ký tự đặc biệt (@, #, $, %, !…)"],
+                    ].map(([passed, label]) => (
+                      <li className={passed ? "passed" : ""} key={String(label)}>
+                        <span>{passed ? "✓" : "○"}</span>
+                        {label}
+                      </li>
+                    ))}
+                  </ul>
+
+                  {newUserPasswordReady && (
+                    <div style={{ marginTop: "var(--space-3)" }}>
+                      <Badge variant={newUserPasswordStrength === "strong" ? "success" : "warning"} size="sm">
+                        Độ mạnh mật khẩu: {newUserPasswordStrength === "strong" ? "Rất mạnh" : "Trung bình"}
+                      </Badge>
+                    </div>
+                  )}
                 </div>
               )}
 
               {editingId && canRecoverEditingUser && (
                 <div style={{ borderTop: "1px solid var(--color-border-subtle)", paddingTop: "1rem" }}>
                   <strong style={{ display: "block", marginBottom: "0.75rem" }}>Bảo mật & Cấp lại quyền</strong>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "0.75rem" }}>
                     <Input
                       label="Mật khẩu mới (nếu muốn đặt lại)"
                       type="password"
+                      autoComplete="new-password"
+                      placeholder="Nhập mật khẩu mới"
                       value={form.password}
                       onChange={(e) => setForm({ ...form, password: e.target.value })}
                     />
                     <Input
                       label="Nhập lại mật khẩu mới"
                       type="password"
+                      autoComplete="new-password"
+                      placeholder="Nhập lại mật khẩu mới"
                       value={form.passwordConfirmation}
+                      hint={form.passwordConfirmation ? (newUserPasswordsMatch ? "✓ Hai mật khẩu trùng khớp" : "✕ Mật khẩu chưa trùng khớp") : undefined}
                       onChange={(e) => setForm({ ...form, passwordConfirmation: e.target.value })}
                     />
                   </div>
+
+                  <ul className="password-checklist" aria-label="Điều kiện mật khẩu">
+                    {[
+                      [newUserPasswordRules.minimumLength, "Tối thiểu 8 ký tự"],
+                      [newUserPasswordRules.uppercase, "Có ít nhất 1 chữ IN HOA"],
+                      [newUserPasswordRules.lowercase, "Có ít nhất 1 chữ thường"],
+                      [newUserPasswordRules.specialCharacter, "Có ký tự đặc biệt (@, #, $, %, !…)"],
+                    ].map(([passed, label]) => (
+                      <li className={passed ? "passed" : ""} key={String(label)}>
+                        <span>{passed ? "✓" : "○"}</span>
+                        {label}
+                      </li>
+                    ))}
+                  </ul>
+
+                  {newUserPasswordReady && (
+                    <div style={{ marginTop: "var(--space-3)" }}>
+                      <Badge variant={newUserPasswordStrength === "strong" ? "success" : "warning"} size="sm">
+                        Độ mạnh mật khẩu: {newUserPasswordStrength === "strong" ? "Rất mạnh" : "Trung bình"}
+                      </Badge>
+                    </div>
+                  )}
+
                   <div style={{ display: "flex", gap: "0.75rem", marginTop: "1rem" }}>
                     <Button
                       variant="outline"
@@ -512,29 +569,35 @@ function UserManagementSection() {
                 setPage(1);
               }}
             />
-            <Select
+            <BentoSelect
               value={roleFilter}
-              onChange={(e) => {
-                setRoleFilter(e.target.value);
+              placeholder="Tất cả vai trò"
+              minWidth="160px"
+              options={[
+                { value: "", label: "Tất cả vai trò" },
+                { value: "admin", label: "Quản trị viên" },
+                { value: "technical", label: "Chuyên gia" },
+                { value: "sales", label: "Người dùng" },
+              ]}
+              onChange={(val) => {
+                setRoleFilter(val);
                 setPage(1);
               }}
-            >
-              <option value="">Tất cả vai trò</option>
-              <option value="admin">Quản trị viên</option>
-              <option value="technical">Chuyên gia</option>
-              <option value="sales">Người dùng</option>
-            </Select>
-            <Select
+            />
+            <BentoSelect
               value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
+              placeholder="Tất cả trạng thái"
+              minWidth="160px"
+              options={[
+                { value: "", label: "Tất cả trạng thái" },
+                { value: "active", label: "Đang hoạt động" },
+                { value: "disabled", label: "Đã vô hiệu hóa" },
+              ]}
+              onChange={(val) => {
+                setStatusFilter(val);
                 setPage(1);
               }}
-            >
-              <option value="">Tất cả trạng thái</option>
-              <option value="active">Đang hoạt động</option>
-              <option value="disabled">Đã vô hiệu hóa</option>
-            </Select>
+            />
           </div>
         </CardHeader>
         <CardContent style={{ padding: 0 }}>
@@ -1684,20 +1747,18 @@ export function SettingsScreen() {
                   </Badge>
                 )}
               </div>
-              <Select
+              <BentoSelect
                 label="Mô hình (Model)"
                 value={model}
                 disabled={!verified && !model}
-                onChange={(e) => setModel(e.target.value)}
-              >
-                <option value="">Chọn Model Gemini…</option>
-                {models.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.label}
-                  </option>
-                ))}
-                {!verified && model && <option value={model}>{model}</option>}
-              </Select>
+                placeholder="Chọn Model Gemini…"
+                options={[
+                  { value: "", label: "Chọn Model Gemini…" },
+                  ...models.map((m) => ({ value: m.id, label: m.label })),
+                  ...(!verified && model && !models.some((m) => m.id === model) ? [{ value: model, label: model }] : []),
+                ]}
+                onChange={(val) => setModel(val)}
+              />
             </CardContent>
             <CardFooter style={{ display: "flex", justifyContent: "space-between" }}>
               {geminiProvider && (
@@ -1808,24 +1869,26 @@ export function SettingsScreen() {
                 value={profileRole}
                 onChange={(e) => setProfileRole(e.target.value)}
               />
-              <Select
+              <BentoSelect
                 label="Giọng điệu (Tone)"
                 value={profileTone}
-                onChange={(e) => setProfileTone(e.target.value)}
-              >
-                <option value="professional">Chuyên nghiệp, ấm áp</option>
-                <option value="friendly">Thân thiện, gần gũi</option>
-                <option value="concise">Ngắn gọn, súc tích</option>
-              </Select>
-              <Select
+                options={[
+                  { value: "professional", label: "Chuyên nghiệp, ấm áp" },
+                  { value: "friendly", label: "Thân thiện, gần gũi" },
+                  { value: "concise", label: "Ngắn gọn, súc tích" },
+                ]}
+                onChange={(val) => setProfileTone(val)}
+              />
+              <BentoSelect
                 label="Độ dài phản hồi"
                 value={profileLength}
-                onChange={(e) => setProfileLength(e.target.value)}
-              >
-                <option value="concise">Ngắn gọn</option>
-                <option value="balanced">Cân bằng</option>
-                <option value="detailed">Chi tiết</option>
-              </Select>
+                options={[
+                  { value: "concise", label: "Ngắn gọn" },
+                  { value: "balanced", label: "Cân bằng" },
+                  { value: "detailed", label: "Chi tiết" },
+                ]}
+                onChange={(val) => setProfileLength(val)}
+              />
             </div>
             <Textarea
               label="Chỉ dẫn bổ sung (Custom System Instructions)"

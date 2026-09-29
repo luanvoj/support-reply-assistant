@@ -12,7 +12,7 @@ All API routes are same-origin Next.js routes. Except for `GET /api/health` and 
 | `POST` | `/api/auth/logout` | Clear current session. |
 | `GET` | `/api/auth/me` | Read current session/user. |
 
-`POST /api/auth/login` applies shared, IP and normalized-identity limits. `POST /api/auth/mfa/verify` limits the pending challenge and source IP; five invalid codes invalidate the pending challenge. Limited requests return `429` with `Retry-After` and never disclose whether an account exists.
+`POST /api/auth/login` always applies shared and normalized-identity limits; it applies an IP limit only when a trusted proxy supplies a valid forwarded IP. `POST /api/auth/mfa/verify` always limits the pending challenge and conditionally limits its source IP under the same proxy contract; five invalid codes invalidate the pending challenge. Limited requests return `429` with `Retry-After` and never disclose whether an account exists.
 
 ## Current user profile and MFA
 

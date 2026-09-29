@@ -46,7 +46,7 @@ Schedule this separate cleanup task daily after the application migration has ru
 npm run auth-rate-limits:retention -- --apply
 ```
 
-The application enforces login and MFA limits in PostgreSQL, so all web instances share the same counters. Keep an edge/WAF limit as a second layer; do not trust client-supplied forwarding headers unless `TRUST_PROXY=true` is configured with a verified proxy contract.
+The application enforces login and MFA limits in PostgreSQL, so all web instances share the same counters. Without a verified proxy contract it deliberately skips app-level IP buckets, while retaining shared, identity and MFA-challenge limits; keep an edge/WAF IP limit as a second layer. Set `TRUST_PROXY=true` only after the proxy strips incoming forwarding headers and writes the client IP itself.
 
 ## Release checklist
 
@@ -56,6 +56,19 @@ The application enforces login and MFA limits in PostgreSQL, so all web instance
 - [x] Protected UI routes redirect unauthenticated users.
 - [ ] Set production secrets through the deployment secret manager.
 - [ ] Configure TLS, domain, database backups, monitoring, and egress policy.
+
+## Bootstrap or reset an administrator
+
+Run the bootstrap script from the project root after the database is reachable:
+
+```bash
+ADMIN_EMAIL=admin@your-domain.example \
+ADMIN_USERNAME=admin \
+ADMIN_FULL_NAME="System Administrator" \
+./scripts/seed-admin.sh
+```
+
+The script runs the idempotent migration first, prompts for `ADMIN_PASSWORD` without echoing it, then creates or resets that administrator. It verifies the stored password hash before reporting success and clears only that account's login-identity rate-limit bucket. A reset restores the account to active status, invalidates existing sessions, and preserves any configured MFA. Do not use the local default `admin@example.local` in production.
 - [ ] Mount and back up persistent `USER_STORAGE_DIR`; do not serve it directly as a public web directory.
 - [ ] Resolve or formally accept the open PostCSS advisory.
 - [ ] Run a production-like deployment rehearsal and rollback test.

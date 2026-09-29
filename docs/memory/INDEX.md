@@ -30,6 +30,8 @@
 
 ## Việc mở có hiệu lực
 
+- Plan mới: [Khắc phục SEC-005 rate limit IP `unknown`](plans/2026-09-29-rate-limit-sec-005-remediation.md) — bỏ bucket IP dùng chung khi không có proxy đáng tin cậy, vẫn giữ limit global/identity/challenge và hợp đồng edge proxy.
+
 - Plan mới: [Loại bỏ CTA gộp từng bài, giữ an toàn Smart Merge theo đợt](plans/2026-09-29-remove-single-article-merge-cta.md) — chỉ gỡ entry point UI đơn lẻ trên route active; giữ nguyên API tạo nháp và toàn bộ lifecycle batch.
 
 - Plan mới: [Lọc ngày, xuất Nhật ký vận hành và xác thực email tạo người dùng](plans/2026-09-29-operational-log-export-and-user-email-validation.md) — khôi phục UI khoảng ngày tùy chọn, xuất Excel/CSV đúng filter và hoàn thiện validation email.

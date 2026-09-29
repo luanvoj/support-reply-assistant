@@ -21,6 +21,7 @@ import {
   Badge,
   Input,
   Textarea,
+  BentoSelect,
   Select,
   TableWrapper,
   Table,
@@ -1720,15 +1721,16 @@ export function KnowledgeScreen() {
                 </label>
               </div>
 
-              <Select
+              <BentoSelect
                 label="Mức độ ưu tiên"
                 value={String(sourcePriority)}
-                onChange={(e) => setSourcePriority(Number(e.target.value))}
-              >
-                <option value="80">Cao (Chính sách/Quy trình chuẩn)</option>
-                <option value="50">Tiêu chuẩn (Hướng dẫn sử dụng)</option>
-                <option value="20">Tham khảo (Cần đối chiếu thêm)</option>
-              </Select>
+                options={[
+                  { value: "80", label: "Cao (Chính sách/Quy trình chuẩn)" },
+                  { value: "50", label: "Tiêu chuẩn (Hướng dẫn sử dụng)" },
+                  { value: "20", label: "Tham khảo (Cần đối chiếu thêm)" },
+                ]}
+                onChange={(val) => setSourcePriority(Number(val))}
+              />
 
               <Input
                 label="Hạn nhắc rà soát"
@@ -1744,14 +1746,15 @@ export function KnowledgeScreen() {
                 onChange={(e) => setServiceGroup(e.target.value)}
               />
 
-              <Select
+              <BentoSelect
                 label="Cách Trợ lý phản hồi"
                 value={responsePolicy}
-                onChange={(e) => setResponsePolicy(e.target.value as "grounded" | "escalate")}
-              >
-                <option value="grounded">Trả lời có căn cứ</option>
-                <option value="escalate">Chuyển tiếp chuyên gia</option>
-              </Select>
+                options={[
+                  { value: "grounded", label: "Trả lời có căn cứ" },
+                  { value: "escalate", label: "Chuyển tiếp chuyên gia" },
+                ]}
+                onChange={(val) => setResponsePolicy(val as "grounded" | "escalate")}
+              />
             </div>
           </CardContent>
           <CardFooter style={{ display: "flex", justifyContent: "flex-end", gap: "0.75rem" }}>

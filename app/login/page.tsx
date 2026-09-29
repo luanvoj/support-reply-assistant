@@ -351,6 +351,13 @@ export default function LoginPage() {
     const body = await response.json().catch(() => ({}));
     setLoading(false);
     if (!response.ok) {
+      if (response.status === 429) {
+        const retryAfter = Number(response.headers.get("retry-after"));
+        setError(Number.isFinite(retryAfter) && retryAfter > 0
+          ? `Bạn đã thử đăng nhập quá nhiều lần. Vui lòng thử lại sau ${Math.ceil(retryAfter / 60)} phút.`
+          : "Bạn đã thử đăng nhập quá nhiều lần. Vui lòng thử lại sau.");
+        return;
+      }
       setError("Tên đăng nhập hoặc mật khẩu không hợp lệ.");
       return;
     }
