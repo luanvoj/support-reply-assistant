@@ -83,6 +83,7 @@ All API routes are same-origin Next.js routes. Except for `GET /api/health` and 
 | `DELETE` | `/api/users/:id/mfa` | Disable an active user's 2FA and revoke their sessions (admin, not self). |
 | `GET` / `PUT` | `/api/operational-logs/settings` | Read or change operational-log retention (admin). |
 | `GET` | `/api/operational-logs` | List paginated operational logs; supports category and inclusive Vietnam-date range filters (admin). |
+| `GET` | `/api/operational-logs/export` | Download filtered operational logs as `csv` or `xlsx` (admin). |
 | `GET` / `POST` / `PATCH` | `/api/providers` | List safe provider metadata, save provider configuration without changing runtime state, or activate/deactivate one saved Agent (admin). |
 | `POST` | `/api/providers/test` | Test saved provider connectivity (admin). |
 | `POST` | `/api/providers/gemini/validate` | Validate Gemini credentials and retrieve usable models. |
@@ -135,6 +136,8 @@ When evidence is sufficient but no Agent is available, the same endpoint returns
 ## Operational log query and retention
 
 `GET /api/operational-logs` accepts `page`, `pageSize` (10–100), optional `category` (`account`, `authentication`, `knowledge`, `configuration`), and optional date-only `from`/`to` (`YYYY-MM-DD`). Dates are normalized to `Asia/Saigon`; `to` includes the selected end date. Invalid dates or a reversed range return `400`.
+
+`GET /api/operational-logs/export` accepts the same filters plus required `format=csv|xlsx`. It exports the complete matching result set (up to 10,000 rows), not just the visible page. Each file contains Vietnam-local `Thời điểm`, `Thời gian`, `Người dùng` (actor email) and `Hành động`; it never includes log details or secrets. Older logs whose actor email was not retained export `Không còn lưu`.
 
 Operational logs never contain chat content, passwords, API keys, OTP values or avatar bytes. Admins set retention from 7 to 3650 days; `npm run operational-logs:retention -- --apply` removes expired log rows.
 

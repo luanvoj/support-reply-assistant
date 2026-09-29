@@ -24,6 +24,7 @@ import {
   TableHead,
   TableCell,
   EmptyState,
+  BentoSelect,
 } from "@/components/ui";
 
 function readableApiError(error: unknown, fallback: string): string {
@@ -85,6 +86,7 @@ function UserManagementSection() {
   const [deleteCandidates, setDeleteCandidates] = useState<ManagedUser[]>([]);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [emailError, setEmailError] = useState("");
 
   const load = () => {
     setLoading(true);
@@ -113,6 +115,12 @@ function UserManagementSection() {
   }, []);
 
   const createUser = async () => {
+    const email = form.email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setEmailError("Nhập một địa chỉ email hợp lệ.");
+      return;
+    }
+    setEmailError("");
     setSaving(true);
     const response = await fetch("/api/users", {
       method: "POST",
@@ -364,8 +372,15 @@ function UserManagementSection() {
                 <Input
                   label="Email liên hệ"
                   type="email"
+                  required
+                  autoComplete="email"
                   value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  error={emailError}
+                  hint="Bắt buộc, dùng một địa chỉ email hợp lệ và chưa được sử dụng."
+                  onChange={(e) => {
+                    setEmailError("");
+                    setForm({ ...form, email: e.target.value });
+                  }}
                 />
                 <Select
                   label="Vai trò hệ thống"
@@ -448,7 +463,7 @@ function UserManagementSection() {
                   size="md"
                   disabled={
                     saving ||
-                    (!editingId && (!newUserPasswordReady || !newUserPasswordsMatch))
+                    (!editingId && (!newUserPasswordReady || !newUserPasswordsMatch || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())))
                   }
                   onClick={() => void (editingId ? updateUser() : createUser())}
                 >
@@ -481,6 +496,7 @@ function UserManagementSection() {
                   passwordConfirmation: "",
                   role: "sales",
                 });
+                setEmailError("");
                 setFormOpen(true);
               }}
             >
@@ -616,7 +632,200 @@ function UserManagementSection() {
 }
 
 // -------------------------------------------------------------
-// Component con: Nhật ký vận hành / kiểm toán
+// Component con: Chi tiết sự kiện Nhật ký Bento
+// -------------------------------------------------------------
+function LogEventDetail({
+  details,
+  category,
+}: {
+  details: Record<string, unknown>;
+  category: OperationalLogRow["category"];
+}) {
+  const [showRaw, setShowRaw] = useState(false);
+
+  // Phân tích đối tượng bài viết (knowledge)
+  const articleTitle =
+    typeof details.title === "string"
+      ? details.title
+      : typeof details.article_title === "string"
+        ? details.article_title
+        : typeof details.slug === "string"
+          ? details.slug
+          : null;
+  const articleId =
+    typeof details.articleId === "string"
+      ? details.articleId
+      : typeof details.id === "string"
+        ? details.id
+        : null;
+
+  // Phân tích đối tượng người dùng (account / authentication)
+  const targetEmail =
+    typeof details.target_email === "string"
+      ? details.target_email
+      : typeof details.email === "string"
+        ? details.email
+        : typeof details.username === "string"
+          ? details.username
+          : null;
+  const targetRole =
+    typeof details.role === "string"
+      ? details.role
+      : typeof details.target_role === "string"
+        ? details.target_role
+        : null;
+
+  // Phân tích đối tượng cấu hình (configuration)
+  const providerId =
+    typeof details.providerId === "string"
+      ? details.providerId
+      : typeof details.provider === "string"
+        ? details.provider
+        : null;
+  const retentionDays =
+    typeof details.retentionDays === "number" || typeof details.retentionDays === "string"
+      ? details.retentionDays
+      : null;
+
+  const actorEmail =
+    typeof details.actor_email === "string"
+      ? details.actor_email
+      : typeof details.actor === "string"
+        ? details.actor
+        : null;
+
+  const ip = typeof details.ip === "string" ? details.ip : null;
+
+  return (
+    <div className="bento-log-detail-box">
+      {/* 1. Banner đối tượng tác động chính */}
+      {articleTitle && (
+        <div className="bento-log-target-banner">
+          <div className="bento-log-target-icon" style={{ background: "rgba(16, 185, 129, 0.1)", color: "#059669" }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+            </svg>
+          </div>
+          <div className="bento-log-target-content">
+            <strong>Bài viết tri thức: &ldquo;{articleTitle}&rdquo;</strong>
+            <span>
+              {articleId && (
+                <>
+                  Mã định danh: <code className="bento-log-code-chip">{articleId}</code>
+                </>
+              )}
+              {details.category ? ` · Chuyên mục: ${String(details.category)}` : ""}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {targetEmail && !articleTitle && (
+        <div className="bento-log-target-banner">
+          <div className="bento-log-target-icon" style={{ background: "rgba(59, 130, 246, 0.1)", color: "#2563eb" }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+          </div>
+          <div className="bento-log-target-content">
+            <strong>Tài khoản tác động: {targetEmail}</strong>
+            <span>
+              {targetRole && `Vai trò phân quyền: ${targetRole}`}
+              {details.status ? ` · Trạng thái: ${String(details.status)}` : ""}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {providerId && !articleTitle && !targetEmail && (
+        <div className="bento-log-target-banner">
+          <div className="bento-log-target-icon" style={{ background: "rgba(139, 92, 246, 0.1)", color: "#7c3aed" }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+              <line x1="8" y1="21" x2="16" y2="21" />
+              <line x1="12" y1="17" x2="12" y2="21" />
+            </svg>
+          </div>
+          <div className="bento-log-target-content">
+            <strong>Nhà cung cấp AI: {providerId}</strong>
+            <span>{details.model ? `Mô hình: ${String(details.model)}` : "Cấu hình cổng AI / LLM"}</span>
+          </div>
+        </div>
+      )}
+
+      {retentionDays && !articleTitle && !targetEmail && !providerId && (
+        <div className="bento-log-target-banner">
+          <div className="bento-log-target-icon" style={{ background: "rgba(245, 158, 11, 0.1)", color: "#d97706" }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+          </div>
+          <div className="bento-log-target-content">
+            <strong>Chính sách lưu trữ nhật ký: {retentionDays} ngày</strong>
+            <span>Hạn lưu vết trước khi hệ thống dọn dẹp tự động</span>
+          </div>
+        </div>
+      )}
+
+      {/* 2. Grid các thông số chi tiết */}
+      <div className="bento-log-meta-grid">
+        {actorEmail && (
+          <div className="bento-log-meta-item">
+            <span className="bento-log-meta-label">Người thực hiện</span>
+            <span className="bento-log-meta-val">{actorEmail}</span>
+          </div>
+        )}
+        {ip && (
+          <div className="bento-log-meta-item">
+            <span className="bento-log-meta-label">Địa chỉ IP / Kênh</span>
+            <span className="bento-log-meta-val">{ip}</span>
+          </div>
+        )}
+        {Boolean(details.action) && (
+          <div className="bento-log-meta-item">
+            <span className="bento-log-meta-label">Mã hành động</span>
+            <span className="bento-log-meta-val">
+              <code className="bento-log-code-chip">{String(details.action)}</code>
+            </span>
+          </div>
+        )}
+        {Boolean(details.changes && typeof details.changes === "object") && (
+          <div className="bento-log-meta-item" style={{ gridColumn: "1 / -1" }}>
+            <span className="bento-log-meta-label">Các thuộc tính cập nhật</span>
+            <span className="bento-log-meta-val">
+              {Object.keys(details.changes as object).join(", ")}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* 3. Nút bật/tắt xem JSON kỹ thuật thô */}
+      <div style={{ marginTop: "4px" }}>
+        <button
+          type="button"
+          className="bento-log-raw-toggle"
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowRaw(!showRaw);
+          }}
+        >
+          {showRaw ? "▲ Thu gọn dữ liệu kỹ thuật" : "▼ Xem dữ liệu thô (JSON Payload)"}
+        </button>
+        {showRaw && (
+          <pre className="bento-log-raw-pre">
+            {JSON.stringify(details, null, 2)}
+          </pre>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// -------------------------------------------------------------
+// Component con: Nhật ký vận hành / kiểm toán Bento
 // -------------------------------------------------------------
 function OperationalLogSection() {
   const { notify } = useFeedback();
@@ -629,13 +838,20 @@ function OperationalLogSection() {
   const [total, setTotal] = useState(0);
   const [retentionDays, setRetentionDays] = useState(90);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
 
-  const load = async () => {
-    setLoading(true);
-    const params = new URLSearchParams({ page: String(page) });
+  const filterParams = () => {
+    const params = new URLSearchParams();
     if (category) params.set("category", category);
     if (from) params.set("from", from);
     if (to) params.set("to", to);
+    return params;
+  };
+
+  const load = async () => {
+    setLoading(true);
+    const params = filterParams();
+    params.set("page", String(page));
     const response = await fetch(`/api/operational-logs?${params}`);
     const body = await response.json().catch(() => ({}));
     if (!response.ok) {
@@ -669,6 +885,34 @@ function OperationalLogSection() {
     setTo(format(end));
   };
 
+  // Xuất báo cáo Excel duy nhất
+  const exportExcel = async () => {
+    if (from && to && from > to) {
+      notify("Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.", "error");
+      return;
+    }
+    setExporting(true);
+    const params = filterParams();
+    params.set("format", "xlsx");
+    const response = await fetch(`/api/operational-logs/export?${params}`);
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      notify(readableApiError(body.error, "Không thể xuất báo cáo nhật ký Excel."), "error");
+      setExporting(false);
+      return;
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    const dateStr = new Date().toISOString().slice(0, 10);
+    link.download = `nhat-ky-van-hanh-${dateStr}.xlsx`;
+    link.click();
+    URL.revokeObjectURL(url);
+    notify("Đã tải xuống báo cáo kiểm toán Excel thành công.", "success");
+    setExporting(false);
+  };
+
   useEffect(() => {
     void fetch("/api/operational-logs/settings")
       .then(async (r) => (r.ok ? r.json() : null))
@@ -686,8 +930,8 @@ function OperationalLogSection() {
     const body = await response.json().catch(() => ({}));
     notify(
       response.ok
-        ? "Đã cập nhật thời gian lưu trữ nhật ký."
-        : readableApiError(body.error, "Không thể cập nhật thời gian lưu."),
+        ? "Đã cập nhật chính sách lưu trữ nhật ký."
+        : readableApiError(body.error, "Không thể cập nhật chính sách lưu trữ."),
       response.ok ? "success" : "error",
     );
   };
@@ -699,102 +943,245 @@ function OperationalLogSection() {
     configuration: "Cấu hình",
   };
 
+  const badgeClass: Record<OperationalLogRow["category"], string> = {
+    account: "bento-badge-cat-account",
+    authentication: "bento-badge-cat-authentication",
+    knowledge: "bento-badge-cat-knowledge",
+    configuration: "bento-badge-cat-configuration",
+  };
+
+  const first = total ? (page - 1) * 30 + 1 : 0;
+  const last = Math.min(page * 30, total);
+  const totalPages = Math.ceil(total / 30) || 1;
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Nhật ký vận hành & Kiểm toán hệ thống</CardTitle>
-        <CardDescription>
-          Ghi nhận hoạt động đăng nhập, thay đổi tài khoản, cấu hình AI và kho tri thức. Không lưu mật khẩu, OTP hoặc dữ liệu hội thoại riêng tư.
-        </CardDescription>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 180px 140px auto", gap: "0.75rem", marginTop: "1rem", alignItems: "flex-end" }}>
-          <Select
-            label="Loại hoạt động"
-            value={category}
-            onChange={(e) => {
-              setPage(1);
-              setCategory(e.target.value);
-            }}
-          >
-            <option value="">Tất cả hoạt động</option>
-            <option value="account">Quản trị tài khoản</option>
-            <option value="authentication">Đăng nhập & Xác thực</option>
-            <option value="knowledge">Kho tri thức</option>
-            <option value="configuration">Cấu hình hệ thống</option>
-          </Select>
-          <Select
-            label="Thời gian"
-            value={range}
-            onChange={(e) => changeRange(e.target.value)}
-          >
-            <option value="today">Hôm nay</option>
-            <option value="7d">7 ngày qua</option>
-            <option value="30d">30 ngày qua</option>
-            <option value="all">Toàn bộ thời gian</option>
-            <option value="custom">Tùy chọn ngày</option>
-          </Select>
-          <Input
-            label="Lưu nhật ký (ngày)"
-            type="number"
-            min="7"
-            max="3650"
-            value={String(retentionDays)}
-            onChange={(e) => setRetentionDays(Number(e.target.value))}
-          />
-          <Button variant="secondary" size="md" onClick={() => void saveRetention()}>
-            Lưu hạn
+    <div className="bento-log-container">
+      {/* 1. Thanh Chính sách lưu trữ (Retention Policy Bar) độc lập */}
+      <div className="bento-log-policy-bar">
+        <div className="bento-log-policy-info">
+          <div className="bento-log-policy-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              <polyline points="12 8 12 12 14 14" />
+            </svg>
+          </div>
+          <div className="bento-log-policy-text">
+            <strong>Chính sách lưu trữ nhật ký & Kiểm toán</strong>
+            <p>Hệ thống tự động lưu vết toàn bộ hoạt động và tự dọn dẹp các sự kiện cũ hơn thời hạn quy định.</p>
+          </div>
+        </div>
+        <div className="bento-log-policy-actions">
+          <div className="bento-log-policy-input-group">
+            <span>Thời hạn:</span>
+            <input
+              type="number"
+              min="7"
+              max="3650"
+              value={retentionDays}
+              onChange={(e) => setRetentionDays(Number(e.target.value))}
+              aria-label="Số ngày lưu trữ nhật ký"
+            />
+            <span>ngày</span>
+          </div>
+          <Button variant="secondary" size="sm" onClick={() => void saveRetention()}>
+            Lưu chính sách
           </Button>
         </div>
-      </CardHeader>
-      <CardContent style={{ padding: 0 }}>
-        {loading ? (
-          <div style={{ padding: "2rem", textAlign: "center", color: "var(--color-text-secondary)" }}>
-            Đang tải nhật ký…
+      </div>
+
+      {/* 2. Thẻ Card Bento chính chứa Toolbar và Danh sách */}
+      <Card>
+        <CardHeader style={{ paddingBottom: "1rem" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.5rem" }}>
+            <div>
+              <CardTitle>Nhật ký vận hành & Kiểm toán hệ thống</CardTitle>
+              <CardDescription>
+                Theo dõi an toàn hoạt động đăng nhập, phân quyền người dùng, cấu hình AI và cập nhật kho tri thức. Không lưu mật khẩu, OTP hay nội dung hội thoại riêng tư.
+              </CardDescription>
+            </div>
           </div>
-        ) : logs.length === 0 ? (
-          <EmptyState
-            title="Chưa có bản ghi nhật ký phù hợp"
-            description="Các thao tác vận hành mới sẽ tự động xuất hiện tại đây khi phát sinh."
-          />
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            {logs.map((log) => (
-              <details
-                key={log.id}
-                style={{
-                  borderBottom: "1px solid var(--color-border-subtle)",
-                  padding: "0.875rem 1.25rem",
-                  cursor: "pointer",
-                }}
+
+          {/* Bento Log Toolbar */}
+          <div className="bento-log-toolbar" style={{ marginTop: "1rem" }}>
+            <div className="bento-log-filters">
+              <div className="bento-log-filter-item">
+                <BentoSelect
+                  label="Loại hoạt động"
+                  value={category}
+                  onChange={(val) => {
+                    setPage(1);
+                    setCategory(val);
+                  }}
+                  options={[
+                    { value: "", label: "Tất cả hoạt động" },
+                    { value: "account", label: "Quản trị tài khoản" },
+                    { value: "authentication", label: "Đăng nhập & Xác thực" },
+                    { value: "knowledge", label: "Kho tri thức" },
+                    { value: "configuration", label: "Cấu hình hệ thống" },
+                  ]}
+                  minWidth="190px"
+                />
+              </div>
+
+              <div className="bento-log-filter-item">
+                <BentoSelect
+                  label="Thời gian"
+                  value={range}
+                  onChange={(val) => changeRange(val)}
+                  options={[
+                    { value: "all", label: "Toàn bộ thời gian" },
+                    { value: "today", label: "Hôm nay" },
+                    { value: "7d", label: "7 ngày qua" },
+                    { value: "30d", label: "30 ngày qua" },
+                    { value: "custom", label: "Tùy chọn ngày" },
+                  ]}
+                  minWidth="160px"
+                />
+              </div>
+
+              {range === "custom" && (
+                <>
+                  <div className="bento-log-filter-item" style={{ width: "140px" }}>
+                    <Input
+                      label="Từ ngày"
+                      type="date"
+                      value={from}
+                      max={to || undefined}
+                      onChange={(e) => {
+                        setPage(1);
+                        setFrom(e.target.value);
+                      }}
+                    />
+                  </div>
+                  <div className="bento-log-filter-item" style={{ width: "140px" }}>
+                    <Input
+                      label="Đến ngày"
+                      type="date"
+                      value={to}
+                      min={from || undefined}
+                      onChange={(e) => {
+                        setPage(1);
+                        setTo(e.target.value);
+                      }}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Vế phải: Đếm số lượng & Nút xuất Excel duy nhất */}
+            <div className="bento-log-actions-bar">
+              <span className="bento-log-count-pill">
+                Tổng số: <strong>{total}</strong> sự kiện
+              </span>
+
+              <button
+                type="button"
+                className="bento-export-btn"
+                disabled={exporting}
+                onClick={() => void exportExcel()}
+                title="Xuất bảng tính Excel chi tiết đầy đủ thông tin hành động và đối tượng tác động"
               >
-                <summary style={{ display: "flex", alignItems: "center", gap: "0.75rem", outline: "none" }}>
-                  <Badge variant="neutral" size="sm">
-                    {label[log.category] ?? log.category}
-                  </Badge>
-                  <strong style={{ flex: 1, fontSize: "0.875rem" }}>{log.summary}</strong>
-                  <time style={{ fontSize: "0.8125rem", color: "var(--color-text-tertiary)" }}>
-                    {new Date(log.created_at).toLocaleString("vi-VN")}
-                  </time>
-                </summary>
-                {Object.keys(log.details ?? {}).length > 0 && (
-                  <pre
-                    style={{
-                      background: "var(--color-bg-secondary)",
-                      padding: "0.75rem",
-                      borderRadius: "var(--radius-md)",
-                      marginTop: "0.5rem",
-                      fontSize: "0.8125rem",
-                      overflowX: "auto",
-                    }}
-                  >
-                    {JSON.stringify(log.details, null, 2)}
-                  </pre>
-                )}
-              </details>
-            ))}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <line x1="8" y1="13" x2="16" y2="13" />
+                  <line x1="8" y1="17" x2="16" y2="17" />
+                  <line x1="10" y1="9" x2="8" y2="9" />
+                </svg>
+                {exporting ? "Đang xuất báo cáo…" : "Xuất báo cáo Excel"}
+              </button>
+            </div>
           </div>
+        </CardHeader>
+
+        {/* 3. Danh sách nhật ký vận hành Bento */}
+        <CardContent style={{ padding: "0 1.25rem 1.25rem 1.25rem" }}>
+          {loading ? (
+            <div style={{ padding: "3rem", textAlign: "center", color: "var(--color-text-secondary)" }}>
+              Đang tải danh sách nhật ký…
+            </div>
+          ) : logs.length === 0 ? (
+            <EmptyState
+              title="Không tìm thấy bản ghi nhật ký phù hợp"
+              description="Các thao tác vận hành mới sẽ tự động xuất hiện tại đây khi phát sinh trong hệ thống."
+            />
+          ) : (
+            <div className="bento-log-card-list">
+              {logs.map((log) => (
+                <div key={log.id} className="bento-log-row-card">
+                  <details>
+                    <summary className="bento-log-summary-row">
+                      <div className="bento-log-summary-left">
+                        <span className={`bento-badge-cat ${badgeClass[log.category] ?? ""}`}>
+                          {label[log.category] ?? log.category}
+                        </span>
+                        <span className="bento-log-title-text" title={log.summary}>
+                          {log.summary}
+                        </span>
+                      </div>
+                      <div className="bento-log-summary-right">
+                        <time className="bento-log-timestamp">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10" />
+                            <polyline points="12 6 12 12 16 14" />
+                          </svg>
+                          {new Date(log.created_at).toLocaleString("vi-VN")}
+                        </time>
+                        <span className="bento-log-chevron">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <polyline points="6 9 12 15 18 9" />
+                          </svg>
+                        </span>
+                      </div>
+                    </summary>
+
+                    {/* Khối chi tiết Bento Event Detail Box */}
+                    {Object.keys(log.details ?? {}).length > 0 && (
+                      <div className="bento-log-detail-wrapper">
+                        <LogEventDetail details={log.details} category={log.category} />
+                      </div>
+                    )}
+                  </details>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+
+        {/* 4. Footer phân trang Bento */}
+        {total > 0 && (
+          <CardFooter style={{ borderTop: "1px solid var(--color-border-subtle)", padding: "0.875rem 1.25rem" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", flexWrap: "wrap", gap: "0.5rem" }}>
+              <span className="bento-log-page-info">
+                Hiển thị <strong>{first}–{last}</strong> trong tổng số <strong>{total}</strong> hoạt động
+              </span>
+              <div className="bento-log-page-nav">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page <= 1 || loading}
+                  onClick={() => setPage(page - 1)}
+                >
+                  Trang trước
+                </Button>
+                <span style={{ fontSize: "12px", color: "var(--color-text-secondary)", padding: "0 6px" }}>
+                  Trang {page} / {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page >= totalPages || loading}
+                  onClick={() => setPage(page + 1)}
+                >
+                  Trang sau
+                </Button>
+              </div>
+            </div>
+          </CardFooter>
         )}
-      </CardContent>
-    </Card>
+      </Card>
+    </div>
   );
 }
 

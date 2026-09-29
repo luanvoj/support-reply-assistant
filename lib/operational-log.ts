@@ -30,10 +30,10 @@ export async function writeOperationalLog(input: OperationalLogInput, client?: Q
 
 export async function getUserLogSnapshot(userId: string, client?: Queryable): Promise<Record<string, string>> {
   const executor = client ?? { query };
-  const result = await executor.query<{ full_name: string; username: string; role: string }>(
-    `SELECT u.full_name, u.username, r.code AS role
+  const result = await executor.query<{ full_name: string; username: string; email: string; role: string }>(
+    `SELECT u.full_name, u.username, u.email, r.code AS role
      FROM users u JOIN roles r ON r.id = u.role_id WHERE u.id = $1`, [userId],
   );
   const user = result.rows[0];
-  return user ? { fullName: user.full_name, username: user.username, role: user.role } : { userId };
+  return user ? { fullName: user.full_name, username: user.username, email: user.email, role: user.role } : { userId };
 }

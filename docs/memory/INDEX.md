@@ -2,6 +2,7 @@
 
 ## Snapshot
 
+- **Plan mới**: [chuẩn hóa UI Nhật ký vận hành & nâng cấp báo cáo xuất Excel](plans/2026-09-29-operational-logs-bento-ux-and-export.md) — Tách Bento Retention Panel, tinh gọn toolbar bộ lọc, gộp thành 1 nút xuất Excel, chuyển đổi chi tiết sự kiện từ raw JSON sang Bento Metadata Card và bổ sung rõ tên đối tượng tác động (tên bài viết bị xóa) trong file Excel.
 - **Kế hoạch tổng hợp toàn hệ thống**: Đã gộp toàn bộ 28 kế hoạch kiến trúc và chuẩn hóa chức năng thành [Tổng hợp kế hoạch kiến trúc & phát triển hệ thống](plans/CONSOLIDATED-PLANS.md) theo 5 trụ cột:
   1. *Xác thực, Danh tính & Vòng đời Tài khoản* (Auth, Identity & Successor Lifecycle).
   2. *Tích hợp AI Provider & Chế độ Suy thoái* (AI Resilience & Degraded Mode).
@@ -29,7 +30,9 @@
 
 ## Việc mở có hiệu lực
 
-- Plan mới: [lọc thời gian và phân trang Nhật ký vận hành](plans/2026-09-28-operational-log-time-filter-pagination.md) — filter server-side theo khoảng thời gian/category, footer phân trang rõ ràng và không ảnh hưởng retention.
+- Plan mới: [Loại bỏ CTA gộp từng bài, giữ an toàn Smart Merge theo đợt](plans/2026-09-29-remove-single-article-merge-cta.md) — chỉ gỡ entry point UI đơn lẻ trên route active; giữ nguyên API tạo nháp và toàn bộ lifecycle batch.
+
+- Plan mới: [Lọc ngày, xuất Nhật ký vận hành và xác thực email tạo người dùng](plans/2026-09-29-operational-log-export-and-user-email-validation.md) — khôi phục UI khoảng ngày tùy chọn, xuất Excel/CSV đúng filter và hoàn thiện validation email.
 
 1. Chốt provider/model embedding và nghiệm thu semantic vector retrieval.
 2. Quyết định target production, secrets, TLS, backup, monitoring và release authorization.

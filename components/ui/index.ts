@@ -9,3 +9,4 @@ export * from "./table";
 export * from "./avatar";
 export * from "./skeleton";
 export * from "./empty-state";
+export * from "./bento-select";

@@ -43,6 +43,6 @@ export async function POST(request: Request) {
   }
   await createSession(payload);
   await query("UPDATE users SET last_login_at = now() WHERE id = $1", [user.id]);
-  await writeOperationalLog({ category: "authentication", action: "login_succeeded", summary: `${user.username} đã đăng nhập`, actorUserId: user.id, actorSnapshot: { fullName: user.full_name, username: user.username, role: user.role } });
+  await writeOperationalLog({ category: "authentication", action: "login_succeeded", summary: `${user.username} đã đăng nhập`, actorUserId: user.id, actorSnapshot: { fullName: user.full_name, username: user.username, email: user.email, role: user.role } });
   return NextResponse.json({ user: { id: user.id, email: user.email, username: user.username, role: user.role } });
 }

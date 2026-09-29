@@ -102,6 +102,8 @@ docs/         API, triển khai, bảo mật và tài liệu vận hành
 - Ảnh đại diện chỉ chủ tài khoản được đọc, được kiểm tra nội dung và chuẩn hóa thành WebP trước khi lưu.
 - Tài khoản bị vô hiệu hóa có thời gian lưu giữ trước khi làm sạch; dữ liệu tri thức và yêu cầu đang mở phải được chuyển giao trước đó.
 - Mọi phản hồi thiếu căn cứ đều được ưu tiên minh bạch lý do hơn là tạo nội dung không được kiểm chứng.
+- **Nhật ký vận hành & Kiểm toán hệ thống:** Tự động ghi vết toàn bộ hoạt động đăng nhập, phân quyền, cấu hình AI và vòng đời bài viết tri thức (bao gồm chi tiết bài viết bị xóa vĩnh viễn, người dùng tác động). Hỗ trợ chính sách lưu trữ linh hoạt (7–3650 ngày), giao diện Bento Box chi tiết và kết xuất báo cáo Excel chuyên nghiệp (.xlsx) với định dạng bảng tính cao cấp.
+- **Thành phần giao diện Bento:** Hệ thống dropdown tùy biến (`BentoSelect`) thay thế hoàn toàn native select của trình duyệt, cung cấp menu xổ xuống bo góc tròn trịa, hiệu ứng kính mờ (frosted glass), bóng đổ Bento phân lớp và dấu kiểm (checkmark) trực quan chuẩn UI/UX.
 
 ## Bắt đầu sử dụng
 

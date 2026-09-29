@@ -383,27 +383,6 @@ export function KnowledgeScreen() {
     }
   };
 
-  const suggestMerge = async (item: Article) => {
-    const response = await fetch("/api/knowledge/merge/suggest", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ articleId: item.id }),
-    });
-    const body = await response.json().catch(() => ({}));
-    if (response.ok && body.suggestion) {
-      notify(
-        `Đã tạo bản nháp gộp từ “${body.suggestion.sourceTitles.join("” và “")}”. Hãy mở bản nháp để duyệt trước khi xuất bản.`,
-        "success",
-      );
-      void load();
-    } else {
-      notify(
-        body.message ?? body.error ?? "Chưa thể tạo đề xuất gộp bài viết.",
-        "info",
-      );
-    }
-  };
-
   const decideMerge = async (item: Article, decision: "approve" | "reject") => {
     if (!item.merge_run_id) return;
     const accepted = await confirm({
@@ -609,7 +588,7 @@ export function KnowledgeScreen() {
       {/* Header */}
       <div className="bento-page-header">
         <div>
-          <span className="bento-eyebrow">QUẢN LÝ DỮ LIỆU CĂN CỨ</span>
+          <span className="bento-eyebrow">QUẢN LÝ DỮ LIỆU</span>
           <h1 className="bento-page-title">Kho Tri Thức & Tài Liệu</h1>
           <p className="bento-page-desc">
             Quản lý tài liệu nguồn được kiểm duyệt dùng để cung cấp câu trả lời có căn cứ cho Trợ lý AI.
@@ -1947,13 +1926,7 @@ export function KnowledgeScreen() {
                                 Từ chối
                               </Button>
                             </>
-                          ) : (
-                            item.status === "published" && (
-                              <Button variant="ghost" size="sm" onClick={() => void suggestMerge(item)}>
-                                Gộp
-                              </Button>
-                            )
-                          )}
+                          ) : null}
                           {item.status !== "archived" ? (
                             <Button variant="ghost" size="sm" onClick={() => void archive(item.id)}>
                               Lưu trữ
