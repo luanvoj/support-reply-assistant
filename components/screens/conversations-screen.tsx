@@ -82,7 +82,7 @@ export function ConversationsScreen() {
     <AppShell screen="conversations">
       <div className="bento-page-header">
         <div>
-          <span className="bento-eyebrow">KHÔNG GIAN LÀM VIỆC / HỘI THOẠI</span>
+          <span className="bento-eyebrow">NHẬT KÝ & TRUY VẾT PHẢN HỒI</span>
           <h1 className="bento-page-title">Lịch sử hội thoại</h1>
           <p className="bento-page-desc">
             Tra cứu và quản lý các phiên hỏi đáp và phản hồi đã được xử lý trong hệ thống.

@@ -259,8 +259,10 @@ function ShellContent({
                   href={href}
                   key={href}
                 >
-                  <NavigationIcon name={icon} />
-                  <span>{name}</span>
+                  <span className={`bento-nav-icon-badge bento-nav-icon-${icon}`}>
+                    <NavigationIcon name={icon} />
+                  </span>
+                  <span className="bento-nav-text">{name}</span>
                   {isActive && <span className="bento-nav-indicator" />}
                 </a>
               );

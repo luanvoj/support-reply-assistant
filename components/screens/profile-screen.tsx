@@ -206,7 +206,7 @@ export function ProfileScreen() {
     <AppShell screen="profile">
       <div className="bento-page-header">
         <div>
-          <span className="bento-eyebrow">TÀI KHOẢN / CÁ NHÂN</span>
+          <span className="bento-eyebrow">THÔNG TIN & BẢO MẬT CÁ NHÂN</span>
           <h1 className="bento-page-title">Hồ sơ người dùng</h1>
           <p className="bento-page-desc">
             Quản lý thông tin tài khoản, ảnh đại diện, đổi mật khẩu và bảo mật hai lớp.

@@ -364,7 +364,7 @@ export function AssistantScreen() {
     <AppShell screen="assistant">
       <div className="bento-page-header">
         <div>
-          <span className="bento-eyebrow">KHÔNG GIAN LÀM VIỆC / TRỢ LÝ</span>
+          <span className="bento-eyebrow">HỎI ĐÁP & HỖ TRỢ NGHIỆP VỤ</span>
           <h1 className="bento-page-title">Trợ lý phản hồi thông minh</h1>
           <p className="bento-page-desc">
             Trò chuyện tự nhiên; mọi thông tin nghiệp vụ luôn được đối chiếu với tài liệu đã xác minh.

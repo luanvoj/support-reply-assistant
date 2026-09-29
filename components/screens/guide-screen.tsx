@@ -202,8 +202,8 @@ export function GuideScreen() {
             ==================================================================== */}
         <header className="bento-guide-hero">
           <div className="bento-guide-hero-content">
-            <div className="bento-badge-eyebrow">
-              <span className="bento-pulse-dot" /> CẨM NANG VẬN HÀNH & NGUYÊN TẮC AN TOÀN
+            <div className="bento-eyebrow">
+              <span className="bento-pulse-dot" /> CẨM NANG & NGUYÊN TẮC VẬN HÀNH
             </div>
             <h1 className="bento-guide-hero-title">
               Hiểu rõ căn cứ trước khi phản hồi.

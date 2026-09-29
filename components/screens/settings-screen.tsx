@@ -1130,9 +1130,9 @@ export function SettingsScreen() {
     <AppShell screen="settings">
       <div className="bento-page-header">
         <div>
-          <span className="bento-badge-eyebrow">QUẢN TRỊ & THIẾT LẬP</span>
+          <span className="bento-eyebrow">QUẢN TRỊ & THIẾT LẬP HỆ THỐNG</span>
           <h1 className="bento-page-title">Cài Đặt Hệ Thống</h1>
-          <p className="bento-page-subtitle">
+          <p className="bento-page-desc">
             Cấu hình mô hình ngôn ngữ AI, tham số tìm kiếm tri thức, phân quyền và nhật ký kiểm toán.
           </p>
         </div>

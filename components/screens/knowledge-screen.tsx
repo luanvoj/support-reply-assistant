@@ -128,6 +128,7 @@ export function KnowledgeScreen() {
   const [mergeLimit, setMergeLimit] = useState(100);
   const [mergeThreshold, setMergeThreshold] = useState(0.78);
   const [mergeGroup, setMergeGroup] = useState("");
+  const [mergeConfigOpen, setMergeConfigOpen] = useState(false);
 
   const editorRef = useRef<HTMLDivElement | null>(null);
   const editorTitleRef = useRef<HTMLInputElement | null>(null);
@@ -438,11 +439,21 @@ export function KnowledgeScreen() {
     const b = await r.json().catch(() => ({}));
     if (r.ok) {
       setMergeBatch(b.batch);
-      setMergeItems(b.items ?? []);
+      const items = b.items ?? [];
+      setMergeItems(items);
+      // A completed draft must never remain in the local selection from an
+      // earlier render; otherwise the bulk CTA can still show a stale count.
+      const selectableIds = new Set(
+        items
+          .filter((item: { id: string; status: string }) => !["drafted", "skipped"].includes(item.status))
+          .map((item: { id: string }) => item.id),
+      );
+      setSelectedMergeItems((selected) => selected.filter((itemId) => selectableIds.has(itemId)));
     }
   };
 
   const startMergeBatch = async () => {
+    setMergeConfigOpen(false);
     setMergeItems([]);
     setSelectedMergeItems([]);
     setMergeDiff(null);
@@ -497,11 +508,23 @@ export function KnowledgeScreen() {
 
   const generateSelectedMerges = async (itemIds = selectedMergeItems) => {
     if (!mergeBatch || !itemIds.length) return;
+    const selectableIds = new Set(
+      mergeItems
+        .filter((item) => !["drafted", "skipped"].includes(item.status))
+        .map((item) => item.id),
+    );
+    const selectedItems = mergeItems.filter(
+      (item) => itemIds.includes(item.id) && selectableIds.has(item.id),
+    );
+    if (!selectedItems.length) {
+      setSelectedMergeItems([]);
+      return;
+    }
     setGeneratingMerge(true);
     let done = 0;
     let failed = 0;
     let skipped = 0;
-    for (const item of mergeItems.filter((x) => itemIds.includes(x.id))) {
+    for (const item of selectedItems) {
       const suggest = await fetch("/api/knowledge/merge/suggest", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -564,14 +587,31 @@ export function KnowledgeScreen() {
     );
   }, [articles, articleFilter]);
 
+  const articleTitleMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const a of articles) {
+      map.set(a.id, a.title);
+    }
+    return map;
+  }, [articles]);
+
+  const selectableMergeItems = useMemo(
+    () => mergeItems.filter((item) => !["drafted", "skipped"].includes(item.status)),
+    [mergeItems],
+  );
+  const selectedSelectableMergeItems = useMemo(
+    () => selectedMergeItems.filter((itemId) => selectableMergeItems.some((item) => item.id === itemId)),
+    [selectedMergeItems, selectableMergeItems],
+  );
+
   return (
     <AppShell screen="knowledge">
       {/* Header */}
       <div className="bento-page-header">
         <div>
-          <span className="bento-badge-eyebrow">QUẢN LÝ DỮ LIỆU CĂN CỨ</span>
+          <span className="bento-eyebrow">QUẢN LÝ DỮ LIỆU CĂN CỨ</span>
           <h1 className="bento-page-title">Kho Tri Thức & Tài Liệu</h1>
-          <p className="bento-page-subtitle">
+          <p className="bento-page-desc">
             Quản lý tài liệu nguồn được kiểm duyệt dùng để cung cấp câu trả lời có căn cứ cho Trợ lý AI.
           </p>
         </div>
@@ -607,180 +647,895 @@ export function KnowledgeScreen() {
 
       {/* Workspace Gộp bài viết */}
       {showMergeWorkspace && (
-        <Card style={{ marginBottom: "1.5rem", border: "1px solid var(--color-border-active)" }}>
-          <CardHeader>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div>
-                <CardTitle>Gộp bài viết trùng lặp theo đợt</CardTitle>
-                <CardDescription>
-                  Hệ thống tự động phát hiện bài viết tương đồng trong cùng nhóm dịch vụ và chính sách phản hồi.
-                </CardDescription>
+        <Card
+          variant="elevated"
+          style={{
+            marginBottom: "var(--space-6)",
+            border: "1px solid var(--border-default)",
+            borderRadius: "var(--radius-xl)",
+            overflow: "hidden",
+            background: "var(--bg-surface)",
+            boxShadow: "var(--shadow-card)",
+          }}
+        >
+          {/* Header Workspace */}
+          <div
+            style={{
+              padding: "var(--space-4) var(--space-6)",
+              background: "linear-gradient(180deg, var(--bg-surface-subtle) 0%, var(--bg-surface) 100%)",
+              borderBottom: "1px solid var(--border-default)",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: "var(--space-3)",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+              <div
+                style={{
+                  width: "40px",
+                  height: "40px",
+                  borderRadius: "var(--radius-md)",
+                  background: "linear-gradient(135deg, rgba(99, 102, 241, 0.14), rgba(79, 70, 229, 0.24))",
+                  color: "var(--brand-primary)",
+                  display: "grid",
+                  placeItems: "center",
+                  border: "1px solid var(--brand-light-border)",
+                  boxShadow: "0 2px 8px var(--brand-glow)",
+                  flexShrink: 0,
+                }}
+              >
+                <IconMergeArticles size={22} />
               </div>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", flexWrap: "wrap" }}>
+                  <span
+                    style={{
+                      fontSize: "11px",
+                      fontWeight: 800,
+                      letterSpacing: "0.08em",
+                      color: "var(--brand-primary)",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    HỢP NHẤT DỮ LIỆU THÔNG MINH
+                  </span>
+                  {mergeBatch && (
+                    <Badge
+                      variant={
+                        mergeBatch.status === "review_ready" || mergeBatch.status === "completed"
+                          ? "success"
+                          : ["scanning", "generating", "queued"].includes(mergeBatch.status)
+                          ? "brand"
+                          : mergeBatch.status === "failed"
+                          ? "danger"
+                          : "neutral"
+                      }
+                      size="sm"
+                      dot
+                      pulse={["scanning", "generating"].includes(mergeBatch.status)}
+                    >
+                      {mergeBatch.status === "review_ready"
+                        ? "Đã sẵn sàng rà soát"
+                        : mergeBatch.status === "scanning"
+                        ? "Đang quét dữ liệu…"
+                        : mergeBatch.status === "generating"
+                        ? "Đang tạo bản nháp…"
+                        : mergeBatch.status === "queued"
+                        ? "Đang xếp hàng đợi"
+                        : mergeBatch.status === "completed"
+                        ? "Đã hoàn thành"
+                        : mergeBatch.status === "failed"
+                        ? "Gặp sự cố"
+                        : "Đã hủy"}
+                    </Badge>
+                  )}
+                </div>
+                <h2
+                  style={{
+                    margin: "2px 0 0",
+                    fontSize: "var(--text-lg)",
+                    fontWeight: 700,
+                    color: "var(--text-primary)",
+                    letterSpacing: "-0.02em",
+                  }}
+                >
+                  Gộp bài viết trùng lặp theo đợt
+                </h2>
+                <p
+                  style={{
+                    margin: "2px 0 0",
+                    fontSize: "var(--text-xs)",
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  Hệ thống tự động phát hiện bài viết tương đồng trong cùng nhóm dịch vụ và chính sách phản hồi.
+                </p>
+              </div>
+            </div>
+
+            {/* Header Controls */}
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
               {mergeBatch && ["queued", "scanning", "generating"].includes(mergeBatch.status) && (
-                <Button variant="secondary" size="sm" onClick={() => void cancelMergeBatch()}>
+                <Button variant="danger" size="sm" onClick={() => void cancelMergeBatch()}>
                   Hủy đợt quét
                 </Button>
               )}
-            </div>
-          </CardHeader>
-          <CardContent>
-            {!mergeBatch || ["failed", "cancelled", "completed"].includes(mergeBatch.status) ? (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 140px 200px auto", gap: "1rem", alignItems: "flex-end" }}>
-                <Input
-                  label="Nhóm dịch vụ lọc"
-                  placeholder="Để trống = quét toàn bộ kho"
-                  value={mergeGroup}
-                  onChange={(e) => setMergeGroup(e.target.value)}
-                />
-                <Input
-                  label="Số bài tối đa"
-                  type="number"
-                  min="10"
-                  max="200"
-                  value={String(mergeLimit)}
-                  onChange={(e) => setMergeLimit(Number(e.target.value))}
-                />
-                <div>
-                  <label style={{ display: "block", fontSize: "0.8125rem", fontWeight: "600", marginBottom: "0.375rem" }}>
-                    Ngưỡng tương đồng: {Math.round(mergeThreshold * 100)}%
-                  </label>
-                  <input
-                    type="range"
-                    min="0.5"
-                    max="0.98"
-                    step="0.01"
-                    value={mergeThreshold}
-                    onChange={(e) => setMergeThreshold(Number(e.target.value))}
-                    style={{ width: "100%", accentColor: "var(--color-primary)" }}
-                  />
-                </div>
-                <Button variant="primary" size="md" onClick={() => void startMergeBatch()}>
-                  Bắt đầu quét
+              {mergeBatch && !["queued", "scanning", "generating"].includes(mergeBatch.status) && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setMergeConfigOpen((v) => !v)}
+                >
+                  {mergeConfigOpen ? "Thu gọn cấu hình" : "Điều chỉnh tham số quét"}
                 </Button>
-              </div>
-            ) : (
-              <div style={{ padding: "1rem 0" }}>
-                <strong>
-                  {mergeBatch.status === "review_ready"
-                    ? "Quét xong — Đã sẵn sàng để rà soát nhóm gộp"
-                    : "Đang quét và so sánh các bài viết…"}
-                </strong>
-                <div style={{ margin: "0.75rem 0", background: "var(--color-bg-secondary)", borderRadius: "999px", overflow: "hidden", height: "8px" }}>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowMergeWorkspace(false)}
+                title="Đóng workspace"
+              >
+                ✕ Thu gọn
+              </Button>
+            </div>
+          </div>
+
+          {/* Bento Stats / KPI Summary */}
+          {mergeBatch && (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                gap: "var(--space-3)",
+                padding: "var(--space-4) var(--space-6)",
+                background: "var(--bg-surface-subtle)",
+                borderBottom: "1px solid var(--border-default)",
+              }}
+            >
+              {/* Card 1: Số bài đã quét */}
+              <div
+                style={{
+                  background: "var(--bg-surface)",
+                  padding: "var(--space-3) var(--space-4)",
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid var(--border-default)",
+                  boxShadow: "var(--shadow-xs)",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: "11px", color: "var(--text-muted)", fontWeight: 600 }}>Tiến độ quét</span>
+                  <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--brand-primary)" }}>
+                    {Math.round((mergeBatch.scanned_articles / Math.max(mergeBatch.total_articles, 1)) * 100)}%
+                  </span>
+                </div>
+                <div style={{ fontSize: "var(--text-xl)", fontWeight: 800, color: "var(--text-primary)", marginTop: "4px" }}>
+                  {mergeBatch.scanned_articles}{" "}
+                  <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", fontWeight: 400 }}>
+                    / {mergeBatch.total_articles} bài
+                  </span>
+                </div>
+                <div
+                  style={{
+                    marginTop: "var(--space-2)",
+                    height: "6px",
+                    borderRadius: "var(--radius-full)",
+                    background: "var(--border-default)",
+                    overflow: "hidden",
+                  }}
+                >
                   <div
                     style={{
                       height: "100%",
                       width: `${Math.min(100, (mergeBatch.scanned_articles / Math.max(mergeBatch.total_articles, 1)) * 100)}%`,
-                      background: "var(--color-primary)",
+                      background: "var(--brand-gradient)",
                       transition: "width 0.3s ease",
                     }}
                   />
                 </div>
-                <span style={{ fontSize: "0.875rem", color: "var(--color-text-secondary)" }}>
-                  {mergeBatch.scanned_articles}/{mergeBatch.total_articles} bài đã quét •{" "}
-                  {mergeBatch.proposed_groups} nhóm bài viết được đề xuất
+              </div>
+
+              {/* Card 2: Nhóm đề xuất */}
+              <div
+                style={{
+                  background: "var(--bg-surface)",
+                  padding: "var(--space-3) var(--space-4)",
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid var(--border-default)",
+                  boxShadow: "var(--shadow-xs)",
+                }}
+              >
+                <span style={{ fontSize: "11px", color: "var(--text-muted)", fontWeight: 600 }}>Nhóm bài viết phát hiện</span>
+                <div
+                  style={{
+                    fontSize: "var(--text-xl)",
+                    fontWeight: 800,
+                    color: mergeBatch.proposed_groups > 0 ? "var(--brand-primary)" : "var(--text-primary)",
+                    marginTop: "4px",
+                  }}
+                >
+                  {mergeBatch.proposed_groups}{" "}
+                  <span style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", fontWeight: 400 }}>
+                    nhóm
+                  </span>
+                </div>
+                <span style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "var(--space-1)", display: "block" }}>
+                  {mergeBatch.proposed_groups > 0 ? "Đã phân tích độ tương đồng" : "Chưa có nhóm nào thỏa ngưỡng"}
                 </span>
-                {mergeBatch.error_code && (
-                  <p style={{ color: "var(--color-danger)", fontSize: "0.875rem", marginTop: "0.5rem" }}>
-                    Lỗi [{mergeBatch.error_code}]: {mergeBatch.error_message}
-                  </p>
-                )}
+              </div>
+
+              {/* Card 3: Ngưỡng tương đồng */}
+              <div
+                style={{
+                  background: "var(--bg-surface)",
+                  padding: "var(--space-3) var(--space-4)",
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid var(--border-default)",
+                  boxShadow: "var(--shadow-xs)",
+                }}
+              >
+                <span style={{ fontSize: "11px", color: "var(--text-muted)", fontWeight: 600 }}>Ngưỡng tương đồng</span>
+                <div style={{ fontSize: "var(--text-xl)", fontWeight: 800, color: "var(--text-primary)", marginTop: "4px" }}>
+                  {Math.round(mergeThreshold * 100)}%
+                </div>
+                <span
+                  style={{
+                    fontSize: "11px",
+                    fontWeight: 600,
+                    color: mergeThreshold >= 0.8 ? "var(--success-text)" : "var(--brand-primary)",
+                    marginTop: "var(--space-1)",
+                    display: "block",
+                  }}
+                >
+                  {mergeThreshold >= 0.85
+                    ? "Khắt khe (Chính xác cao)"
+                    : mergeThreshold >= 0.75
+                    ? "Tiêu chuẩn (Khuyến nghị)"
+                    : "Mở rộng (Tìm kiếm rộng)"}
+                </span>
+              </div>
+
+              {/* Card 4: Phạm vi */}
+              <div
+                style={{
+                  background: "var(--bg-surface)",
+                  padding: "var(--space-3) var(--space-4)",
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid var(--border-default)",
+                  boxShadow: "var(--shadow-xs)",
+                }}
+              >
+                <span style={{ fontSize: "11px", color: "var(--text-muted)", fontWeight: 600 }}>Phạm vi nhóm dịch vụ</span>
+                <div
+                  style={{
+                    fontSize: "var(--text-base)",
+                    fontWeight: 700,
+                    color: "var(--text-primary)",
+                    marginTop: "4px",
+                    textOverflow: "ellipsis",
+                    overflow: "hidden",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {mergeGroup || "Toàn bộ kho tri thức"}
+                </div>
+                <span style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "var(--space-1)", display: "block" }}>
+                  Giới hạn tối đa {mergeLimit} bài viết
+                </span>
+              </div>
+            </div>
+          )}
+
+          <CardContent style={{ padding: "var(--space-6)" }}>
+            {/* Lỗi nếu có */}
+            {mergeBatch?.error_code && (
+              <div
+                style={{
+                  padding: "var(--space-3) var(--space-4)",
+                  background: "var(--danger-bg)",
+                  border: "1px solid var(--danger-border)",
+                  borderRadius: "var(--radius-md)",
+                  color: "var(--danger-text)",
+                  fontSize: "var(--text-sm)",
+                  marginBottom: "var(--space-4)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "var(--space-2)",
+                }}
+              >
+                <strong>Lỗi [{mergeBatch.error_code}]:</strong>
+                <span>{mergeBatch.error_message || "Đã xảy ra lỗi trong quá trình quét đợt gộp."}</span>
               </div>
             )}
 
-            {mergeItems.length > 0 && (
-              <div style={{ marginTop: "1.5rem" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
-                  <strong>Nhóm bài viết đề xuất ({mergeItems.length})</strong>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    disabled={!selectedMergeItems.length || generatingMerge}
-                    onClick={() => void generateSelectedMerges()}
-                  >
-                    {generatingMerge
-                      ? "Đang tạo bản nháp gộp…"
-                      : `Tạo bản nháp gộp (${selectedMergeItems.length})`}
-                  </Button>
+            {/* Khối cấu hình quét: Hiện khi chưa quét, hoặc khi quét xong/lỗi, hoặc khi bấm mở cấu hình */}
+            {(!mergeBatch ||
+              ["failed", "cancelled", "completed"].includes(mergeBatch.status) ||
+              mergeConfigOpen) && (
+              <div
+                style={{
+                  background: "var(--bg-surface-subtle)",
+                  border: "1px solid var(--border-default)",
+                  borderRadius: "var(--radius-lg)",
+                  padding: "var(--space-5)",
+                  marginBottom: mergeBatch ? "var(--space-5)" : 0,
+                }}
+              >
+                <div style={{ marginBottom: "var(--space-4)" }}>
+                  <h3 style={{ margin: 0, fontSize: "var(--text-md)", fontWeight: 700, color: "var(--text-primary)" }}>
+                    Cấu hình tham số đợt quét mới
+                  </h3>
+                  <p style={{ margin: "4px 0 0", fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+                    Tùy chỉnh nhóm dịch vụ lọc, giới hạn bài viết và ngưỡng độ tương đồng trước khi bắt đầu quét.
+                  </p>
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  {mergeItems.map((item) => (
-                    <div
-                      key={item.id}
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                    gap: "var(--space-4)",
+                    alignItems: "flex-start",
+                  }}
+                >
+                  <Input
+                    label="Nhóm dịch vụ lọc"
+                    placeholder="Để trống = quét toàn bộ kho"
+                    value={mergeGroup}
+                    onChange={(e) => setMergeGroup(e.target.value)}
+                  />
+
+                  <Input
+                    label="Số bài tối đa cần quét"
+                    type="number"
+                    min="10"
+                    max="200"
+                    value={String(mergeLimit)}
+                    onChange={(e) => setMergeLimit(Number(e.target.value))}
+                  />
+
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-1-5)" }}>
+                      <label style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--text-secondary)" }}>
+                        Ngưỡng tương đồng:
+                      </label>
+                      <Badge variant={mergeThreshold >= 0.8 ? "success" : "brand"} size="sm">
+                        {Math.round(mergeThreshold * 100)}%
+                      </Badge>
+                    </div>
+
+                    <input
+                      type="range"
+                      min="0.5"
+                      max="0.98"
+                      step="0.01"
+                      value={mergeThreshold}
+                      onChange={(e) => setMergeThreshold(Number(e.target.value))}
                       style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "0.75rem 1rem",
-                        background: "var(--color-bg-secondary)",
-                        borderRadius: "var(--radius-md)",
-                        border: "1px solid var(--color-border-subtle)",
+                        width: "100%",
+                        height: "6px",
+                        accentColor: "var(--brand-primary)",
+                        cursor: "pointer",
                       }}
+                    />
+
+                    {/* Quick Presets */}
+                    <div style={{ display: "flex", gap: "var(--space-1)", marginTop: "var(--space-2)" }}>
+                      {[
+                        { val: 0.65, label: "65% (Mở rộng)" },
+                        { val: 0.75, label: "75% (Chuẩn)" },
+                        { val: 0.85, label: "85% (Khắt khe)" },
+                      ].map((preset) => (
+                        <button
+                          key={preset.val}
+                          type="button"
+                          onClick={() => setMergeThreshold(preset.val)}
+                          style={{
+                            padding: "2px 8px",
+                            fontSize: "10px",
+                            fontWeight: 600,
+                            borderRadius: "var(--radius-sm)",
+                            border:
+                              Math.abs(mergeThreshold - preset.val) < 0.02
+                                ? "1px solid var(--brand-primary)"
+                                : "1px solid var(--border-default)",
+                            background:
+                              Math.abs(mergeThreshold - preset.val) < 0.02
+                                ? "var(--brand-light)"
+                                : "var(--bg-surface)",
+                            color:
+                              Math.abs(mergeThreshold - preset.val) < 0.02
+                                ? "var(--brand-primary)"
+                                : "var(--text-muted)",
+                            cursor: "pointer",
+                          }}
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", alignItems: "flex-end", height: "100%", paddingTop: "1.25rem" }}>
+                    <Button
+                      variant="primary"
+                      size="md"
+                      leftIcon={<IconMergeArticles size={16} />}
+                      onClick={() => void startMergeBatch()}
+                      style={{ width: "100%" }}
                     >
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                        <input
-                          type="checkbox"
-                          disabled={["drafted", "skipped"].includes(item.status)}
-                          checked={selectedMergeItems.includes(item.id)}
-                          onChange={(e) =>
-                            setSelectedMergeItems((v) =>
-                              e.target.checked ? [...v, item.id] : v.filter((id) => id !== item.id),
-                            )
-                          }
-                        />
-                        <div>
-                          <Badge variant="brand" size="sm">
-                            {Math.round(item.score * 100)}% tương đồng
-                          </Badge>
-                          <span style={{ marginLeft: "0.5rem", fontSize: "0.875rem" }}>
-                            {item.reason}
+                      Bắt đầu quét trùng lặp
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Trạng thái đang quét */}
+            {mergeBatch && ["queued", "scanning", "generating"].includes(mergeBatch.status) && (
+              <div
+                style={{
+                  padding: "var(--space-6)",
+                  textAlign: "center",
+                  background: "var(--bg-surface-subtle)",
+                  borderRadius: "var(--radius-lg)",
+                  border: "1px solid var(--border-default)",
+                }}
+              >
+                <div
+                  style={{
+                    width: "48px",
+                    height: "48px",
+                    borderRadius: "50%",
+                    background: "var(--brand-light)",
+                    color: "var(--brand-primary)",
+                    display: "grid",
+                    placeItems: "center",
+                    margin: "0 auto var(--space-3)",
+                    animation: "bento-pulse-ring 2s infinite ease-in-out",
+                  }}
+                >
+                  <IconMergeArticles size={24} />
+                </div>
+                <h4 style={{ margin: "0 0 var(--space-1)", fontSize: "var(--text-base)", fontWeight: 700, color: "var(--text-primary)" }}>
+                  {mergeBatch.status === "generating"
+                    ? "Đang tạo bản nháp gộp từ các tài liệu nguồn…"
+                    : "Đang quét và so sánh các bài viết trong kho…"}
+                </h4>
+                <p style={{ margin: 0, fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+                  Tiến độ: {mergeBatch.scanned_articles} / {mergeBatch.total_articles} bài đã được phân tích ngữ nghĩa vector.
+                </p>
+              </div>
+            )}
+
+            {/* Trạng thái quét xong nhưng 0 nhóm đề xuất: Empty State */}
+            {mergeBatch && mergeBatch.status === "review_ready" && mergeItems.length === 0 && (
+              <EmptyState
+                icon={
+                  <div
+                    style={{
+                      width: "56px",
+                      height: "56px",
+                      borderRadius: "50%",
+                      background: "var(--brand-light)",
+                      color: "var(--brand-primary)",
+                      display: "grid",
+                      placeItems: "center",
+                    }}
+                  >
+                    <IconMergeArticles size={28} />
+                  </div>
+                }
+                title="Không phát hiện bài viết trùng lặp"
+                description={
+                  mergeBatch.total_articles === 0
+                    ? "Không tìm thấy bài viết đã xuất bản nào phù hợp với phạm vi quét hiện tại."
+                    : `Hệ thống đã phân tích ${mergeBatch.scanned_articles} bài viết với ngưỡng tương đồng ${Math.round(
+                        mergeThreshold * 100,
+                      )}%. Tất cả bài viết đều có nội dung riêng biệt hoặc mức tương đồng thấp hơn ngưỡng yêu cầu.`
+                }
+                action={
+                  <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap", justifyContent: "center" }}>
+                    <Button
+                      variant="primary"
+                      size="md"
+                      onClick={() => setMergeConfigOpen(true)}
+                    >
+                      Điều chỉnh tham số & Quét lại
+                    </Button>
+                    {mergeThreshold > 0.65 && (
+                      <Button
+                        variant="outline"
+                        size="md"
+                        onClick={() => {
+                          setMergeThreshold(0.65);
+                          void startMergeBatch();
+                        }}
+                      >
+                        Thử quét lại với ngưỡng 65% (Mở rộng)
+                      </Button>
+                    )}
+                  </div>
+                }
+              />
+            )}
+
+            {/* Danh sách các nhóm bài viết đề xuất gộp */}
+            {mergeItems.length > 0 && (
+              <div style={{ marginTop: "var(--space-2)" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "var(--space-3)",
+                    flexWrap: "wrap",
+                    gap: "var(--space-2)",
+                  }}
+                >
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: "var(--text-base)", fontWeight: 700, color: "var(--text-primary)" }}>
+                      Nhóm bài viết đề xuất hợp nhất ({mergeItems.length})
+                    </h3>
+                    <p style={{ margin: "2px 0 0", fontSize: "var(--text-xs)", color: "var(--text-muted)" }}>
+                      Chọn các nhóm tương đồng cao để hệ thống tạo bản nháp tổng hợp và đưa vào hàng rà soát.
+                    </p>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        if (selectedSelectableMergeItems.length === selectableMergeItems.length) {
+                          setSelectedMergeItems([]);
+                        } else {
+                          setSelectedMergeItems(selectableMergeItems.map((i) => i.id));
+                        }
+                      }}
+                      disabled={!selectableMergeItems.length || generatingMerge}
+                    >
+                      {selectedSelectableMergeItems.length === selectableMergeItems.length
+                        ? "Bỏ chọn tất cả"
+                        : "Chọn tất cả"}
+                    </Button>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      disabled={!selectedSelectableMergeItems.length || generatingMerge}
+                      onClick={() => void generateSelectedMerges()}
+                    >
+                      {generatingMerge
+                        ? "Đang tạo bản nháp gộp…"
+                        : `Tạo bản nháp gộp (${selectedSelectableMergeItems.length})`}
+                    </Button>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2-5)" }}>
+                  {mergeItems.map((item) => {
+                    const isDrafted = item.status === "drafted";
+                    const isSkipped = item.status === "skipped";
+                    const isSelected = !isDrafted && !isSkipped && selectedMergeItems.includes(item.id);
+
+                    return (
+                      <div
+                        key={item.id}
+                        style={{
+                          display: "flex",
+                          alignItems: "flex-start",
+                          justifyContent: "space-between",
+                          padding: "var(--space-3-5) var(--space-4)",
+                          background: isSelected
+                            ? "var(--brand-light)"
+                            : "var(--bg-surface)",
+                          borderRadius: "var(--radius-lg)",
+                          border: isSelected
+                            ? "1px solid var(--brand-light-border)"
+                            : "1px solid var(--border-default)",
+                          boxShadow: "var(--shadow-xs)",
+                          transition: "all var(--duration-fast) var(--ease-spring)",
+                          gap: "var(--space-3)",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--space-3)", flex: 1, minWidth: 0 }}>
+                          <input
+                            type="checkbox"
+                            disabled={isDrafted || isSkipped}
+                            checked={isSelected}
+                            onChange={(e) =>
+                              setSelectedMergeItems((v) =>
+                                e.target.checked ? [...v, item.id] : v.filter((id) => id !== item.id),
+                              )
+                            }
+                            style={{
+                              marginTop: "4px",
+                              width: "16px",
+                              height: "16px",
+                              cursor: isDrafted || isSkipped ? "not-allowed" : "pointer",
+                              accentColor: "var(--brand-primary)",
+                            }}
+                          />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", flexWrap: "wrap" }}>
+                              <Badge
+                                variant={item.score >= 0.85 ? "success" : "brand"}
+                                size="sm"
+                              >
+                                {Math.round(item.score * 100)}% tương đồng
+                              </Badge>
+                              {isDrafted && (
+                                <Badge variant="info" size="sm">
+                                  Đã tạo bản nháp gộp
+                                </Badge>
+                              )}
+                              {isSkipped && (
+                                <Badge variant="neutral" size="sm">
+                                  Giữ riêng
+                                </Badge>
+                              )}
+                              <span style={{ fontSize: "var(--text-xs)", color: "var(--text-secondary)", fontWeight: 500 }}>
+                                {item.reason}
+                              </span>
+                            </div>
+
+                            {/* Danh sách tiêu đề bài viết con trong nhóm */}
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-1)", marginTop: "var(--space-2)" }}>
+                              {item.article_ids.map((artId, idx) => {
+                                const artTitle = articleTitleMap.get(artId);
+                                return (
+                                  <span
+                                    key={artId}
+                                    style={{
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      gap: "4px",
+                                      padding: "2px 8px",
+                                      background: "var(--bg-surface-subtle)",
+                                      border: "1px solid var(--border-subtle)",
+                                      borderRadius: "var(--radius-sm)",
+                                      fontSize: "11px",
+                                      color: "var(--text-secondary)",
+                                      maxWidth: "320px",
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis",
+                                      whiteSpace: "nowrap",
+                                    }}
+                                    title={artTitle || artId}
+                                  >
+                                    <span style={{ color: "var(--text-muted)", fontSize: "10px" }}>#{idx + 1}</span>
+                                    {artTitle || `Bài viết #${artId.slice(0, 8)}`}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Cột phải: Thao tác */}
+                        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", flexShrink: 0 }}>
+                          {isDrafted && item.merge_run_id && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => void openMergeDiff(item.merge_run_id!)}
+                            >
+                              Xem đối chiếu
+                            </Button>
+                          )}
+                          <span
+                            style={{
+                              fontSize: "var(--text-xs)",
+                              fontWeight: 600,
+                              color: "var(--text-muted)",
+                              padding: "4px 8px",
+                              background: "var(--bg-surface-subtle)",
+                              borderRadius: "var(--radius-sm)",
+                            }}
+                          >
+                            {item.article_ids.length} bài nguồn
                           </span>
                         </div>
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                        {item.status === "drafted" && item.merge_run_id && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => void openMergeDiff(item.merge_run_id!)}
-                          >
-                            Xem đối chiếu
-                          </Button>
-                        )}
-                        <span style={{ fontSize: "0.8125rem", color: "var(--color-text-tertiary)" }}>
-                          {item.article_ids.length} bài
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Modal Đối chiếu bản nháp gộp (Thay thế thẻ pre thô) */}
+      {mergeDiff && (
+        <div
+          className="ui-modal-backdrop"
+          role="presentation"
+          onMouseDown={() => setMergeDiff(null)}
+        >
+          <div
+            className="ui-modal ui-modal-lg"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="merge-diff-modal-title"
+            onMouseDown={(e) => e.stopPropagation()}
+            style={{ maxWidth: "1020px", maxHeight: "90vh" }}
+          >
+            <div className="ui-modal-header">
+              <span className="ui-modal-eyebrow">ĐỐI CHIẾU HỢP NHẤT TRI THỨC</span>
+              <div className="ui-modal-title-row">
+                <h2 id="merge-diff-modal-title" className="ui-modal-title">
+                  Đối chiếu bản gộp: {mergeDiff.run.title}
+                </h2>
+                <button
+                  type="button"
+                  className="ui-modal-close"
+                  onClick={() => setMergeDiff(null)}
+                  title="Đóng modal"
+                >
+                  ✕
+                </button>
+              </div>
+              <p className="ui-modal-description">
+                So sánh nội dung bản nháp do AI tổng hợp với các bài viết nguồn ban đầu trước khi duyệt xuất bản.
+              </p>
+            </div>
+
+            <div
+              className="ui-modal-body"
+              style={{
+                overflowY: "auto",
+                display: "grid",
+                gridTemplateColumns: "1.25fr 1fr",
+                gap: "var(--space-4)",
+                padding: "var(--space-5)",
+              }}
+            >
+              {/* Cột 1: Bản nháp gộp hoàn thiện */}
+              <div
+                style={{
+                  background: "var(--bg-surface-subtle)",
+                  borderRadius: "var(--radius-lg)",
+                  padding: "var(--space-4)",
+                  border: "1px solid var(--border-default)",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "var(--space-3)",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+                    <Badge variant="brand" size="sm">
+                      Bản nháp gộp mới
+                    </Badge>
+                    <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>Do AI biên soạn</span>
+                  </div>
+                  <Badge variant="neutral" size="sm">
+                    {mergeDiff.run.status}
+                  </Badge>
+                </div>
+                <h3
+                  style={{
+                    margin: 0,
+                    fontSize: "var(--text-base)",
+                    fontWeight: 700,
+                    color: "var(--text-primary)",
+                  }}
+                >
+                  {mergeDiff.run.title}
+                </h3>
+                <div
+                  style={{
+                    background: "var(--bg-surface)",
+                    padding: "var(--space-4)",
+                    borderRadius: "var(--radius-md)",
+                    border: "1px solid var(--border-default)",
+                    fontSize: "var(--text-sm)",
+                    lineHeight: "var(--leading-relaxed)",
+                    whiteSpace: "pre-wrap",
+                    color: "var(--text-secondary)",
+                    maxHeight: "440px",
+                    overflowY: "auto",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  {mergeDiff.run.content_markdown}
+                </div>
+              </div>
+
+              {/* Cột 2: Các tài liệu nguồn ban đầu */}
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "var(--space-3)",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-primary)" }}>
+                    Tài liệu nguồn ({mergeDiff.sources.length} bài viết)
+                  </span>
+                  <Badge variant="neutral" size="sm">
+                    Nội dung gốc
+                  </Badge>
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "var(--space-3)",
+                    maxHeight: "520px",
+                    overflowY: "auto",
+                  }}
+                >
+                  {mergeDiff.sources.map((source, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        background: "var(--bg-surface)",
+                        borderRadius: "var(--radius-md)",
+                        border: "1px solid var(--border-default)",
+                        padding: "var(--space-3-5)",
+                        boxShadow: "var(--shadow-xs)",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          marginBottom: "var(--space-1-5)",
+                        }}
+                      >
+                        <Badge variant="info" size="sm">
+                          Nguồn #{i + 1}
+                        </Badge>
+                        <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                          Trạng thái: {source.status}
                         </span>
+                      </div>
+                      <h4
+                        style={{
+                          margin: "0 0 var(--space-2) 0",
+                          fontSize: "var(--text-sm)",
+                          fontWeight: 700,
+                          color: "var(--text-primary)",
+                        }}
+                      >
+                        {source.title}
+                      </h4>
+                      <div
+                        style={{
+                          fontSize: "var(--text-xs)",
+                          color: "var(--text-secondary)",
+                          lineHeight: "var(--leading-normal)",
+                          maxHeight: "150px",
+                          overflowY: "auto",
+                          whiteSpace: "pre-wrap",
+                          background: "var(--bg-surface-subtle)",
+                          padding: "var(--space-2-5)",
+                          borderRadius: "var(--radius-sm)",
+                          border: "1px solid var(--border-subtle)",
+                        }}
+                      >
+                        {source.content_markdown}
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
-            )}
+            </div>
 
-            {mergeDiff && (
-              <Card style={{ marginTop: "1rem", background: "var(--color-bg-primary)" }}>
-                <CardHeader>
-                  <CardTitle>Bản nháp gộp: {mergeDiff.run.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <pre style={{ whiteSpace: "pre-wrap", fontFamily: "inherit", fontSize: "0.875rem" }}>
-                    {mergeDiff.run.content_markdown}
-                  </pre>
-                  <div style={{ marginTop: "1rem", borderTop: "1px solid var(--color-border-subtle)", paddingTop: "1rem" }}>
-                    <strong style={{ display: "block", marginBottom: "0.5rem" }}>Nguồn ban đầu:</strong>
-                    {mergeDiff.sources.map((source, i) => (
-                      <div key={i} style={{ marginBottom: "0.75rem" }}>
-                        <b>Nguồn {i + 1}: {source.title}</b>
-                        <p style={{ margin: "0.25rem 0", color: "var(--color-text-secondary)", fontSize: "0.8125rem" }}>
-                          {source.content_markdown.slice(0, 200)}…
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </CardContent>
-        </Card>
+            <div className="ui-modal-footer">
+              <div className="ui-modal-actions" style={{ justifyContent: "flex-end", width: "100%" }}>
+                <Button variant="secondary" size="md" onClick={() => setMergeDiff(null)}>
+                  Đóng đối chiếu
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Modal Nhập dữ liệu hàng loạt */}

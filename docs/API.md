@@ -67,6 +67,8 @@ All API routes are same-origin Next.js routes. Except for `GET /api/health` and 
 | `POST` | `/api/knowledge/merge/:id/approve` | Publish draft and archive source articles. |
 | `POST` | `/api/knowledge/merge/:id/reject` | Reject draft and retain sources. |
 
+`POST /api/knowledge/merge/batches/:id/items/:itemId/attach` requires a valid `mergeRunId` UUID. The server enforces state validation, allowing attachment only when the candidate item status is in `('candidate', 'selected', 'generating', 'failed')` before setting it to `drafted`. If the item has already been attached/processed or no longer matches the batch, it returns `409` Conflict.
+
 ## Administration
 
 | Method | Route | Purpose |

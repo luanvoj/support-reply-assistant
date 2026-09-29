@@ -14,3 +14,4 @@ stitch.md
 # Vận hành cục bộ: có thể chứa cấu hình, thông tin kết nối hoặc dữ liệu khởi tạo nhạy cảm.
 /scripts/app.sh
 /scripts/seed-*
+*.zip

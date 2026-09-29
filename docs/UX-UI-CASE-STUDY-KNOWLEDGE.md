@@ -26,7 +26,17 @@ Kho kiến thức là nơi người vận hành nhập, chỉnh sửa, xuất b�
 
 ## Điều chỉnh đã triển khai
 
-- Khu vực quét gộp dùng lưới desktop 5/2/3/2, responsive ở tablet/mobile.
+- **Smart Merge Workspace (Modern Bento Layout)**: Khu vực quét và đối chiếu gộp bài viết được tái cấu trúc thành không gian Bento hiện đại:
+  - Header chuyên biệt với eyebrow định danh nghiệp vụ: `KHÔNG GIAN LÀM VIỆC TRI THỨC / QUÉT & ĐỐI CHIẾU THÔNG MINH`.
+  - Grid 4 thẻ KPI chỉ số trực quan (Tổng ứng viên, Đã phân tích, Đã tạo nháp, Đã hợp nhất an toàn).
+  - Bộ nút chọn nhanh ngưỡng tương đồng preset (65% Khám phá rộng, 75% Tiêu chuẩn, 85% Nghiêm ngặt).
+  - Trạng thái trống (Empty state) chuẩn Bento có icon vector, chỉ báo trạng thái và CTA hướng dẫn người dùng bắt đầu lượt quét.
+  - Modal đối chiếu 2 cột (Diff Modal) chi tiết giữa tài liệu nguồn và bản nháp đề xuất trước khi người vận hành phê duyệt.
+- **Chuẩn hóa nhãn Eyebrow & Desc trên 9 màn hình**: Loại bỏ hoàn toàn sự trùng lặp breadcrumb (`KHÔNG GIAN LÀM VIỆC / ...`), áp dụng hệ thống phân tầng nghiệp vụ chuyên nghiệp (VD: Trợ lý -> `HỎI ĐÁP & HỖ TRỢ / TRỢ LÝ TRUY XUẤT CĂN CỨ`, Hàng đợi -> `HÀNG ĐỢI NGHIỆP VỤ / YÊU CẦU CẦN CHUYÊN GIA XÁC NHẬN`).
+- **Bento Navigation & Ambient Aurora**:
+  - Bộ biểu tượng vector sắc nét (độ dày 1.8 stroke, hình khối nhận diện duotone).
+  - Hộp Bento Icon Badge Tile (`.bento-nav-icon-badge`) cho từng mục điều hướng với màu sắc phân tầng theo danh mục chức năng.
+  - Màu nền Ambient Aurora Mesh Gradient đa tầng tạo chiều sâu không gian, kết hợp khung điều hướng Frosted Glass (Sidebar & Topbar).
 - Import CSV/XLSX chuyển sang modal có preview, validation, tải file mẫu, Esc/backdrop và không mất preview trước khi import.
 - Editor có scroll/focus khi mở từ `Chỉnh sửa`; có nút đóng cạnh Lưu/Xuất bản.
 - CTA primary dùng nền đặc, border/shadow/focus thống nhất; CTA secondary và link có vai trò riêng.
@@ -37,11 +47,12 @@ Kho kiến thức là nơi người vận hành nhập, chỉnh sửa, xuất b�
 ## Tiêu chuẩn tái sử dụng
 
 - CTA: primary / secondary / link / destructive có semantic rõ; không dùng màu nổi chỉ vì muốn thu hút.
-- Surface: panel, card, list row và modal dùng cùng border, radius, shadow và spacing token.
+- Surface: panel, card, list row, bento tile và modal dùng cùng border, radius, shadow và spacing token.
+- Navigation: icon nằm trong hộp badge tile 32x32px với màu nhận diện danh mục, hiệu ứng hover/active đồng bộ với dải chỉ thị viên ngọc.
 - Form: label → control → hint/error theo cùng khoảng cách; focus state thống nhất.
 - List: title là thông tin không được hy sinh; state và metadata là thông tin có thể giảm dần ở viewport hẹp.
 - Modal: tiêu đề, mô tả, thao tác chính, đóng an toàn, keyboard/focus rõ ràng.
 
 ## Bằng chứng và giới hạn
 
-Các thay đổi trên đã được kiểm tra bằng source, `npm run typecheck`, build/restart cục bộ ở các lượt tương ứng. Nghiệm thu ảnh ở tất cả browser/viewport chưa hoàn tất trong phiên này; không coi đây là bằng chứng visual PASS toàn ứng dụng.
+Các thay đổi trên đã được kiểm tra bằng source, `npm run typecheck`, lệnh `npm run build` trên Next.js 16 thành công hoàn toàn (0 lỗi biên dịch, exit code 0). Nghiệm thu ảnh ở tất cả browser/viewport chưa hoàn tất trong phiên này; không coi đây là bằng chứng visual PASS toàn ứng dụng.

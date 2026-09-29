@@ -27,7 +27,7 @@
 | **Trợ lý** | Tiếp nhận câu hỏi, tìm nguồn trong Kho tri thức và trình bày phản hồi phù hợp với căn cứ hiện có. |
 | **Hội thoại** | Lưu và tra cứu lịch sử trao đổi theo thứ tự ổn định; dữ liệu được giữ mặc định 90 ngày. |
 | **Kho tri thức** | Tạo, nhập, chỉnh sửa, xuất bản, lưu trữ, khôi phục hoặc xóa vĩnh viễn tài liệu văn bản đã lưu trữ; chỉ nội dung phù hợp chính sách mới được dùng để tra cứu. |
-| **Gộp bài viết** | Giúp phát hiện các bài có khả năng trùng lặp, tạo bản nháp gộp để người có quyền rà soát trước khi xuất bản. |
+| **Gộp bài viết (Smart Merge)** | Phát hiện bài viết tương đồng theo đợt với giao diện Modern Bento: hiển thị chỉ số quét trực quan (KPI Grid), bộ chọn nhanh ngưỡng (65%/75%/85%), danh sách đề xuất kèm tiêu đề tài liệu nguồn và Modal đối chiếu 2 cột trước khi phê duyệt. |
 | **Yêu cầu chuyên gia** | Là hàng đợi các câu hỏi chưa xử lý xong; yêu cầu đã xuất bản hoặc đóng không còn hiện trong danh sách cần xử lý. Có tìm kiếm, phân trang và liên kết trực tiếp đến yêu cầu đang chọn. |
 | **Cài đặt** | Cấu hình cách Agent diễn đạt, nguồn/cách xếp hạng tri thức, ngưỡng phản hồi, chủ đề nhạy cảm, nhà cung cấp AI và người dùng. |
 | **Thông tin người dùng** | Cho phép người dùng đổi mật khẩu, quản lý xác thực hai bước và ảnh đại diện của chính mình. |
@@ -76,7 +76,7 @@ Quy trình gộp bài viết cũng giữ nguyên nguyên tắc này: Agent chỉ
 
 ## Công nghệ và kiến trúc mã nguồn
 
-- **Giao diện và máy chủ ứng dụng:** Next.js 16, React 19, TypeScript.
+- **Giao diện và máy chủ ứng dụng:** Next.js 16, React 19, TypeScript; kiến trúc Modern Bento Layout tích hợp nền Ambient Aurora Mesh Gradient tinh tế, thanh điều hướng Frosted Glass và bộ biểu tượng Bento Badge Tile phân tầng trực quan theo danh mục nghiệp vụ.
 - **Cơ sở dữ liệu:** PostgreSQL tương thích, hỗ trợ triển khai với Supabase qua biến môi trường.
 - **AI provider:** Google Gemini hoặc Azure OpenAI; tại một thời điểm chỉ một Agent được bật.
 - **Tìm kiếm tri thức:** truy xuất theo từ khóa/hybrid, xếp hạng lại khi Agent sẵn sàng, ưu tiên tài liệu đã xác minh, còn hiệu lực và đúng chính sách.

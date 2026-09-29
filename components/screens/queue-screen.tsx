@@ -308,7 +308,7 @@ export function QueueScreen() {
     <AppShell screen="queue">
       <div className="bento-page-header">
         <div>
-          <span className="bento-eyebrow">KHÔNG GIAN LÀM VIỆC / HÀNG ĐỢI</span>
+          <span className="bento-eyebrow">HÀNG ĐỢI CHUYÊN GIA</span>
           <h1 className="bento-page-title">Yêu cầu chuyên gia</h1>
           <p className="bento-page-desc">
             Tiếp nhận các câu hỏi Trợ lý chưa thể phản hồi an toàn và biến kiến thức đã xác nhận thành tài sản dùng lại.

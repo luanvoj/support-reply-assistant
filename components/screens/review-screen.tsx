@@ -110,9 +110,9 @@ export function ReviewScreen() {
     <AppShell screen="review">
       <div className="bento-page-header">
         <div>
-          <span className="bento-badge-eyebrow">CHUYÊN GIA DUYỆT BÀI</span>
+          <span className="bento-eyebrow">THẨM ĐỊNH & XUẤT BẢN</span>
           <h1 className="bento-page-title">Rà soát & Xuất bản Tri thức</h1>
-          <p className="bento-page-subtitle">
+          <p className="bento-page-desc">
             Chuyển câu hỏi chưa có căn cứ thành bài viết tài liệu chính thức đã được phê duyệt.
           </p>
         </div>
