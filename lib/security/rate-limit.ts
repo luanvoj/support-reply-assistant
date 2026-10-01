@@ -2,7 +2,7 @@ import { createHmac } from "node:crypto";
 import { isIP } from "node:net";
 
 import { query, withTransaction } from "@/lib/db";
-import { env } from "@/lib/env";
+import { getEnv } from "@/lib/env";
 
 type Limit = { scope: string; key: string; maxAttempts: number; windowSeconds: number; blockSeconds: number };
 type LimitRow = { blocked_until: string | null };
@@ -17,7 +17,7 @@ const passwordResetIdentity = (identity: string): Limit => ({ scope: "password-r
 const mfaIp = (ip: string): Limit => ({ scope: "mfa:ip", key: ip, maxAttempts: 10, windowSeconds: 900, blockSeconds: 900 });
 const mfaChallenge = (fingerprint: string): Limit => ({ scope: "mfa:challenge", key: fingerprint, maxAttempts: 5, windowSeconds: 300, blockSeconds: 300 });
 
-function keyHash(value: string) { return createHmac("sha256", env.AUTH_SECRET).update(value).digest("base64url"); }
+function keyHash(value: string) { return createHmac("sha256", getEnv().AUTH_SECRET).update(value).digest("base64url"); }
 function retryAfter(blockedUntil: string | null) { return blockedUntil ? Math.max(1, Math.ceil((new Date(blockedUntil).getTime() - Date.now()) / 1000)) : 0; }
 
 async function isBlocked(limit: Limit): Promise<RateLimitResult> {

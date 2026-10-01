@@ -16,7 +16,7 @@ The local reference target is Docker Compose. A production platform/hostname, ba
 
 ## Vibe Host deployment contract
 
-When the linked Git repository receives a commit, Vibe Host can build from the repository `Dockerfile`. The image entrypoint validates required secrets, runs `npm run deploy:release` (which runs `db:migrate`) and only then starts the web server. This makes new tables, columns and indexes available before code that reads them accepts traffic.
+When the linked Git repository receives a commit, Vibe Host can build from the repository `Dockerfile`. The Docker build does not require or receive runtime secrets; server modules defer environment validation and database-pool creation until runtime. The image entrypoint then validates required secrets, runs `npm run deploy:release` (which runs `db:migrate`) and only then starts the web server. This makes new tables, columns and indexes available before code that reads them accepts traffic.
 
 Set these values in the Vibe Host secret/environment manager, never in Git:
 
