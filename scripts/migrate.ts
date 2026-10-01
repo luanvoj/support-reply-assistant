@@ -305,6 +305,20 @@ async function main() {
       PRIMARY KEY (scope, key_hash)
     );
     CREATE INDEX IF NOT EXISTS auth_rate_limit_buckets_expiry_idx ON auth_rate_limit_buckets(updated_at);
+    CREATE TABLE IF NOT EXISTS smtp_settings (
+      id BOOLEAN PRIMARY KEY DEFAULT true CHECK (id), host TEXT, port INTEGER CHECK (port BETWEEN 1 AND 65535),
+      secure BOOLEAN NOT NULL DEFAULT false, username TEXT, password_encrypted TEXT,
+      from_email TEXT, from_name TEXT, updated_by UUID REFERENCES users(id) ON DELETE SET NULL,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    INSERT INTO smtp_settings(id) VALUES(true) ON CONFLICT (id) DO NOTHING;
+    CREATE TABLE IF NOT EXISTS password_reset_requests (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(), user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      email TEXT NOT NULL, otp_hash TEXT NOT NULL, attempts INTEGER NOT NULL DEFAULT 0 CHECK (attempts >= 0),
+      expires_at TIMESTAMPTZ NOT NULL, consumed_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS password_reset_requests_user_idx ON password_reset_requests(user_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS password_reset_requests_expiry_idx ON password_reset_requests(expires_at);
     -- A confirmed permanent deletion must not be blocked by historical links.
     ALTER TABLE question_reviews DROP CONSTRAINT IF EXISTS question_reviews_published_article_id_fkey;
     ALTER TABLE question_reviews ADD CONSTRAINT question_reviews_published_article_id_fkey

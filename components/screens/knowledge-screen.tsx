@@ -22,6 +22,7 @@ import {
   Input,
   Textarea,
   BentoSelect,
+  BentoDatePicker,
   Select,
   TableWrapper,
   Table,
@@ -1631,7 +1632,7 @@ export function KnowledgeScreen() {
               </Button>
             </div>
           </CardHeader>
-          <CardContent style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+          <CardContent style={{ display: "flex", flexDirection: "column", gap: "1.25rem", position: "relative", zIndex: 1 }}>
             <Input
               ref={editorTitleRef}
               label="Tiêu đề bài viết"
@@ -1732,11 +1733,11 @@ export function KnowledgeScreen() {
                 onChange={(val) => setSourcePriority(Number(val))}
               />
 
-              <Input
+              <BentoDatePicker
                 label="Hạn nhắc rà soát"
-                type="date"
                 value={reviewDueAt}
-                onChange={(e) => setReviewDueAt(e.target.value)}
+                placeholder="Chọn hạn rà soát…"
+                onChange={(val) => setReviewDueAt(val)}
               />
 
               <Input
@@ -1757,7 +1758,7 @@ export function KnowledgeScreen() {
               />
             </div>
           </CardContent>
-          <CardFooter style={{ display: "flex", justifyContent: "flex-end", gap: "0.75rem" }}>
+          <CardFooter style={{ display: "flex", justifyContent: "flex-end", gap: "0.75rem", position: "relative", zIndex: 0 }}>
             <Button
               variant="secondary"
               size="md"

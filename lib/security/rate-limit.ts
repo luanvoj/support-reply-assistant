@@ -11,6 +11,9 @@ export type RateLimitResult = { allowed: boolean; retryAfterSeconds: number };
 const loginGlobal: Limit = { scope: "login:global", key: "global", maxAttempts: 100, windowSeconds: 60, blockSeconds: 60 };
 const loginIp = (ip: string): Limit => ({ scope: "login:ip", key: ip, maxAttempts: 10, windowSeconds: 900, blockSeconds: 900 });
 const loginIdentity = (identity: string): Limit => ({ scope: "login:identity", key: identity, maxAttempts: 5, windowSeconds: 900, blockSeconds: 900 });
+const passwordResetGlobal: Limit = { scope: "password-reset:global", key: "global", maxAttempts: 60, windowSeconds: 60, blockSeconds: 60 };
+const passwordResetIp = (ip: string): Limit => ({ scope: "password-reset:ip", key: ip, maxAttempts: 10, windowSeconds: 900, blockSeconds: 900 });
+const passwordResetIdentity = (identity: string): Limit => ({ scope: "password-reset:identity", key: identity, maxAttempts: 3, windowSeconds: 900, blockSeconds: 900 });
 const mfaIp = (ip: string): Limit => ({ scope: "mfa:ip", key: ip, maxAttempts: 10, windowSeconds: 900, blockSeconds: 900 });
 const mfaChallenge = (fingerprint: string): Limit => ({ scope: "mfa:challenge", key: fingerprint, maxAttempts: 5, windowSeconds: 300, blockSeconds: 300 });
 
@@ -69,6 +72,16 @@ export async function recordLoginFailure(request: Request, identity: string) {
 }
 export async function clearLoginFailuresForIdentity(identity: string) {
   await clear(loginIdentity(normalizedIdentity(identity)));
+}
+export async function checkPasswordResetRequest(request: Request, identity: string) {
+  const clientKey = requestClientKey(request);
+  const limits = [passwordResetGlobal, ...(clientKey ? [passwordResetIp(clientKey)] : []), passwordResetIdentity(normalizedIdentity(identity))];
+  for (const limit of limits) {
+    const status = await isBlocked(limit);
+    if (!status.allowed) return status;
+  }
+  const results = await Promise.all(limits.map(record));
+  return results.find((result) => !result.allowed) ?? { allowed: true, retryAfterSeconds: 0 };
 }
 export async function clearLoginFailures(request: Request, identity: string) {
   const clientKey = requestClientKey(request);

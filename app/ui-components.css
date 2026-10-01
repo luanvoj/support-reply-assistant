@@ -366,7 +366,6 @@
   box-shadow: var(--shadow-card);
   transition: all var(--duration-normal) var(--ease-spring);
   position: relative;
-  overflow: hidden;
 }
 
 .ui-card-elevated {
@@ -394,6 +393,8 @@
 .ui-card-header {
   padding: var(--space-5) var(--space-6);
   border-bottom: 1px solid var(--border-subtle);
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
 }
 
 .ui-card-title {
@@ -413,12 +414,15 @@
 
 .ui-card-content {
   padding: var(--space-6);
+  position: relative;
 }
 
 .ui-card-footer {
   padding: var(--space-4) var(--space-6);
   border-top: 1px solid var(--border-subtle);
   background-color: var(--bg-surface-subtle);
+  border-bottom-left-radius: inherit;
+  border-bottom-right-radius: inherit;
 }
 
 /* --------------------------------------------------------------------------

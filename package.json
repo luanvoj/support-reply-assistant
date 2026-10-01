@@ -23,15 +23,18 @@
     "db:seed": "tsx scripts/seed.ts",
     "conversations:retention": "tsx scripts/retention.ts",
     "operational-logs:retention": "tsx scripts/operational-log-retention.ts",
-    "auth-rate-limits:retention": "tsx scripts/auth-rate-limit-retention.ts"
+    "auth-rate-limits:retention": "tsx scripts/auth-rate-limit-retention.ts",
+    "password-resets:retention": "tsx scripts/password-reset-retention.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.10.4",
+    "@types/nodemailer": "^8.0.2",
     "@types/pg": "^8.11.11",
     "bcryptjs": "^2.4.3",
     "exceljs": "^4.4.0",
     "jose": "^6.1.0",
     "next": "^16.3.6",
+    "nodemailer": "^10.0.13",
     "otpauth": "^9.4.1",
     "pg": "^8.16.3",
     "qrcode": "^1.5.4",

@@ -77,7 +77,11 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
 });
 
 import { BentoSelect, type BentoSelectProps } from "./bento-select";
+import { BentoDatePicker, type BentoDatePickerProps } from "./bento-date-picker";
 
 export type SelectProps = BentoSelectProps;
 export const Select = BentoSelect;
+
+export type DatePickerProps = BentoDatePickerProps;
+export const DatePicker = BentoDatePicker;
 

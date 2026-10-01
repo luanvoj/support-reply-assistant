@@ -10,3 +10,4 @@ export * from "./avatar";
 export * from "./skeleton";
 export * from "./empty-state";
 export * from "./bento-select";
+export * from "./bento-date-picker";

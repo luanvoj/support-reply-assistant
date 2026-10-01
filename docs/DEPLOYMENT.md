@@ -46,6 +46,12 @@ Schedule this separate cleanup task daily after the application migration has ru
 npm run auth-rate-limits:retention -- --apply
 ```
 
+Schedule the password-reset cleanup task daily as well. It removes only requests that are expired or consumed and older than 30 days; first run it without `--apply` to inspect the count.
+
+```sh
+npm run password-resets:retention -- --apply
+```
+
 The application enforces login and MFA limits in PostgreSQL, so all web instances share the same counters. Without a verified proxy contract it deliberately skips app-level IP buckets, while retaining shared, identity and MFA-challenge limits; keep an edge/WAF IP limit as a second layer. Set `TRUST_PROXY=true` only after the proxy strips incoming forwarding headers and writes the client IP itself.
 
 ## Release checklist

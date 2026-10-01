@@ -11,8 +11,12 @@ All API routes are same-origin Next.js routes. Except for `GET /api/health` and 
 | `POST` | `/api/auth/mfa/verify` | Complete a pending login with a six-digit TOTP code when MFA is enabled. |
 | `POST` | `/api/auth/logout` | Clear current session. |
 | `GET` | `/api/auth/me` | Read current session/user. |
+| `POST` | `/api/auth/password-reset/request` | Request a six-digit OTP via email with rate limiting and challenge cookie. |
+| `POST` | `/api/auth/password-reset/confirm` | Verify OTP challenge, enforce password policy, set new password and revoke existing sessions. |
 
 `POST /api/auth/login` always applies shared and normalized-identity limits; it applies an IP limit only when a trusted proxy supplies a valid forwarded IP. `POST /api/auth/mfa/verify` always limits the pending challenge and conditionally limits its source IP under the same proxy contract; five invalid codes invalidate the pending challenge. Limited requests return `429` with `Retry-After` and never disclose whether an account exists.
+
+`POST /api/auth/password-reset/request` applies global, client-IP, and identity rate limiting. If the user account is active, it invalidates any previously pending OTP for that user, stores an HMAC-SHA256 hash of the 6-digit OTP, sends an email, and issues a signed `httpOnly` challenge cookie. `POST /api/auth/password-reset/confirm` requires the challenge cookie, validates the OTP in constant time within a database row lock, enforces 5 maximum failed attempts, updates the password hash, increments `session_version` to revoke all active sessions, and consumes the OTP token atomically.
 
 ## Current user profile and MFA
 
@@ -91,7 +95,12 @@ All API routes are same-origin Next.js routes. Except for `GET /api/health` and 
 | `GET` | `/api/unanswered` | List expert requests for review, with server-side search and pagination. |
 | `DELETE` | `/api/unanswered/:id` | Permanently delete a new expert request that has no review (technical/admin). Requires `{ confirm: true }`. |
 | `POST` | `/api/unanswered/:id/review` | Publish or resolve an unanswered-question review. |
+| `GET` / `PUT` | `/api/settings/smtp` | Read public SMTP metadata or update encrypted SMTP configuration (admin). |
+| `POST` | `/api/settings/smtp/test` | Verify draft SMTP connectivity and credentials with DNS resolution checks (admin). |
+| `POST` | `/api/settings/smtp/send-test` | Dispatch a live test email to a recipient address using saved SMTP settings (admin). |
 | `GET` | `/api/dashboard/summary` | Read dashboard metrics permitted to current user. |
+
+`GET /api/settings/smtp` returns only non-sensitive configuration (`host`, `port`, `secure`, `username`, `fromEmail`, `fromName`, `configured`). It never exposes the encrypted or plaintext SMTP password. `PUT /api/settings/smtp` accepts an optional password (omitting it retains the existing encrypted secret), strictly disallows private/loopback IP addresses or unresolvable internal domains via pre-flight DNS pinning to mitigate SSRF and DNS rebinding attacks, and writes an operational audit log.
 
 `GET /api/users` accepts `page`, `pageSize` (10–100), `search`, `role` (`sales`, `technical`, `admin`) and `status` (`active`, `disabled`, `purged`). Its response contains `users` and `pagination` with `page`, `pageSize`, and `total`.
 

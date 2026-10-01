@@ -25,6 +25,7 @@ import {
   TableCell,
   EmptyState,
   BentoSelect,
+  BentoDatePicker,
 } from "@/components/ui";
 
 function readableApiError(error: unknown, fallback: string): string {
@@ -307,7 +308,7 @@ function UserManagementSection() {
       {/* Modal Xóa tài khoản */}
       {deleteTarget && (
         <div className="ui-modal-backdrop" role="presentation">
-          <div className="ui-modal ui-modal-md ui-modal-tone-danger" role="dialog" aria-modal="true">
+          <div className="ui-modal ui-modal-md ui-modal-tone-danger" role="dialog" aria-modal="true" style={{ overflow: "visible" }}>
             <div className="ui-modal-header">
               <span className="ui-modal-eyebrow">XÓA TÀI KHOẢN VĨNH VIỄN</span>
               <div className="ui-modal-title-row">
@@ -318,7 +319,7 @@ function UserManagementSection() {
                 Hành động không thể hoàn tác. Chọn tài khoản kế thừa để chuyển giao tài liệu và dữ liệu vận hành.
               </p>
             </div>
-            <div className="ui-modal-body">
+            <div className="ui-modal-body" style={{ overflow: "visible", minHeight: "130px" }}>
               <BentoSelect
                 label="Chọn tài khoản kế thừa"
                 value={successorId}
@@ -1104,27 +1105,27 @@ function OperationalLogSection() {
 
               {range === "custom" && (
                 <>
-                  <div className="bento-log-filter-item" style={{ width: "140px" }}>
-                    <Input
+                  <div className="bento-log-filter-item" style={{ width: "155px" }}>
+                    <BentoDatePicker
                       label="Từ ngày"
-                      type="date"
                       value={from}
+                      placeholder="Từ ngày…"
                       max={to || undefined}
-                      onChange={(e) => {
+                      onChange={(val) => {
                         setPage(1);
-                        setFrom(e.target.value);
+                        setFrom(val);
                       }}
                     />
                   </div>
-                  <div className="bento-log-filter-item" style={{ width: "140px" }}>
-                    <Input
+                  <div className="bento-log-filter-item" style={{ width: "155px" }}>
+                    <BentoDatePicker
                       label="Đến ngày"
-                      type="date"
                       value={to}
+                      placeholder="Đến ngày…"
                       min={from || undefined}
-                      onChange={(e) => {
+                      onChange={(val) => {
                         setPage(1);
-                        setTo(e.target.value);
+                        setTo(val);
                       }}
                     />
                   </div>
@@ -1251,10 +1252,56 @@ function OperationalLogSection() {
 // -------------------------------------------------------------
 // Component chính: Màn hình Cài đặt SettingsScreen
 // -------------------------------------------------------------
+function SmtpSettingsSection() {
+  const { notify } = useFeedback();
+  const [form, setForm] = useState({ host: "", port: "587", secure: false, username: "", password: "", fromEmail: "", fromName: "" });
+  const [saving, setSaving] = useState(false);
+  useEffect(() => { void fetch("/api/settings/smtp").then((r) => r.ok ? r.json() : null).then((body) => { if (body?.smtp) setForm((v) => ({ ...v, host: body.smtp.host ?? "", port: String(body.smtp.port ?? 587), secure: Boolean(body.smtp.secure), username: body.smtp.username ?? "", fromEmail: body.smtp.fromEmail ?? "", fromName: body.smtp.fromName ?? "" })); }); }, []);
+  const save = async () => { setSaving(true); const r = await fetch("/api/settings/smtp", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...form, port: Number(form.port) }) }); const b = await r.json().catch(() => ({})); setSaving(false); notify(r.ok ? "Đã lưu cấu hình SMTP." : readableApiError(b.error, "Không thể lưu cấu hình SMTP."), r.ok ? "success" : "error"); };
+  return <Card><CardHeader><CardTitle>Cấu hình SMTP</CardTitle><CardDescription>Hỗ trợ Gmail App Password và SMTP public có TLS. Mật khẩu SMTP chỉ được lưu mã hóa.</CardDescription></CardHeader><CardContent style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}><Input label="SMTP host" value={form.host} onChange={(e) => setForm({ ...form, host: e.target.value })} placeholder="smtp.gmail.com"/><Input label="Cổng" type="number" value={form.port} onChange={(e) => setForm({ ...form, port: e.target.value })}/><Input label="Tên đăng nhập" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })}/><Input label="Mật khẩu SMTP" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} hint="Để trống khi cập nhật để giữ mật khẩu đã lưu."/><Input label="Email người gửi" type="email" value={form.fromEmail} onChange={(e) => setForm({ ...form, fromEmail: e.target.value })}/><Input label="Tên người gửi" value={form.fromName} onChange={(e) => setForm({ ...form, fromName: e.target.value })}/><label style={{ display: "flex", alignItems: "center", gap: ".5rem" }}><input type="checkbox" checked={form.secure} onChange={(e) => setForm({ ...form, secure: e.target.checked })}/> SMTPS (465); cổng 587 dùng STARTTLS</label></CardContent><CardFooter style={{ display: "flex", justifyContent: "flex-end" }}><Button variant="primary" size="md" disabled={saving} onClick={() => void save()}>{saving ? "Đang lưu…" : "Lưu cấu hình SMTP"}</Button></CardFooter></Card>;
+}
+
+function VerifiedSmtpSettingsSection() {
+  const { notify } = useFeedback();
+  const [form, setForm] = useState({ host: "", port: "587", secure: false, username: "", password: "", fromEmail: "", fromName: "" });
+  const [tested, setTested] = useState(""); const [busy, setBusy] = useState(false);
+  const signature = JSON.stringify(form);
+  const update = (next: typeof form) => { setForm(next); };
+  useEffect(() => { void fetch("/api/settings/smtp").then(r => r.ok ? r.json() : null).then(body => { if (body?.smtp) setForm(v => ({ ...v, host: body.smtp.host ?? "", port: String(body.smtp.port ?? 587), secure: Boolean(body.smtp.secure), username: body.smtp.username ?? "", fromEmail: body.smtp.fromEmail ?? "", fromName: body.smtp.fromName ?? "" })); }); }, []);
+  const test = async () => { setBusy(true); const r = await fetch("/api/settings/smtp/test", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ host: form.host, port: Number(form.port), secure: form.secure, username: form.username, password: form.password }) }); const b = await r.json().catch(() => ({})); setBusy(false); if (r.ok) { setTested(JSON.stringify(form)); notify("Kết nối SMTP thành công. Bạn có thể lưu cấu hình.", "success"); } else notify(readableApiError(b.error, "Không thể kết nối SMTP."), "error"); };
+  const save = async () => { setBusy(true); const r = await fetch("/api/settings/smtp", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...form, port: Number(form.port) }) }); const b = await r.json().catch(() => ({})); setBusy(false); notify(r.ok ? "Đã lưu cấu hình SMTP." : readableApiError(b.error, "Không thể lưu cấu hình SMTP."), r.ok ? "success" : "error"); };
+  return <Card><CardHeader><CardTitle>Cấu hình SMTP</CardTitle><CardDescription>Kiểm tra kết nối trước khi lưu. Gmail: smtp.gmail.com, cổng 587, STARTTLS và App Password.</CardDescription></CardHeader><CardContent style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1rem" }}><Input label="SMTP host" value={form.host} onChange={e=>update({...form,host:e.target.value})}/><Input label="Cổng" type="number" value={form.port} onChange={e=>update({...form,port:e.target.value})}/><Input label="Tên đăng nhập" value={form.username} onChange={e=>update({...form,username:e.target.value})}/><Input label="Mật khẩu SMTP" type="password" value={form.password} onChange={e=>update({...form,password:e.target.value})} hint="Nhập lại để kiểm tra kết nối trước khi lưu."/><Input label="Email người gửi" type="email" value={form.fromEmail} onChange={e=>update({...form,fromEmail:e.target.value})}/><Input label="Tên người gửi" value={form.fromName} onChange={e=>update({...form,fromName:e.target.value})}/><label><input type="checkbox" checked={form.secure} onChange={e=>update({...form,secure:e.target.checked})}/> SMTPS (465); 587 dùng STARTTLS</label></CardContent><CardFooter style={{display:"flex",justifyContent:"flex-end",gap:".75rem"}}><Button variant="secondary" size="md" disabled={busy||!form.password} onClick={()=>void test()}>{busy?"Đang kiểm tra…":"Kiểm tra kết nối"}</Button><Button variant="primary" size="md" disabled={busy||tested!==signature} onClick={()=>void save()}>Lưu cấu hình SMTP</Button></CardFooter></Card>;
+}
+
+function SmtpSendTestSection() {
+  const { notify } = useFeedback();
+  const [recipient, setRecipient] = useState("");
+  const [sending, setSending] = useState(false);
+
+  const send = async () => {
+    setSending(true);
+    const response = await fetch("/api/settings/smtp/send-test", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ to: recipient }),
+    });
+    const body = await response.json().catch(() => ({}));
+    setSending(false);
+    notify(
+      response.ok
+        ? "Đã gửi email test. Hãy kiểm tra hộp thư của người nhận."
+        : readableApiError(body.error, "Không thể gửi email test."),
+      response.ok ? "success" : "error",
+    );
+  };
+
+  return <Card style={{ marginTop: "1rem" }}><CardHeader><CardTitle>Gửi email test</CardTitle><CardDescription>Sau khi đã lưu cấu hình SMTP, nhập email nhận để kiểm tra việc gửi email thực tế.</CardDescription></CardHeader><CardContent><Input label="Email nhận test" type="email" value={recipient} onChange={e => setRecipient(e.target.value)} placeholder="nguoinhan@example.com" /></CardContent><CardFooter style={{ display: "flex", justifyContent: "flex-end" }}><Button variant="secondary" size="md" disabled={sending || !recipient.trim()} onClick={() => void send()}>{sending ? "Đang gửi…" : "Gửi email test"}</Button></CardFooter></Card>;
+}
+
 export function SettingsScreen() {
   const { notify } = useFeedback();
   const [settingsTab, setSettingsTab] = useState<
-    "retrieval" | "providers" | "agent" | "users" | "logs"
+    "retrieval" | "providers" | "agent" | "users" | "logs" | "smtp"
   >("retrieval");
 
   useEffect(() => {
@@ -1264,7 +1311,7 @@ export function SettingsScreen() {
       tab === "retrieval" ||
       tab === "providers" ||
       tab === "users" ||
-      tab === "logs"
+      tab === "logs" || tab === "smtp"
     )
       setSettingsTab(tab as typeof settingsTab);
   }, []);
@@ -1595,6 +1642,7 @@ export function SettingsScreen() {
           ["providers", "Nhà cung cấp AI"],
           ["agent", "Hồ sơ Trợ lý"],
           ["users", "Quản trị người dùng"],
+          ["smtp", "Cấu hình SMTP"],
           ["logs", "Nhật ký vận hành"],
         ].map(([id, label]) => (
           <Button
@@ -1913,6 +1961,8 @@ export function SettingsScreen() {
 
       {/* Tab: Quản trị người dùng */}
       {settingsTab === "users" && <UserManagementSection />}
+
+      {settingsTab === "smtp" && <><VerifiedSmtpSettingsSection /><SmtpSendTestSection /></>}
 
       {/* Tab: Nhật ký vận hành */}
       {settingsTab === "logs" && <OperationalLogSection />}

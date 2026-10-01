@@ -52,10 +52,27 @@ export function BentoSelect({
   required,
 }: BentoSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [placement, setPlacement] = useState<"bottom" | "top">("bottom");
   const containerRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
   const stringValue = String(value ?? "");
+
+  // Tự động tính toán hướng mở (dropup / dropdown) tránh bị che khuất ở mép dưới viewport/container
+  useEffect(() => {
+    if (isOpen && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const viewportHeight = typeof window !== "undefined" ? window.innerHeight : 800;
+      const spaceBelow = viewportHeight - rect.bottom;
+      const spaceAbove = rect.top;
+
+      if (spaceBelow < 220 && spaceAbove > spaceBelow) {
+        setPlacement("top");
+      } else {
+        setPlacement("bottom");
+      }
+    }
+  }, [isOpen]);
 
   // Tự động giải quyết options từ props `options` hoặc từ thẻ `<option>` trong `children`
   const resolvedOptions: BentoSelectOption[] = React.useMemo(() => {
@@ -147,13 +164,14 @@ export function BentoSelect({
     <div
       ref={containerRef}
       id={selectId}
-      className={`bento-select-wrapper ${error ? "has-error" : ""} ${className}`.trim()}
+      className={`bento-select-wrapper ${isOpen ? "is-open" : ""} ${error ? "has-error" : ""} ${className}`.trim()}
       style={{
         position: "relative",
         display: "flex",
         flexDirection: "column",
         gap: "4px",
         minWidth: minWidth,
+        zIndex: isOpen ? 100 : undefined,
         ...style,
       }}
     >
@@ -199,7 +217,7 @@ export function BentoSelect({
 
       {/* Popover Menu Xổ Xuống Chuẩn Bento System Design (Frosted Glass + Bo góc tròn) */}
       {isOpen && (
-        <div className="bento-select-dropdown" role="listbox">
+        <div className={`bento-select-dropdown placement-${placement}`} role="listbox">
           <div ref={listRef} className="bento-select-options-list">
             {resolvedOptions.length === 0 ? (
               <div style={{ padding: "8px 12px", fontSize: "13px", color: "var(--text-muted, #94a3b8)", textAlign: "center" }}>

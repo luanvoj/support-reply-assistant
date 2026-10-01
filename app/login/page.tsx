@@ -334,18 +334,24 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [mfaRequired, setMfaRequired] = useState(false);
   const [mfaCode, setMfaCode] = useState("");
+  const [identity, setIdentity] = useState("");
+  const [password, setPassword] = useState("");
+  const [resetStep, setResetStep] = useState<"email" | "code" | null>(null);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetCode, setResetCode] = useState("");
+  const [resetPassword, setResetPassword] = useState("");
+  const [resetPasswordConfirmation, setResetPasswordConfirmation] = useState("");
 
   const login = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
     setError("");
-    const form = new FormData(event.currentTarget);
     const response = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        identity: form.get("identity"),
-        password: form.get("password"),
+        identity,
+        password,
       }),
     });
     const body = await response.json().catch(() => ({}));
@@ -384,6 +390,21 @@ export default function LoginPage() {
       return;
     }
     window.location.assign("/");
+  };
+
+  const requestReset = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault(); setLoading(true); setError("");
+    const response = await fetch("/api/auth/password-reset/request", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: resetEmail }) });
+    const body = await response.json().catch(() => ({})); setLoading(false);
+    if (!response.ok) { setError(body.error ?? "Không thể gửi mã xác thực."); return; }
+    setResetStep("code"); setError(body.message ?? "Mã xác thực đã được gửi nếu email thuộc tài khoản đang hoạt động.");
+  };
+  const confirmReset = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault(); setLoading(true); setError("");
+    const response = await fetch("/api/auth/password-reset/confirm", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ code: resetCode, password: resetPassword, passwordConfirmation: resetPasswordConfirmation }) });
+    const body = await response.json().catch(() => ({})); setLoading(false);
+    if (!response.ok) { setError(body.error ?? "Không thể đặt lại mật khẩu."); return; }
+    setResetStep(null); setResetCode(""); setResetPassword(""); setResetPasswordConfirmation(""); setError("Đã đặt lại mật khẩu. Hãy đăng nhập bằng mật khẩu mới.");
   };
 
   return (
@@ -465,6 +486,21 @@ export default function LoginPage() {
               </Button>
             </form>
           </>
+        ) : resetStep ? (
+          <>
+            <h1 id="login-title" className="bento-login-title">Đặt lại mật khẩu</h1>
+            <p className="bento-login-subtitle">{resetStep === "email" ? "Nhập email tài khoản để nhận mã OTP 6 số." : "Nhập mã OTP và mật khẩu mới. Mã có hiệu lực trong 10 phút."}</p>
+            <form onSubmit={resetStep === "email" ? requestReset : confirmReset} className="bento-login-form">
+              {resetStep === "email" ? <Input label="Email tài khoản" type="email" autoComplete="email" value={resetEmail} onChange={(event) => setResetEmail(event.target.value)} required autoFocus /> : <>
+                <Input label="Mã OTP 6 số" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={resetCode} onChange={(event) => setResetCode(event.target.value.replace(/\D/g, ""))} required autoFocus />
+                <Input label="Mật khẩu mới" type="password" autoComplete="new-password" value={resetPassword} onChange={(event) => setResetPassword(event.target.value)} required />
+                <Input label="Nhập lại mật khẩu mới" type="password" autoComplete="new-password" value={resetPasswordConfirmation} onChange={(event) => setResetPasswordConfirmation(event.target.value)} required />
+              </>}
+              {error && <div className="bento-login-error" role="alert"><span>{error}</span></div>}
+              <Button type="submit" variant="primary" size="lg" isLoading={loading} disabled={loading || (resetStep === "code" && (resetCode.length !== 6 || !resetPassword || !resetPasswordConfirmation))} className="bento-submit-btn">{resetStep === "email" ? "Gửi mã xác thực" : "Xác nhận đặt lại mật khẩu"}</Button>
+              <Button type="button" variant="ghost" size="md" onClick={() => { setResetStep(null); setError(""); }}>← Quay lại đăng nhập</Button>
+            </form>
+          </>
         ) : (
           <>
             <h1 id="login-title" className="bento-login-title">
@@ -478,6 +514,8 @@ export default function LoginPage() {
               <Input
                 label="Email hoặc tên đăng nhập"
                 name="identity"
+                value={identity}
+                onChange={(event) => setIdentity(event.target.value)}
                 autoComplete="username"
                 placeholder="ban@congty.vn hoặc nguyenvana"
                 required
@@ -486,6 +524,8 @@ export default function LoginPage() {
               <Input
                 label="Mật khẩu"
                 name="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
                 type="password"
                 autoComplete="current-password"
                 placeholder="Nhập mật khẩu của bạn"
@@ -513,9 +553,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   className="bento-forgot-link"
-                  onClick={() =>
-                    setError("Hãy liên hệ quản trị viên để được đặt lại mật khẩu.")
-                  }
+                  onClick={() => { setResetStep("email"); setError(""); }}
                 >
                   Quên mật khẩu?
                 </button>

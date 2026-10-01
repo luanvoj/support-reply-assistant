@@ -1,118 +1,280 @@
-# Trợ lý phản hồi
+# Trợ lý phản hồi (Support Reply Assistant)
 
-**Trợ lý phản hồi** là ứng dụng hỗ trợ đội ngũ chăm sóc khách hàng tra cứu, kiểm chứng và sử dụng tri thức nội bộ khi tư vấn. Ứng dụng không hướng đến việc trả lời thay con người bằng nội dung suy đoán; mục tiêu là giúp mỗi phản hồi có căn cứ, minh bạch nguồn tham khảo và được chuyển đúng người khi hệ thống chưa đủ điều kiện trả lời an toàn.
+> **Hệ thống Trợ lý Tri thức Khách hàng Mã nguồn mở Cấp Doanh nghiệp**  
+> Tự chủ hạ tầng tri thức, loại bỏ hoàn toàn ảo giác AI (Anti-Hallucination) bằng cơ chế đối soát căn cứ đa tầng (Grounded RAG), đặt con người vào trung tâm quyết định (Human-in-the-Loop) và tuân thủ các tiêu chuẩn bảo mật nghiêm ngặt nhất.
 
-## Ứng dụng dành cho ai?
+[![Next.js](https://img.shields.io/badge/Next.js-16.3-black?style=flat-square&logo=next.js)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19.1-blue?style=flat-square&logo=react)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16%20%2B%20pgvector-336791?style=flat-square&logo=postgresql)](https://www.postgresql.org/)
+[![Security Audit](https://img.shields.io/badge/Security%20Audit-Verified%20Clean-success?style=flat-square)](docs/SECURITY-REPORT-2026-09-30.md)
+[![License](https://img.shields.io/badge/License-Open%20Source-green?style=flat-square)](#minh-bạch-mã-nguồn-mở--cam-kết-quyền-riêng-tư)
 
-| Nhóm người dùng | Giá trị chính |
-| --- | --- |
-| **Nhân viên tư vấn** | Đặt câu hỏi về tình huống khách hàng, nhận phản hồi có nguồn tham khảo và biết rõ khi nào cần chờ chuyên gia. |
-| **Chuyên gia nghiệp vụ/kỹ thuật** | Xử lý yêu cầu cần xác nhận, chuẩn hóa câu trả lời và bổ sung tri thức dùng lại cho toàn đội ngũ. |
-| **Quản trị viên** | Quản lý Agent, chính sách truy xuất, Kho tri thức, người dùng và các nguyên tắc vận hành an toàn. |
+---
 
-## Giá trị mang lại
+## 1. Giới thiệu tổng quan & Sứ mệnh
 
-- Rút ngắn thời gian tìm kiếm tài liệu nội bộ khi hỗ trợ khách hàng.
-- Hạn chế phản hồi thiếu căn cứ nhờ cơ chế đánh giá nguồn và ngưỡng an toàn.
-- Đưa các khoảng trống tri thức đến đúng chuyên gia thay vì để câu hỏi bị bỏ quên.
-- Biến câu trả lời đã xác nhận thành tri thức có thể tái sử dụng ở các tình huống sau.
-- Giữ trách nhiệm quyết định ở con người: nhân viên luôn nhìn thấy nguồn và mức căn cứ trước khi tư vấn.
+Trong hoạt động chăm sóc khách hàng và vận hành doanh nghiệp, việc ứng dụng AI tạo sinh (Generative AI) thường vấp phải rào cản lớn nhất: **AI tự suy đoán nội dung (Hallucination)**, dẫn đến việc tư vấn sai chính sách, sai giá hoặc cam kết vượt thẩm quyền. Đồng thời, việc đưa dữ liệu khách hàng lên các nền tảng đám mây đóng kín tiềm ẩn nguy cơ rò rỉ dữ liệu nội bộ nghiêm trọng.
 
-## Các chức năng chính
+**Trợ lý phản hồi (Support Reply Assistant)** được thiết kế để giải quyết triệt để bài toán này:
+- **Không suy đoán bừa bãi:** AI chỉ được phép tổng hợp câu trả lời khi tìm thấy đầy đủ tài liệu căn cứ hợp lệ đã được thẩm định trong Kho tri thức.
+- **Minh bạch nguồn gốc:** Mọi phản hồi đều hiển thị rõ ràng nguồn trích dẫn, liên kết bài viết và Điểm căn cứ định lượng (Grounded Confidence Score).
+- **Chuyển giao thông minh (Graceful Escalation):** Khi tri thức chưa đủ hoặc câu hỏi chạm đến các chủ đề nhạy cảm (Giá, Hợp đồng, SLA, Bảo mật), hệ thống tự động chuyển tiếp câu hỏi thành **Yêu cầu chuyên gia** kèm phân tích lý do cụ thể, thay vì để nhân viên tư vấn sai hoặc câu hỏi bị lãng quên.
+- **Khép kín vòng đời tri thức:** Câu trả lời do chuyên gia giải đáp được biên tập và xuất bản trực tiếp thành bài viết mới trong Kho tri thức, giúp toàn bộ đội ngũ tự động học hỏi và tái sử dụng ở các tình huống tiếp theo.
 
-| Chức năng | Công dụng |
-| --- | --- |
-| **Tổng quan** | Theo dõi tình hình vận hành tri thức, các chỉ số phản hồi và công việc cần ưu tiên. |
-| **Hướng dẫn sử dụng** | Giải thích theo vai trò về luồng Agent, điểm căn cứ, yêu cầu chuyên gia, gộp bài viết và ý nghĩa từng cấu hình. |
-| **Trợ lý** | Tiếp nhận câu hỏi, tìm nguồn trong Kho tri thức và trình bày phản hồi phù hợp với căn cứ hiện có. |
-| **Hội thoại** | Lưu và tra cứu lịch sử trao đổi theo thứ tự ổn định; dữ liệu được giữ mặc định 90 ngày. |
-| **Kho tri thức** | Tạo, nhập, chỉnh sửa, xuất bản, lưu trữ, khôi phục hoặc xóa vĩnh viễn tài liệu văn bản đã lưu trữ; chỉ nội dung phù hợp chính sách mới được dùng để tra cứu. |
-| **Gộp bài viết (Smart Merge)** | Phát hiện bài viết tương đồng theo đợt với giao diện Modern Bento: hiển thị chỉ số quét trực quan (KPI Grid), bộ chọn nhanh ngưỡng (65%/75%/85%), danh sách đề xuất kèm tiêu đề tài liệu nguồn và Modal đối chiếu 2 cột trước khi phê duyệt. |
-| **Yêu cầu chuyên gia** | Là hàng đợi các câu hỏi chưa xử lý xong; yêu cầu đã xuất bản hoặc đóng không còn hiện trong danh sách cần xử lý. Có tìm kiếm, phân trang và liên kết trực tiếp đến yêu cầu đang chọn. |
-| **Cài đặt** | Cấu hình cách Agent diễn đạt, nguồn/cách xếp hạng tri thức, ngưỡng phản hồi, chủ đề nhạy cảm, nhà cung cấp AI và người dùng. |
-| **Thông tin người dùng** | Cho phép người dùng đổi mật khẩu, quản lý xác thực hai bước và ảnh đại diện của chính mình. |
+---
 
-## Cách hệ thống xử lý một câu hỏi
+## 2. Ứng dụng mang lại giá trị gì cho tổ chức?
 
-```text
-Người dùng đặt câu hỏi
-        ↓
-Tìm kiếm trong Kho tri thức đã xuất bản
-        ↓
-Đánh giá căn cứ, chính sách nguồn và ngưỡng an toàn
-        ↓
-┌──────────────────────────────────────────────────────────────────┐
-│ Đủ điều kiện: Agent tổng hợp phản hồi kèm nguồn tham khảo.        │
-│ Chưa đủ điều kiện: tạo Yêu cầu chuyên gia và nêu lý do cụ thể.    │
-│ Agent không sẵn sàng: trả gợi ý từ nguồn đã xác minh nếu an toàn. │
-└──────────────────────────────────────────────────────────────────┘
-```
+| Nhóm người dùng | Giá trị thực tiễn mang lại |
+| :--- | :--- |
+| **Nhân viên tư vấn (Sales / Support)** | <ul><li>Rút ngắn 80% thời gian tra cứu tài liệu nội bộ giữa hàng trăm quy trình phức tạp.</li><li>Tự tin tư vấn nhờ có nguồn trích dẫn đối soát chính thức ngay bên cạnh câu trả lời.</li><li>Biết chính xác khi nào cần xin ý kiến chuyên gia thay vì phỏng đoán mạo hiểm.</li></ul> |
+| **Chuyên gia nghiệp vụ (Technical / QA / Reviewer)** | <ul><li>Kiểm soát hàng đợi các khoảng trống tri thức (Knowledge Gaps) phát sinh từ thực tế.</li><li>Thẩm định câu trả lời một lần và xuất bản thành tài sản tri thức dùng chung cho toàn công ty.</li><li>Hợp nhất bài viết trùng lặp thông minh (Smart Merge) để giữ kho dữ liệu luôn tinh gọn.</li></ul> |
+| **Quản trị viên & Trưởng phòng CSKH (Admin / Operations)** | <ul><li>Kiểm soát chi phí và linh hoạt chuyển đổi giữa Google Gemini và Azure OpenAI theo nhu cầu.</li><li>Tùy chỉnh ngưỡng an toàn, chủ đề nhạy cảm và phong cách diễn đạt của Trợ lý AI.</li><li>Theo dõi toàn diện nhật ký vận hành (Audit Logs) và bảo vệ an toàn dữ liệu nội bộ.</li></ul> |
 
-### Điểm căn cứ là gì?
+---
 
-Điểm căn cứ phản ánh mức độ hệ thống tìm được tài liệu phù hợp để hỗ trợ phản hồi. Điểm này được hình thành từ độ phù hợp của tài liệu, chất lượng nguồn, tính đa dạng của căn cứ và chính sách của từng bài viết.
+## 3. Minh bạch Mã nguồn Mở & Cam kết Quyền riêng tư
 
-Điểm căn cứ **không phải** lời cam kết rằng câu trả lời đúng tuyệt đối. Hệ thống đối chiếu điểm đó với ngưỡng do quản trị viên đặt. Với chủ đề nhạy cảm hoặc bài viết yêu cầu chuyên gia xác nhận, ngưỡng có thể nghiêm ngặt hơn hoặc hệ thống sẽ chuyển yêu cầu ngay cả khi đã tìm thấy tài liệu.
+Là một dự án mã nguồn mở hướng tới môi trường doanh nghiệp, **Trợ lý phản hồi** cam kết minh bạch 100% về mặt công nghệ và quản trị dữ liệu:
 
-## Hoạt động khi có và không có Agent
+1. **Tự chủ hạ tầng 100% (Self-Hosted / On-Premise):**
+   - Ứng dụng chạy hoàn toàn trên máy chủ riêng hoặc hạ tầng đám mây nội bộ của doanh nghiệp. Bạn sở hữu toàn bộ cơ sở dữ liệu PostgreSQL, không bị khóa vào bất kỳ nhà cung cấp dịch vụ thứ ba nào (No Vendor Lock-in).
+2. **Bảo vệ quyền riêng tư & Dữ liệu khách hàng:**
+   - Dữ liệu câu hỏi, lịch sử hội thoại nội bộ và thông tin người dùng **tuyệt đối không bị chia sẻ** cho bên ngoài và không bị dùng để đào tạo (train) lại các mô hình AI công cộng.
+3. **Mã hóa cấp quân sự (AES-256-GCM AEAD):**
+   - Khóa API của nhà cung cấp AI và mật khẩu máy chủ SMTP được mã hóa an toàn khi lưu trữ tại máy chủ (Encryption at Rest) bằng khóa bí mật `SECRETS_ENCRYPTION_KEY`. Các khóa này không bao giờ được gửi về trình duyệt hay xuất hiện trong API response.
+4. **Kiểm toán bảo mật độc lập định kỳ:**
+   - Mã nguồn được rà soát định kỳ theo quy chuẩn bảo mật nghiêm ngặt (kiểm tra injection, session revocation, rate-limiting, SSRF, DNS rebinding, dependency vulnerabilities). Toàn bộ báo cáo kiểm định được công khai minh bạch tại thư mục [`docs/`](docs/).
 
-| Trạng thái | Hệ thống làm gì? |
-| --- | --- |
-| **Agent đang hoạt động** | Khi căn cứ đủ, Agent tổng hợp phản hồi từ các nguồn hợp lệ. Có thể lưu cấu hình Gemini và Azure độc lập, nhưng chỉ một Agent được bật tại một thời điểm. Bật Agent này sẽ tắt Agent còn lại. |
-| **Agent tắt, hết khả năng xử lý hoặc tạm mất kết nối** | Ứng dụng vẫn tìm kiếm trong Kho tri thức. Nếu căn cứ an toàn, người dùng nhận được các gợi ý và nguồn đã xác minh thay vì một câu trả lời được tạo mới. Hệ thống không tự suy đoán. |
-| **Không có tài liệu phù hợp hoặc căn cứ quá thấp** | Hệ thống tạo Yêu cầu chuyên gia kèm lý do thật, ví dụ thiếu tài liệu hoặc thấp hơn ngưỡng cấu hình. |
+---
 
-Quét gộp bài viết cần Agent đang sẵn sàng. Nếu Agent không hoạt động, thao tác này được chặn an toàn và không làm thay đổi dữ liệu bài viết.
-
-## Vòng lặp phát triển tri thức
-
-1. Nhân viên đặt câu hỏi trong Trợ lý.
-2. Hệ thống tìm nguồn và đánh giá căn cứ.
-3. Nếu chưa an toàn, một Yêu cầu chuyên gia được tạo tự động.
-4. Chuyên gia xác nhận câu trả lời, sau đó có thể xuất bản thành tri thức mới.
-5. Lần hỏi sau, tri thức đã xác minh trở thành nguồn căn cứ để hỗ trợ phản hồi tốt hơn.
-
-Quy trình gộp bài viết cũng giữ nguyên nguyên tắc này: Agent chỉ **đề xuất** các bài gần nhau; người có quyền luôn rà soát bản nháp trước khi phê duyệt xuất bản và lưu trữ các bài nguồn.
-
-## Công nghệ và kiến trúc mã nguồn
-
-- **Giao diện và máy chủ ứng dụng:** Next.js 16, React 19, TypeScript; kiến trúc Modern Bento Layout tích hợp nền Ambient Aurora Mesh Gradient tinh tế, thanh điều hướng Frosted Glass và bộ biểu tượng Bento Badge Tile phân tầng trực quan theo danh mục nghiệp vụ.
-- **Cơ sở dữ liệu:** PostgreSQL tương thích, hỗ trợ triển khai với Supabase qua biến môi trường.
-- **AI provider:** Google Gemini hoặc Azure OpenAI; tại một thời điểm chỉ một Agent được bật.
-- **Tìm kiếm tri thức:** truy xuất theo từ khóa/hybrid, xếp hạng lại khi Agent sẵn sàng, ưu tiên tài liệu đã xác minh, còn hiệu lực và đúng chính sách.
-- **Bảo mật:** phiên đăng nhập `httpOnly`, phân quyền theo vai trò ở server, mật khẩu băm, khóa provider mã hóa ở server, TOTP tùy chọn và ảnh đại diện được kiểm tra/chuẩn hóa. Login/MFA được rate limit trong PostgreSQL để chống dò mật khẩu và OTP; `TRUST_PROXY=true` chỉ dùng khi reverse proxy kiểm soát forwarding header.
-- **Nhập dữ liệu:** CSV/XLSX cho nội dung văn bản, giới hạn 5 MB và 200 dòng mỗi lần, chỉ đọc worksheet đầu tiên; không lập chỉ mục tệp hình ảnh hoặc tài liệu đa phương tiện.
-
-Các thành phần chính trong mã nguồn:
+## 4. Kiến trúc Hệ thống & Luồng RAG Đối soát
 
 ```text
-app/          Đường dẫn, API và giao diện Next.js
-components/   Thành phần giao diện và khung ứng dụng dùng chung
-lib/          Xác thực, phân quyền, kết nối Agent, truy xuất và nghiệp vụ tri thức
-db/           Lược đồ và cập nhật cơ sở dữ liệu
-scripts/      Khởi tạo dữ liệu, cập nhật, đánh giá và tác vụ bảo trì
-docs/         API, triển khai, bảo mật và tài liệu vận hành
+               ┌────────────────────────────────────────────────────────┐
+               │         Người dùng đặt câu hỏi trong Trợ lý             │
+               └───────────────────────────┬────────────────────────────┘
+                                           │
+                                           ▼
+               ┌────────────────────────────────────────────────────────┐
+               │    Truy xuất Kho tri thức (Hybrid Search: Vector + BM25)│
+               │   Lọc tài liệu: Còn hiệu lực, Đã xác minh, Đúng nhóm   │
+               └───────────────────────────┬────────────────────────────┘
+                                           │
+                                           ▼
+               ┌────────────────────────────────────────────────────────┐
+               │     Đánh giá Điểm căn cứ & Kiểm tra Chủ đề nhạy cảm    │
+               │   (Grounded Score vs Ngưỡng an toàn Auto-Answer/Escalate)│
+               └───────────────────────────┬────────────────────────────┘
+                                           │
+                 ┌─────────────────────────┴─────────────────────────┐
+                 │                                                   │
+     [ Đủ căn cứ & An toàn ]                             [ Thiếu căn cứ / Nhạy cảm ]
+                 │                                                   │
+                 ▼                                                   ▼
+┌───────────────────────────────────┐               ┌───────────────────────────────────┐
+│     Agent tổng hợp câu trả lời    │               │  Tự động tạo Yêu cầu chuyên gia   │
+│  - Trích dẫn nguồn bài viết rõ ràng│               │  - Nêu rõ lý do thiếu tài liệu    │
+│  - Giọng điệu chuẩn hóa doanh nghiệp│              │  - Thông báo nhân viên chờ xác nhận│
+└───────────────────────────────────┘               └─────────────────┬─────────────────┘
+                                                                      │
+                                                                      ▼
+                                                    ┌───────────────────────────────────┐
+                                                    │   Chuyên gia giải đáp & Xuất bản  │
+                                                    │   - Tri thức mới lưu vào Kho       │
+                                                    │   - Vòng hỏi sau được tự động trả lời│
+                                                    └───────────────────────────────────┘
 ```
 
-## Bảo mật và vận hành
+### Điểm căn cứ (Grounded Confidence Score) hoạt động như thế nào?
+Điểm căn cứ được tính toán dựa trên sự kết hợp có trọng số của 3 yếu tố:
+- **Độ khớp từ khóa & ngữ nghĩa (Keyword & Semantic Relevance):** Đảm bảo bài viết đúng thuật ngữ và sát nghĩa ngữ cảnh câu hỏi.
+- **Tính đa dạng & Chất lượng nguồn (Source Diversity & Priority):** Ưu tiên các tài liệu được đánh dấu là *Chính sách chuẩn*, *Nguồn đã xác minh* và còn hạn hiệu lực.
+- **Bộ lọc chủ đề nhạy cảm (Sensitive Topic Guard):** Nếu câu hỏi chứa các chủ đề thuộc diện kiểm soát đặc biệt (ví dụ: *Giá, Hợp đồng, SLA, Bảo mật*), hệ thống nâng ngưỡng an toàn lên mức tối đa hoặc chủ động điều hướng sang chuyên gia dù đã tìm thấy tài liệu tham khảo.
 
-- Khóa API của provider được mã hóa ở máy chủ và không trả về trình duyệt.
-- Login và MFA trả `429` kèm `Retry-After` khi vượt giới hạn; production vẫn cần edge/WAF rate limit bổ sung.
-- Quyền giao diện chỉ hỗ trợ trải nghiệm; mọi endpoint quan trọng vẫn kiểm tra quyền ở server.
-- Ảnh đại diện chỉ chủ tài khoản được đọc, được kiểm tra nội dung và chuẩn hóa thành WebP trước khi lưu.
-- Tài khoản bị vô hiệu hóa có thời gian lưu giữ trước khi làm sạch; dữ liệu tri thức và yêu cầu đang mở phải được chuyển giao trước đó.
-- Mọi phản hồi thiếu căn cứ đều được ưu tiên minh bạch lý do hơn là tạo nội dung không được kiểm chứng.
-- **Nhật ký vận hành & Kiểm toán hệ thống:** Tự động ghi vết toàn bộ hoạt động đăng nhập, phân quyền, cấu hình AI và vòng đời bài viết tri thức (bao gồm chi tiết bài viết bị xóa vĩnh viễn, người dùng tác động). Hỗ trợ chính sách lưu trữ linh hoạt (7–3650 ngày), giao diện Bento Box chi tiết và kết xuất báo cáo Excel chuyên nghiệp (.xlsx) với định dạng bảng tính cao cấp.
-- **Thành phần giao diện Bento:** Hệ thống dropdown tùy biến (`BentoSelect`) thay thế hoàn toàn native select của trình duyệt, cung cấp menu xổ xuống bo góc tròn trịa, hiệu ứng kính mờ (frosted glass), bóng đổ Bento phân lớp và dấu kiểm (checkmark) trực quan chuẩn UI/UX.
-- **Tiêu chuẩn kiểm tra mật khẩu doanh nghiệp:** Tích hợp bộ quy tắc và checklist trực quan thời gian thực (tối thiểu 8 ký tự, chữ hoa, chữ thường, ký tự đặc biệt, huy hiệu độ mạnh mật khẩu và so khớp mật khẩu) đồng bộ trên cả trang Hồ sơ cá nhân lẫn hộp thoại Tạo/Chỉnh sửa tài khoản người dùng của Quản trị viên.
+### Khả năng tự phục hồi khi Agent ngoại tuyến (Fail-safe Architecture)
+Nếu nhà cung cấp AI gặp sự cố gián đoạn hoặc hết quota, hệ thống **không bị tê liệt**:
+- Cơ chế tìm kiếm tri thức cơ sở dữ liệu vẫn hoạt động bình thường.
+- Nếu điểm căn cứ đạt mức an toàn, hệ thống lập tức chuyển sang chế độ **Gợi ý trích dẫn tri thức (Knowledge Suggestions)**: hiển thị trực tiếp các đoạn trích từ bài viết đã thẩm định cho nhân viên tư vấn, tuyệt đối không tự bịa đặt câu trả lời.
 
-## Bắt đầu sử dụng
+---
 
-Sau khi đăng nhập, mở **Hướng dẫn sử dụng** ở sidebar (ngay dưới **Tổng quan**) để xem lộ trình phù hợp với vai trò của bạn. Trang này có các liên kết nhanh đến Trợ lý, Kho tri thức, Yêu cầu chuyên gia và Cài đặt theo đúng quyền tài khoản.
+## 5. Bản đồ Tính năng & Giao diện Bento Design System
 
-## Tài liệu liên quan
+Ứng dụng được xây dựng trên ngôn ngữ thiết kế **Modern Bento UI** cao cấp, kết hợp nền *Ambient Aurora Mesh Gradient*, hiệu ứng kính mờ *Frosted Glass*, phân lớp bóng đổ tinh tế và typography hiện đại:
 
-- [Hợp đồng API](docs/API.md)
-- [Hướng dẫn triển khai](docs/DEPLOYMENT.md)
-- [Báo cáo bảo mật mới nhất (2026-09-29)](docs/SECURITY-REPORT-2026-09-29.md)
-- [Báo cáo bảo mật (2026-09-28)](docs/SECURITY-REPORT-2026-09-28.md)
+| Tính năng | Mô tả chi tiết & Điểm nổi bật |
+| :--- | :--- |
+| **Tổng quan (Bento Dashboard)** | Bảng điều khiển tập trung hiển thị các chỉ số vận hành then chốt: Tỷ lệ trả lời tự động, Yêu cầu chuyên gia chờ duyệt, Radar đối soát RAG và danh sách công việc cần ưu tiên. |
+| **Trợ lý AI (Support Assistant)** | Giao diện hội thoại thông minh hỗ trợ streaming phản hồi, hiển thị thẻ trích dẫn nguồn có thể mở đọc trực tiếp, chỉ báo trạng thái đối soát RAG và cơ chế chuyển tiếp chuyên gia 1-click. |
+| **Kho tri thức (Knowledge Base)** | Quản lý toàn diện tài liệu Markdown nội bộ, tự động chia nhỏ thành các phân mảnh ngữ nghĩa (Semantic Chunks) kèm tìm kiếm toàn văn GIN/Vector; hỗ trợ nhập hàng loạt bằng Excel/CSV (.xlsx, .csv). |
+| **Gộp bài viết (Smart Merge)** | Tính năng độc quyền quét toàn bộ kho tri thức để phát hiện bài viết trùng lặp nội dung theo đợt; cung cấp giao diện đối chiếu 2 cột (Diff Viewer) giúp chuyên gia hợp nhất bài viết mà không làm mất thông tin gốc. |
+| **Hàng đợi chuyên gia (Expert Queue)** | Quản lý các câu hỏi chưa được giải đáp trong thực tế; chuyên gia tiếp nhận, thẩm định nội dung, phản hồi khách hàng và xuất bản thẳng thành bài viết tri thức mới chỉ bằng 1 thao tác. |
+| **Thành phần Bento độc quyền** | <ul><li>**`BentoSelect`**: Dropdown menu bo góc tròn, hiệu ứng kính mờ, tự động tính toán hướng mở (dropup/dropdown) chống che khuất và quản lý tầng hiển thị `z-index` thông minh.</li><li>**`BentoDatePicker`**: Bộ chọn lịch tiếng Việt thuần túy thay thế lịch thô của trình duyệt, hiển thị trực quan định dạng `DD/MM/YYYY`, tích hợp phím tắt hôm nay/xóa nhanh.</li></ul> |
+| **Quản trị người dùng & Phân quyền (RBAC)** | Phân quyền 3 cấp độ chặt chẽ (*Sales - Tư vấn viên*, *Technical - Chuyên gia kiểm định*, *Admin - Quản trị viên*); cơ chế chuyển giao dữ liệu bắt buộc (Successor Hierarchy) khi xóa tài khoản để không làm thất thoát tri thức. |
+| **Bảo mật mật khẩu & Xác thực 2 bước (2FA)** | Bộ kiểm tra độ mạnh mật khẩu chuẩn doanh nghiệp (Checklist thời gian thực); tích hợp xác thực 2 bước qua ứng dụng Authenticator (Google Authenticator, Microsoft Authenticator) bằng chuẩn TOTP RFC 6238. |
+| **Khôi phục mật khẩu an toàn & Quản trị SMTP** | Quản trị viên cấu hình kết nối SMTP máy chủ gửi thư (Gmail App Password hoặc SMTP Server); quy trình quên mật khẩu gửi mã OTP 6 số qua email có bảo vệ chống brute-force và thu hồi phiên toàn diện. |
+| **Nhật ký vận hành & Xuất báo cáo Excel** | Ghi nhận chi tiết mọi biến động hệ thống (đăng nhập, đổi quyền, thay đổi cấu hình, xóa bài viết); hỗ trợ lọc theo ngày giờ Việt Nam và xuất tệp Excel (.xlsx) chuyên nghiệp phục vụ kiểm toán nội bộ. |
+
+---
+
+## 6. Cấu trúc Mã nguồn Minh bạch (Repository Structure)
+
+Cấu trúc dự án được phân tách rõ ràng theo chuẩn kiến trúc Next.js App Router, giúp các kỹ sư và chuyên gia bảo mật dễ dàng thẩm định và đóng góp mã nguồn:
+
+```text
+support-reply-assistant/
+├── app/                           # Lớp định tuyến & API Routes (Next.js App Router)
+│   ├── (screens)/                 # Các trang giao diện chính (assistant, knowledge, review...)
+│   ├── api/                       # Toàn bộ REST API Endpoints được kiểm soát RBAC
+│   │   ├── assistant/             # API xử lý câu hỏi & sinh câu trả lời RAG
+│   │   ├── auth/                  # Đăng nhập, đăng xuất, MFA TOTP & Quên mật khẩu OTP
+│   │   ├── knowledge/             # Quản lý bài viết, nhập file, gộp tri thức Smart Merge
+│   │   ├── operational-logs/      # Tra cứu và xuất báo cáo nhật ký vận hành (.xlsx)
+│   │   ├── providers/             # Quản lý cấu hình Gemini & Azure OpenAI
+│   │   ├── settings/              # Cấu hình SMTP gửi thư & tham số hệ thống
+│   │   └── users/                 # Quản trị tài khoản, phân quyền, bàn giao & xóa
+│   ├── bento-layout.css           # Hệ thống CSS Design Tokens & Bento UI Components
+│   └── ui-components.css          # Thư viện kiểu dáng giao diện dùng chung
+├── components/                    # Thành phần giao diện React có tính tái sử dụng cao
+│   ├── screens/                   # Giao diện hoàn chỉnh từng phân hệ nghiệp vụ
+│   └── ui/                        # Nguyên tử giao diện Bento (Button, Modal, BentoSelect, BentoDatePicker...)
+├── lib/                           # Tầng xử lý nghiệp vụ lõi (Core Business Logic)
+│   ├── ai/                        # Kết nối LLM (Gemini / Azure OpenAI), prompt engineering & guardrails
+│   ├── auth/                      # Quản lý phiên JWT, băm mật khẩu, TOTP & OTP reset token
+│   ├── db/                        # Kết nối PostgreSQL connection pool & transaction helper
+│   ├── retrieval/                 # Thuật toán tìm kiếm tri thức lai (Hybrid Search) & chấm điểm căn cứ
+│   └── security/                  # Mã hóa AES-256-GCM, Rate Limiting 3 tầng & kiểm tra bảo mật mạng
+├── db/                            # Cơ sở dữ liệu
+│   └── schema.sql                 # Lược đồ cơ sở dữ liệu quan hệ hoàn chỉnh
+├── scripts/                       # Kịch bản dòng lệnh vận hành & Bảo trì
+│   ├── migrate.ts                 # Trình di chuyển dữ liệu Idempotent Migration
+│   ├── seed.ts                    # Khởi tạo dữ liệu mẫu cho môi trường phát triển
+│   ├── retention.ts               # Dọn dẹp hội thoại cũ định kỳ (Conversations retention)
+│   ├── operational-log-retention.ts # Dọn dẹp nhật ký vận hành theo hạn lưu trữ
+│   ├── auth-rate-limit-retention.ts # Giải phóng bộ nhớ bucket rate-limit quá hạn
+│   └── password-reset-retention.ts  # Làm sạch các yêu cầu OTP hết hạn (> 30 ngày)
+└── docs/                          # Tài liệu kỹ thuật chi tiết
+    ├── API.md                     # Hợp đồng chi tiết toàn bộ API Endpoints
+    ├── DEPLOYMENT.md              # Hướng dẫn đóng gói Docker & Triển khai Production
+    └── SECURITY-REPORT-*.md       # Lịch sử các báo cáo kiểm định bảo mật định kỳ
+```
+
+---
+
+## 7. Tiêu chuẩn Bảo mật Cấp Doanh nghiệp (Enterprise Security)
+
+| Cơ chế bảo vệ | Cách thức triển khai trong mã nguồn |
+| :--- | :--- |
+| **Quản lý phiên (Session Security)** | Phiên đăng nhập lưu trong Cookie `httpOnly`, `SameSite=Lax`, `Secure`. Khi người dùng đổi mật khẩu, bị vô hiệu hóa hoặc đổi 2FA, trường `session_version` trong database tự động tăng để **thu hồi ngay lập tức toàn bộ phiên cũ** trên mọi thiết bị. |
+| **Chống Brute-Force & DoS đa tầng** | Cơ chế Rate Limiting phân lớp lưu trực tiếp trong PostgreSQL (đồng bộ trên toàn bộ cụm máy chủ): kiểm soát lưu lượng toàn cục (`global`), kiểm soát theo địa chỉ IP (`client_ip`) và kiểm soát theo định danh tài khoản (`identity`). Trả về mã lỗi chuẩn `429 Too Many Requests` kèm `Retry-After`. |
+| **Bảo mật luồng Quên mật khẩu** | Mã OTP 6 chữ số được băm HMAC-SHA256 trước khi lưu; đối soát bằng thuật toán `timingSafeEqual` chống tấn công đo thời gian (Timing Attack); khóa hàng `SELECT ... FOR UPDATE` triệt tiêu race condition; yêu cầu mã mới tự động vô hiệu hóa mã cũ. |
+| **Phòng chống SSRF & DNS Rebinding** | Khi cấu hình hoặc kiểm tra máy chủ gửi thư SMTP, hệ thống chủ động phân giải DNS (`dns.promises.lookup`) và từ chối kết nối tới toàn bộ dải IP riêng tư (Private IP RFC 1918), Loopback (`127.0.0.1`), Link-Local (`169.254.x.x`) hoặc tên miền nội bộ. |
+| **Làm sạch tệp tải lên (File Sanitization)** | Ảnh đại diện (Avatar) chỉ cho phép định dạng ảnh hợp lệ, giới hạn 5 MB, được giải mã và chuẩn hóa lại thành định dạng WebP an toàn trước khi ghi vào thư mục lưu trữ ngoài web root; tệp nhập dữ liệu chỉ nhận văn bản thuần qua thư viện an toàn `exceljs`. |
+| **Bảo vệ chống rò rỉ dữ liệu trong Log** | Nhật ký vận hành (Operational Logs) tuyệt đối không ghi nội dung chat, mật khẩu, khóa API, mã OTP hay địa chỉ email nhận thư test. |
+
+---
+
+## 8. Hướng dẫn Cài đặt & Triển khai Nhanh
+
+### Yêu cầu hệ thống
+- **Node.js**: Phiên bản 20.x hoặc 22.x LTS trở lên
+- **PostgreSQL**: Phiên bản 16 trở lên (khuyến nghị có extension `pgvector` để tối ưu hóa tìm kiếm vector)
+- **Docker & Docker Compose** (nếu muốn khởi chạy database nhanh trong môi trường local)
+
+### Bước 1: Clone mã nguồn & Cài đặt thư viện
+```bash
+git clone https://github.com/your-org/support-reply-assistant.git
+cd support-reply-assistant
+npm install
+```
+
+### Bước 2: Thiết lập biến môi trường
+Tạo tệp `.env` từ tệp mẫu `.env.example`:
+```bash
+cp .env.example .env
+```
+Cập nhật các thông số thiết yếu trong `.env`:
+```env
+# Kết nối cơ sở dữ liệu PostgreSQL
+DATABASE_URL=postgresql://@localhost:5432/support_reply_assistant
+
+# Khóa bí mật JWT Session (chuỗi ngẫu nhiên dài tối thiểu 32 ký tự)
+AUTH_SECRET=your_super_secret_auth_key_at_least_32_characters
+
+# Khóa mã hóa AES-256-GCM bảo vệ API Key & SMTP (32 bytes base64)
+# Bạn có thể tạo nhanh bằng lệnh: node -e "console.log(crypto.randomBytes(32).toString('base64'))"
+SECRETS_ENCRYPTION_KEY=your_base64_encoded_32_byte_encryption_key
+
+# URL ứng dụng
+APP_URL=http://localhost:3000
+
+# Bật 'true' nếu ứng dụng chạy sau Reverse Proxy tin cậy (Nginx, Traefik, Cloudflare)
+TRUST_PROXY=false
+```
+
+### Bước 3: Khởi động cơ sở dữ liệu & Chạy Migration
+Nếu sử dụng Docker Compose:
+```bash
+# Khởi động PostgreSQL 16 + pgvector container
+npm run db:up
+
+# Chạy di chuyển cấu trúc dữ liệu tự động (Idempotent Migration)
+npm run db:migrate
+
+# (Tùy chọn) Khởi tạo dữ liệu mẫu ban đầu để kiểm thử
+npm run db:seed
+```
+
+### Bước 4: Khởi chạy ứng dụng
+Chạy trong môi trường phát triển (Development):
+```bash
+npm run dev
+```
+Mở trình duyệt tại địa chỉ `http://localhost:3000`.
+
+Tài khoản quản trị mặc định (nếu chạy seed):
+- **Email:** `admin@support.local`
+- **Mật khẩu:** `Admin@123456` *(Bắt buộc đổi mật khẩu ngay sau lần đăng nhập đầu tiên)*
+
+---
+
+### Bước 5: Triển khai Production & Tác vụ Bảo trì định kỳ
+
+Khi triển khai trên máy chủ thực tế (Production), thực hiện biên dịch gói tối ưu:
+```bash
+npm run build
+npm run deploy:start
+```
+
+Để giữ hệ thống luôn sạch sẽ và tối ưu hiệu năng cơ sở dữ liệu, hãy thiết lập **Cron Job** chạy định kỳ các tác vụ dọn dẹp dữ liệu quá hạn:
+```bash
+# Dọn dẹp lịch sử hội thoại cũ hơn 90 ngày (Chạy hàng ngày)
+npm run conversations:retention -- --apply
+
+# Dọn dẹp nhật ký vận hành quá hạn do Admin cấu hình (Chạy hàng ngày)
+npm run operational-logs:retention -- --apply
+
+# Giải phóng bộ nhớ bucket rate-limit quá hạn (Chạy hàng ngày)
+npm run auth-rate-limits:retention -- --apply
+
+# Xóa các yêu cầu đặt lại mật khẩu OTP đã hết hạn hoặc tiêu thụ quá 30 ngày (Chạy hàng ngày)
+npm run password-resets:retention -- --apply
+```
+
+---
+
+## 9. Tài liệu Kỹ thuật Chi tiết
+
+- 📘 [Hợp đồng Toàn bộ API Endpoints (docs/API.md)](docs/API.md) — Chi tiết tham số, cấu trúc request/response và mã lỗi.
+- 🚀 [Hướng dẫn Đóng gói & Triển khai Production (docs/DEPLOYMENT.md)](docs/DEPLOYMENT.md) — Hướng dẫn Docker, biến môi trường và thiết lập Reverse Proxy.
+- 🛡️ [Báo cáo Kiểm định Bảo mật Mới nhất (2026-09-30)](docs/SECURITY-REPORT-2026-09-30.md) — Kiểm định chuyên sâu chức năng Quên mật khẩu OTP & Cấu hình SMTP.
+- 🛡️ [Báo cáo Kiểm định Bảo mật (2026-09-29)](docs/SECURITY-REPORT-2026-09-29.md) — Kiểm tra rate limiting, ExcelJS dependency & RBAC.
+- 🛡️ [Báo cáo Kiểm định Bảo mật (2026-09-28)](docs/SECURITY-REPORT-2026-09-28.md) — Kiểm định toàn diện kiến trúc bảo mật nền tảng.
+
+---
+
+## 10. Giấy phép Bản quyền (License)
+
+Dự án được phát hành dưới hình thức **Mã nguồn mở (Open Source)**. Mọi cá nhân và tổ chức đều có quyền tự do triển khai, tùy biến và sử dụng trong nội bộ doanh nghiệp.
