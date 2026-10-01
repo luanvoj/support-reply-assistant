@@ -6,7 +6,9 @@ const algorithm = "aes-256-gcm";
 let encryptionKey: Buffer | undefined;
 
 function getEncryptionKey() {
-  encryptionKey ??= createHash("sha256").update(getEnv().SECRETS_ENCRYPTION_KEY).digest();
+  if (!encryptionKey) {
+    encryptionKey = createHash("sha256").update(getEnv().SECRETS_ENCRYPTION_KEY).digest();
+  }
   return encryptionKey;
 }
 
