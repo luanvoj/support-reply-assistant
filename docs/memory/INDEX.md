@@ -30,6 +30,8 @@
 
 ## Việc mở có hiệu lực
 
+- Plan: [Thay thế kho tri thức trên deploy bằng dữ liệu mô phỏng đã làm sạch](plans/2026-10-03-deploy-knowledge-library-replacement.md) — deploy đã được làm sạch và import lại; chờ checkpoint Git và luân chuyển credential deploy.
+
 - Plan mới: [Khắc phục findings Security Report 30-09-2026](plans/2026-09-30-security-report-remediation.md) — đóng SEC-007/008 (rate limit OTP và single-active OTP), bổ sung retention reset và hardening DNS rebinding SMTP; chờ phê duyệt triển khai.
 
 - Plan mới: [SMTP và OTP email cho quên mật khẩu](plans/2026-09-30-smtp-otp-password-recovery.md) — cấu hình SMTP Admin-only, OTP email 6 số và reset password public có rate-limit/challenge/session revocation; chờ chốt policy email/domain và SMTP nội bộ trước khi triển khai.

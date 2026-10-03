@@ -28,69 +28,69 @@ type Scenario = {
 
 const SCENARIOS: Scenario[] = [
   {
-    id: "dns-domain",
-    tabLabel: "Tư vấn DNS tên miền",
-    icon: "⚡",
-    userQuestion: "Tôi vừa đăng ký tên miền, làm sao để cấu hình trỏ về hosting cPanel?",
-    ragDocTitle: "Hướng dẫn cấu hình DNS tên miền trỏ về Web Hosting",
-    ragMatchScore: 96,
-    ragStatus: "verified",
-    ragExcerpt: "Tạo bản ghi A (@) trỏ về địa chỉ IP của gói hosting; Bản ghi CNAME (www) trỏ về tên miền chính...",
-    assistantAnswer:
-      "Chào bạn! Để trỏ tên miền về hosting cPanel, bạn vào Quản trị DNS và thiết lập: 1. Bản ghi A (@) trỏ về IP của Hosting [1]. 2. Bản ghi CNAME (www) trỏ về tên miền chính [1]. Thời gian DNS cập nhật toàn cầu từ 15–30 phút.",
-    citationDoc: "Kho tri thức: KB-DNS-01 (Đã xác minh bởi Chuyên gia)",
-    actionBadge: {
-      label: "✓ 96% Có căn cứ",
-      variant: "success",
-    },
-    metrics: {
-      latency: "0.34s",
-      groundedRatio: "100% tài liệu duyệt",
-      sourceCode: "KB-DNS-01",
-    },
-  },
-  {
-    id: "pricing-contract",
-    tabLabel: "Báo giá & Hợp đồng",
-    icon: "💼",
-    userQuestion: "Gói Cloud Server Enterprise thanh toán 3 năm có chính sách chiết khấu 35% và xuất HĐ VAT không?",
-    ragDocTitle: "Chính sách Báo giá, Hợp đồng & Chiết khấu Doanh nghiệp",
-    ragMatchScore: 89,
+    id: "password-reset",
+    tabLabel: "Đặt lại mật khẩu",
+    icon: "🔐",
+    userQuestion: "Tôi không thể đăng nhập tài khoản thử nghiệm. Tôi cần đặt lại mật khẩu như thế nào?",
+    ragDocTitle: "Đặt lại mật khẩu tài khoản mẫu",
+    ragMatchScore: 98,
     ragStatus: "sensitive",
-    ragExcerpt: "Chủ đề nhạy cảm [Giá & Hợp đồng] yêu cầu độ tin cậy tối thiểu 90% hoặc chuyển giao Chuyên gia Kinh doanh xác nhận.",
+    ragExcerpt: "Chọn Quên mật khẩu, nhập thanhvien@example.test, mở thư đặt lại trong hộp thư thử nghiệm và tạo mật khẩu mới dài ít nhất 12 ký tự.",
     assistantAnswer:
-      "Chính sách chiết khấu hợp đồng dài hạn là nội dung cần sự thẩm định của Bộ phận Kinh doanh. Trợ lý đã tự động chuyển tiếp câu hỏi này cho chuyên gia phụ trách để liên hệ tư vấn chi tiết cho bạn.",
-    citationDoc: "Quy chuẩn an toàn: CS-SENSITIVE-90 (Ngưỡng nhạy cảm nghiêm ngặt)",
+      "Chọn Quên mật khẩu, nhập thanhvien@example.test, mở thư đặt lại trong hộp thư thử nghiệm và tạo mật khẩu mới dài ít nhất 12 ký tự. Sau đó đăng nhập lại để kiểm tra; các phiên cũ sẽ được yêu cầu đăng nhập lại [1].",
+    citationDoc: "Nguồn mô phỏng: Đặt lại mật khẩu tài khoản mẫu",
     actionBadge: {
-      label: "⚠️ Nhạy cảm — Chuyển #EXP-842",
+      label: "↗ Có bước cần chuyển cấp",
       variant: "warning",
     },
     metrics: {
-      latency: "0.28s",
-      groundedRatio: "Tự động chặn bịa đặt",
-      sourceCode: "RULE-SAFE-90",
+      latency: "0.31s",
+      groundedRatio: "1 bài viết mô phỏng",
+      sourceCode: "Tài khoản",
     },
   },
   {
-    id: "missing-knowledge",
-    tabLabel: "Chưa có tài liệu",
-    icon: "❓",
-    userQuestion: "Dịch vụ có hỗ trợ cài cắm extension chưa ký số cho cụm Kubernetes nội bộ không?",
-    ragDocTitle: "Quét toàn bộ Kho tri thức: Không tìm thấy bài viết khớp",
-    ragMatchScore: 31,
-    ragStatus: "missing",
-    ragExcerpt: "Độ tương đồng cao nhất 31% < ngưỡng tự trả lời 80%. Không có tài liệu nào trong kho được duyệt cho nghiệp vụ này.",
+    id: "a-record",
+    tabLabel: "Bản ghi A",
+    icon: "🌐",
+    userQuestion: "Bản ghi A dùng để làm gì khi cấu hình tên máy chủ thử nghiệm?",
+    ragDocTitle: "Bản ghi A dùng để làm gì",
+    ragMatchScore: 97,
+    ragStatus: "sensitive",
+    ragExcerpt: "Tạo bản ghi A cho app.demo.example.test trỏ đến 192.0.2.25, chọn TTL 300 giây khi đang kiểm thử và lưu.",
     assistantAnswer:
-      "Trợ lý chưa tìm thấy tài liệu chính thức được phê duyệt để giải đáp câu hỏi này. Câu hỏi đã được tự động ghi nhận vào Hàng đợi rà soát (Queue) để chuyên gia kỹ thuật thẩm định và biên soạn tài liệu mới.",
-    citationDoc: "Hàng đợi xử lý: Đã ghi nhận phiếu chờ duyệt mới",
+      "Bản ghi A liên kết tên máy chủ với địa chỉ IPv4. Trong môi trường thử nghiệm, hãy tạo bản ghi A cho app.demo.example.test trỏ đến 192.0.2.25, chọn TTL 300 giây rồi tra cứu DNS để xác nhận kết quả [1].",
+    citationDoc: "Nguồn mô phỏng: Bản ghi A dùng để làm gì",
     actionBadge: {
-      label: "📥 Đưa vào Hàng đợi Queue",
-      variant: "brand",
+      label: "↗ Có bước cần chuyển cấp",
+      variant: "warning",
     },
     metrics: {
-      latency: "0.19s",
-      groundedRatio: "Phát hiện thiếu tài liệu",
-      sourceCode: "QUEUE-PENDING",
+      latency: "0.27s",
+      groundedRatio: "1 bài viết mô phỏng",
+      sourceCode: "Tên miền",
+    },
+  },
+  {
+    id: "phishing-message",
+    tabLabel: "Nhận biết thư lừa đảo",
+    icon: "🛡️",
+    userQuestion: "Tôi nhận được một thư có liên kết lạ và yêu cầu xử lý gấp. Tôi nên làm gì?",
+    ragDocTitle: "Nhận biết thư lừa đảo cơ bản",
+    ragMatchScore: 95,
+    ragStatus: "verified",
+    ragExcerpt: "Kiểm tra người gửi, tên miền đích, yêu cầu khẩn cấp và tệp đính kèm. Không nhấp liên kết; đối chiếu yêu cầu qua kênh tin cậy.",
+    assistantAnswer:
+      "Không nhấp liên kết hoặc mở tệp đính kèm. Hãy kiểm tra người gửi, tên miền đích và yêu cầu khẩn cấp; sau đó đối chiếu yêu cầu qua một kênh tin cậy. Báo cáo thư bằng chức năng có sẵn nếu vẫn thấy đáng ngờ [1].",
+    citationDoc: "Nguồn mô phỏng: Nhận biết thư lừa đảo cơ bản",
+    actionBadge: {
+      label: "✓ Có căn cứ từ bài viết",
+      variant: "success",
+    },
+    metrics: {
+      latency: "0.23s",
+      groundedRatio: "1 bài viết mô phỏng",
+      sourceCode: "Bảo mật",
     },
   },
 ];
@@ -129,11 +129,11 @@ function EvidenceFlow() {
   return (
     <aside className="bento-login-visual" aria-labelledby="evidence-flow-title">
       <div className="bento-visual-copy">
-        <span className="bento-visual-eyebrow">MÔ PHỎNG THỜI GIAN THỰC</span>
-        <h2 id="evidence-flow-title">Từ tri thức nội bộ đến phản hồi tin cậy.</h2>
+        <span className="bento-visual-eyebrow">MINH HỌA PHẢN HỒI</span>
+        <h2 id="evidence-flow-title">Từ bài viết mô phỏng đến phản hồi có căn cứ.</h2>
         <p>
-          Mọi câu trả lời của trợ lý đều được đối chiếu trực tiếp từ kho tài liệu đã xác minh, 
-          tự động nhận diện trường hợp phức tạp để chuyển giao cho chuyên gia.
+          Các kịch bản bên dưới dùng trực tiếp nội dung từ thư viện bài viết mô phỏng hiện có.
+          Những trường hợp cần thêm xác minh sẽ được đánh dấu để chuyển cấp.
         </p>
       </div>
 
@@ -146,12 +146,12 @@ function EvidenceFlow() {
             <span className="demo-mac-dot yellow" />
             <span className="demo-mac-dot green" />
             <span style={{ fontSize: "11px", fontWeight: "700", color: "#64748b", marginLeft: "6px" }}>
-              Mô phỏng Luồng AI Grounding
+              Mô phỏng phản hồi theo bài viết
             </span>
           </div>
           <div className="demo-header-badge">
             <span className="demo-pulse-dot" />
-            <span>Đang phát trực tiếp</span>
+            <span>Đang trình bày</span>
           </div>
         </div>
 
@@ -182,22 +182,22 @@ function EvidenceFlow() {
             />
             <div className={`demo-pipe-node ${step >= 1 ? (step === 1 ? "active" : "passed") : ""}`}>
               <span>{step > 1 ? "✓" : "1"}</span>
-              <span>Nhận câu hỏi</span>
+              <span>Nhận yêu cầu</span>
             </div>
             <div className={`demo-pipe-node ${step >= 2 ? (step === 2 ? "active" : "passed") : ""}`}>
               <span>{step > 2 ? "✓" : "2"}</span>
-              <span>Đối soát RAG</span>
+              <span>Tìm bài viết phù hợp</span>
             </div>
             <div className={`demo-pipe-node ${step === 3 ? "active passed" : ""}`}>
               <span>3</span>
-              <span>Ra quyết định</span>
+              <span>Phản hồi</span>
             </div>
           </div>
 
           {/* Bước 1: Câu hỏi của khách hàng */}
           <div className="demo-bubble-user">
             <div style={{ fontSize: "11px", opacity: 0.85, marginBottom: "2px" }}>
-              👤 Khách hàng gửi yêu cầu
+              👤 Người dùng gửi câu hỏi
             </div>
             <div>{scenario.userQuestion}</div>
           </div>
@@ -209,7 +209,7 @@ function EvidenceFlow() {
               <div className="demo-rag-head">
                 <div className="demo-rag-title">
                   <span>🔍</span>
-                  <span>Đang đối soát Semantic RAG</span>
+                  <span>Đang tìm bài viết phù hợp</span>
                 </div>
                 <Badge
                   variant={
@@ -507,7 +507,7 @@ export default function LoginPage() {
               Đăng nhập không gian làm việc
             </h1>
             <p className="bento-login-subtitle">
-              Truy cập trợ lý thông minh và tra cứu tri thức nội bộ đã được kiểm duyệt.
+              Truy cập trợ lý thông minh và tra cứu thư viện hướng dẫn mô phỏng.
             </p>
 
             <form onSubmit={login} className="bento-login-form">
