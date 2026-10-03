@@ -2,7 +2,11 @@ import { hashPassword } from "@/lib/auth/password";
 import { db } from "@/lib/db";
 
 async function main() {
-  const passwordHash = await hashPassword("");
+  const password = process.env.SEED_PASSWORD;
+  if (!password) {
+    throw new Error("SEED_PASSWORD must be set before creating demo users.");
+  }
+  const passwordHash = await hashPassword(password);
   const users = [
     ["Demo Sales", "sales@example.local", "sales"],
     ["Demo Technical", "technical@example.local", "technical"],

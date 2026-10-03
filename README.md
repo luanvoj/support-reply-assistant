@@ -198,7 +198,8 @@ cp .env.example .env
 Cập nhật các thông số thiết yếu trong `.env`:
 ```env
 # Kết nối cơ sở dữ liệu PostgreSQL
-DATABASE_URL=postgresql://@localhost:5432/support_reply_assistant
+DATABASE_URL=postgresql://support:replace-with-local-database-password@localhost:5432/support_reply_assistant
+POSTGRES_PASSWORD=replace-with-local-database-password
 
 # Khóa bí mật JWT Session (chuỗi ngẫu nhiên dài tối thiểu 32 ký tự)
 AUTH_SECRET=your_super_secret_auth_key_at_least_32_characters
@@ -212,6 +213,9 @@ APP_URL=http://localhost:3000
 
 # Bật 'true' nếu ứng dụng chạy sau Reverse Proxy tin cậy (Nginx, Traefik, Cloudflare)
 TRUST_PROXY=false
+
+# Required only when running `npm run db:seed`; use a unique local demo password.
+SEED_PASSWORD=replace-with-strong-demo-password
 ```
 
 ### Bước 3: Khởi động cơ sở dữ liệu & Chạy Migration
