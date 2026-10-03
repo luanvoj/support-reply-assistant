@@ -272,7 +272,7 @@ export function QueueScreen() {
           label="Tiêu đề tài liệu tri thức mới"
           value={title}
           onChange={(event) => setTitle(event.target.value)}
-          placeholder="Ví dụ: Hướng dẫn cấu hình DNS tên miền …"
+          placeholder="Ví dụ: Hướng dẫn cấu hình DNS tên miền…"
         />
         <Textarea
           label="Câu trả lời chính xác đã được chuyên gia xác minh"

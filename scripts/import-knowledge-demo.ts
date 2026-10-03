@@ -5,7 +5,7 @@ import { db, query, withTransaction } from "@/lib/db";
 import { replaceArticleChunks } from "@/lib/knowledge/article";
 
 type ImportedItem = { number: number; group: string; title: string; policy: "grounded" | "escalate"; answer: string };
-const sourceFile = path.resolve(process.cwd(), "nguon_tri_thuc_demo_50_cau_hoi_.md");
+const sourceFile = path.resolve(process.cwd(), "nguon_tri_thuc_demo_50_cau_hoi.md");
 const apply = process.argv.includes("--apply");
 
 function slugify(value: string) { return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 96); }

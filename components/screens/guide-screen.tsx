@@ -459,7 +459,7 @@ export function GuideScreen() {
                   Độ tin cậy: 95% • Đã đối soát 2 nguồn
                 </div>
                 <p className="bento-outcome-mock-text">
-                  Để trỏ tên miền về hosting cPanel , bạn cấu hình bản ghi <strong>A Record</strong> về IP hosting và <strong>CNAME</strong> cho www. Thời gian cập nhật DNS từ 15 phút đến 2 giờ. <span className="bento-mock-cite">[1]</span>
+                  Để trỏ tên miền về hosting cPanel, bạn cấu hình bản ghi <strong>A Record</strong> về IP hosting và <strong>CNAME</strong> cho www. Thời gian cập nhật DNS từ 15 phút đến 2 giờ. <span className="bento-mock-cite">[1]</span>
                 </p>
               </div>
 
@@ -493,7 +493,7 @@ export function GuideScreen() {
                   Chế độ căn cứ an toàn (Kho tri thức)
                 </div>
                 <p className="bento-outcome-mock-text">
-                  <strong>Đoạn trích phù hợp:</strong> “Tài liệu KB-DNS-01: Hướng dẫn cấu hình DNS . Mục 2: Cặp bản ghi A và CNAME chuẩn cho dịch vụ Cloud Hosting.”
+                  <strong>Đoạn trích phù hợp:</strong> “Tài liệu KB-DNS-01: Hướng dẫn cấu hình DNS. Mục 2: Cặp bản ghi A và CNAME chuẩn cho dịch vụ Cloud Hosting.”
                 </p>
               </div>
 

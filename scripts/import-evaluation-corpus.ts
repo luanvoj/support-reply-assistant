@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
 import { db } from "@/lib/db";
 
-const path = resolve(process.argv[2] ?? "dataset_huan_luyen_agent_.xlsx");
+const path = resolve(process.argv[2] ?? "dataset_huan_luyen_agent.xlsx");
 const xml = execFileSync("unzip", ["-p", path, "xl/worksheets/sheet1.xml"], { encoding: "utf8" });
 const decode = (value: string) => value.replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code))).replace(/&amp;/g, "&");
 const rows = [...xml.matchAll(/<row[^>]*>([\s\S]*?)<\/row>/g)].slice(1).map((row) => [...row[1].matchAll(/<c r="([A-E])\d+"[^>]*>([\s\S]*?)<\/c>/g)].reduce<Record<string, string>>((result, cell) => {
