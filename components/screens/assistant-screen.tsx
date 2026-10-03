@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { Button, Badge } from "@/components/ui";
 import { useFeedback } from "@/components/app-shell";
+import { Modal } from "@/components/ui/modal";
 
 export type ChatSource = {
   id?: string;
@@ -12,6 +13,23 @@ export type ChatSource = {
   title?: string;
   score?: number;
   excerpt?: string;
+};
+
+type EvidenceSource = {
+  articleId: string;
+  title: string;
+  excerpt: string;
+  responsePolicy: "grounded" | "escalate";
+  articleVersion: number | null;
+  snapshotAt: string | null;
+  contentMarkdown?: string;
+};
+
+type EvidenceModalState = {
+  source: EvidenceSource | null;
+  title: string;
+  loading: boolean;
+  error: string | null;
 };
 
 export type ChatMessage = {
@@ -103,22 +121,25 @@ function CitationAnswer({
 function CitationSources({
   sources,
   mode,
+  onOpenEvidence,
 }: {
   sources: ChatSource[];
   mode?: ChatMessage["mode"];
+  onOpenEvidence: (source: ChatSource) => void;
 }) {
   const grouped = Array.from(
     sources.reduce((groups, source, index) => {
       const key = source.articleId ?? source.title ?? `source-${index}`;
       const current = groups.get(key) ?? {
         title: source.title ?? "Tài liệu đã xác minh",
+        articleId: source.articleId,
         count: 0,
         firstCitation: index + 1,
       };
       current.count += 1;
       groups.set(key, current);
       return groups;
-    }, new Map<string, { title: string; count: number; firstCitation: number }>())
+    }, new Map<string, { title: string; articleId?: string; count: number; firstCitation: number }>())
   );
 
   const label =
@@ -140,10 +161,24 @@ function CitationSources({
         {grouped.map(([key, source]) => (
           <li key={key}>
             <span className="source-number">{source.firstCitation}</span>
-            <span>
-              <strong>{source.title}</strong>
-              <small>{source.count} đoạn được dùng</small>
-            </span>
+            {source.articleId ? (
+              <button
+                type="button"
+                className="citation-source-button"
+                onClick={() =>
+                  onOpenEvidence({ articleId: source.articleId, title: source.title })
+                }
+                aria-label={`Xem nội dung căn cứ: ${source.title}`}
+              >
+                <strong>{source.title}</strong>
+                <small>{source.count} đoạn được dùng • Xem chi tiết</small>
+              </button>
+            ) : (
+              <span>
+                <strong>{source.title}</strong>
+                <small>{source.count} đoạn được dùng</small>
+              </span>
+            )}
           </li>
         ))}
       </ul>
@@ -161,7 +196,46 @@ export function AssistantScreen() {
   const [sending, setSending] = useState(false);
   const [archived, setArchived] = useState(false);
   const [assistantName, setAssistantName] = useState("Trợ lý phản hồi");
+  const [evidenceModal, setEvidenceModal] = useState<EvidenceModalState | null>(null);
   const endRef = useRef<HTMLDivElement | null>(null);
+
+  const openEvidence = async (messageId: string, source: ChatSource) => {
+    if (!conversationId || !source.articleId) {
+      notify("Căn cứ này chưa sẵn sàng để xem chi tiết.", "error");
+      return;
+    }
+    setEvidenceModal({
+      source: null,
+      title: source.title ?? "Căn cứ đã dùng",
+      loading: true,
+      error: null,
+    });
+    try {
+      const response = await fetch(
+        `/api/conversations/${conversationId}/messages/${messageId}/sources/${source.articleId}`,
+      );
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(readableApiError(body.error, "Không thể tải căn cứ này."));
+      }
+      setEvidenceModal({
+        source: body.source as EvidenceSource,
+        title: body.source?.title ?? source.title ?? "Căn cứ đã dùng",
+        loading: false,
+        error: null,
+      });
+    } catch (error) {
+      setEvidenceModal({
+        source: null,
+        title: source.title ?? "Căn cứ đã dùng",
+        loading: false,
+        error: readableApiError(
+          error instanceof Error ? error.message : error,
+          "Không thể tải căn cứ này.",
+        ),
+      });
+    }
+  };
 
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get("conversationId");
@@ -512,6 +586,7 @@ export function AssistantScreen() {
                         <CitationSources
                           sources={message.sources}
                           mode={message.mode}
+                          onOpenEvidence={(source) => void openEvidence(message.id, source)}
                         />
                       )}
                   </div>
@@ -590,6 +665,72 @@ export function AssistantScreen() {
           </div>
         </aside>
       </div>
+      <Modal
+        isOpen={Boolean(evidenceModal)}
+        onClose={() => setEvidenceModal(null)}
+        title={evidenceModal?.title ?? "Căn cứ đã dùng"}
+        eyebrow="CĂN CỨ TRONG HỘI THOẠI"
+        description="Bản chụp tại thời điểm trợ lý tạo phản hồi; không phải nội dung kho tri thức hiện hành."
+        size="lg"
+      >
+        {evidenceModal?.loading ? (
+          <p className="evidence-modal-status">Đang tải nội dung căn cứ…</p>
+        ) : evidenceModal?.error ? (
+          <p className="evidence-modal-status evidence-modal-error">{evidenceModal.error}</p>
+        ) : evidenceModal?.source ? (
+          <EvidenceContent source={evidenceModal.source} />
+        ) : null}
+      </Modal>
     </AppShell>
+  );
+}
+
+function EvidenceContent({ source }: { source: EvidenceSource }) {
+  return (
+    <div className="evidence-modal-content">
+      <div className="evidence-modal-meta">
+        <Badge variant={source.responsePolicy === "grounded" ? "success" : "warning"} size="sm">
+          {source.responsePolicy === "grounded" ? "Đã xác minh" : "Cần chuyên gia xác nhận"}
+        </Badge>
+        {source.articleVersion && <span>Phiên bản {source.articleVersion}</span>}
+        {source.snapshotAt && <span>Chụp lúc {new Date(source.snapshotAt).toLocaleString("vi-VN")}</span>}
+      </div>
+      {source.responsePolicy === "escalate" ? (
+        <div className="evidence-modal-escalate">
+          <p>Nội dung này cần chuyên gia xác nhận nên hệ thống chỉ hiển thị phần trích dẫn đã dùng.</p>
+          <p>{source.excerpt || "Không có đoạn trích khả dụng."}</p>
+        </div>
+      ) : (
+        <SafeMarkdown content={source.contentMarkdown ?? ""} />
+      )}
+    </div>
+  );
+}
+
+function SafeMarkdown({ content }: { content: string }) {
+  return (
+    <div className="evidence-markdown">
+      {content.split(/\n\s*\n/).filter(Boolean).map((block, index) => {
+        const lines = block.split("\n");
+        const heading = lines[0]?.match(/^(#{1,3})\s+(.+)$/);
+        if (heading) {
+          const Tag = `h${heading[1].length}` as "h1" | "h2" | "h3";
+          const body = lines.slice(1).join("\n").trim();
+          return (
+            <div key={index}>
+              <Tag>{heading[2]}</Tag>
+              {body && <p>{body}</p>}
+            </div>
+          );
+        }
+        if (lines.every((line) => /^\d+\.\s+/.test(line))) {
+          return <ol key={index}>{lines.map((line, lineIndex) => <li key={lineIndex}>{line.replace(/^\d+\.\s+/, "")}</li>)}</ol>;
+        }
+        if (lines.every((line) => /^[-*]\s+/.test(line))) {
+          return <ul key={index}>{lines.map((line, lineIndex) => <li key={lineIndex}>{line.replace(/^[-*]\s+/, "")}</li>)}</ul>;
+        }
+        return <p key={index}>{block}</p>;
+      })}
+    </div>
   );
 }

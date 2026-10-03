@@ -2,10 +2,16 @@ export const roles = ["sales", "technical", "admin"] as const;
 export type Role = (typeof roles)[number];
 
 export const permissions = {
-  sales: ["chat:use", "conversation:read", "knowledge:read", "feedback:create"],
+  sales: [
+    "chat:use",
+    "conversation:read",
+    "conversation:evidence:read",
+    "feedback:create",
+  ],
   technical: [
     "chat:use",
     "conversation:read",
+    "conversation:evidence:read",
     "knowledge:read",
     "knowledge:write",
     "ticket:read",

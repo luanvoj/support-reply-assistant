@@ -10,6 +10,7 @@ Quản lý bài text-only để Agent truy hồi; hỗ trợ import, version/chu
 - Bài archive không dùng cho câu trả lời mới; restore đưa về draft. Sau xác nhận, xóa vĩnh viễn bài archive kể cả khi có citation hoặc liên kết review/import/merge; nhật ký vận hành chỉ giữ metadata thao tác.
 - Merge batch giới hạn phạm vi theo service group/policy, lexical prefilter rồi Agent rerank; chỉ xuất bản/lưu trữ nguồn sau Admin duyệt draft.
 - Điểm rerank bị giới hạn 0–1. Synonym/ngưỡng merge lưu trong retrieval settings và được snapshot vào batch.
+- Quyền `knowledge:read` dành cho Technical/Admin để duyệt Kho tri thức. Căn cứ hiển thị trong hội thoại dùng endpoint scoped và snapshot từ message, không dùng endpoint bài viết chung.
 
 ## Việc mở/rủi ro
 

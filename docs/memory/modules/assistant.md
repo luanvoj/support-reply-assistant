@@ -13,6 +13,8 @@ Trả lời theo tri thức xuất bản có căn cứ; thiếu căn cứ hoặc
 - `fallback` tự tạo một yêu cầu chuyên gia; không còn CTA chuyển chuyên gia thủ công hay nhánh trả lời một phần. Yêu cầu liên kết duy nhất với assistant message để không tạo trùng.
 - Khi căn cứ đủ nhưng Agent tắt, trong cooldown hoặc tạm không sẵn sàng, `knowledge_suggestions` trả nguồn đã xác minh để tham khảo; outage provider không tự tạo yêu cầu chuyên gia.
 - Mỗi message có `sequence_no` theo hội thoại. API chi tiết hội thoại đọc theo thứ tự này; migration đã gán thứ tự cho dữ liệu cũ.
+- Nhân viên không có quyền duyệt Kho tri thức chung. Họ chỉ có thể mở căn cứ đã trích dẫn trong message assistant thuộc hội thoại của chính mình qua `GET /api/conversations/:id/messages/:messageId/sources/:articleId`. Bài `grounded` trả snapshot toàn văn tại thời điểm trả lời; bài `escalate` chỉ trả excerpt. Message cũ không có snapshot không được fallback sang bài hiện hành.
+- Mỗi lượt mở căn cứ thành công ghi nhật ký `knowledge_evidence_opened` với định danh hội thoại/message/bài và policy, không ghi nội dung bài hoặc chat vào log.
 
 ## Việc mở/rủi ro
 

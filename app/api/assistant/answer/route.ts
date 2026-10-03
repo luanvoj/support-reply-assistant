@@ -390,6 +390,55 @@ export async function POST(request: Request) {
       [id],
     );
     const userSequence = Number(lastSequence.rows[0]?.value ?? 0) + 1;
+    const articleIds = [...new Set(sources.map((source) => source.articleId))];
+    const articleSnapshots = articleIds.length
+      ? await client.query<{
+          id: string;
+          title: string;
+          content_markdown: string;
+          version: number;
+          response_policy: "grounded" | "escalate";
+        }>(
+          `SELECT id, title, content_markdown, version, response_policy
+           FROM knowledge_articles
+           WHERE id = ANY($1::uuid[])`,
+          [articleIds],
+        )
+      : { rows: [] as Array<{
+          id: string;
+          title: string;
+          content_markdown: string;
+          version: number;
+          response_policy: "grounded" | "escalate";
+        }> };
+    const snapshotsByArticleId = new Map(
+      articleSnapshots.rows.map((article) => [article.id, article]),
+    );
+    const snapshotAt = new Date().toISOString();
+    const snapshottedArticleIds = new Set<string>();
+    const retrievalSummary = sources.map((source) => {
+      const article = snapshotsByArticleId.get(source.articleId);
+      const responsePolicy =
+        source.responsePolicy === "grounded" ? "grounded" : "escalate";
+      return {
+        id: source.id,
+        articleId: source.articleId,
+        title: article?.title ?? source.sourceTitle,
+        score: source.score,
+        responsePolicy,
+        excerpt: source.content.slice(0, 260),
+        articleVersion: article?.version,
+        snapshotAt,
+        // Escalation-only sources must never expose their full text through the
+        // conversation evidence viewer.  The excerpt remains enough context to
+        // explain why the assistant asked for expert review.
+        ...(responsePolicy === "grounded" && article && !snapshottedArticleIds.has(source.articleId)
+          ? (snapshottedArticleIds.add(source.articleId), {
+              contentSnapshot: article.content_markdown.slice(0, 30_000),
+            })
+          : {}),
+      };
+    });
     await client.query(
       "INSERT INTO messages (conversation_id, sender_type, content, request_id, sequence_no) VALUES ($1,'user',$2,$3,$4)",
       [id, question, clientMessageId, userSequence],
@@ -403,16 +452,7 @@ export async function POST(request: Request) {
         providerUsed,
         bestScore,
         evidence.score,
-        JSON.stringify(
-          sources.map((source) => ({
-            id: source.id,
-            articleId: source.articleId,
-            title: source.sourceTitle,
-            score: source.score,
-            responsePolicy: source.responsePolicy,
-            excerpt: source.content.slice(0, 260),
-          })),
-        ),
+        JSON.stringify(retrievalSummary),
         mode,
         clientMessageId,
         userSequence + 1,

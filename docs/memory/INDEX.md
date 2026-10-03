@@ -30,6 +30,8 @@
 
 ## Việc mở có hiệu lực
 
+- Plan mới: [Xem căn cứ theo hội thoại cho nhân viên](plans/2026-10-03-conversation-scoped-evidence-viewer.md) — đã triển khai snapshot, API scoped, modal và tách quyền xem căn cứ khỏi quyền duyệt Kho tri thức; chờ nghiệm thu kiểm thử.
+
 - Plan: [Thay thế kho tri thức trên deploy bằng dữ liệu mô phỏng đã làm sạch](plans/2026-10-03-deploy-knowledge-library-replacement.md) — deploy đã được làm sạch và import lại; chờ checkpoint Git và luân chuyển credential deploy.
 
 - Plan mới: [Khắc phục findings Security Report 30-09-2026](plans/2026-09-30-security-report-remediation.md) — đóng SEC-007/008 (rate limit OTP và single-active OTP), bổ sung retention reset và hardening DNS rebinding SMTP; chờ phê duyệt triển khai.
