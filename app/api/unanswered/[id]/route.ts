@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { requirePermission } from "@/lib/auth/guard";
+import { withAuthorizationErrors, isAuthorizationError } from "@/lib/auth/guard";
 import { withTransaction } from "@/lib/db";
 
 const deleteSchema = z.object({ confirm: z.literal(true) });
 
-export async function DELETE(
+export const DELETE = withAuthorizationErrors(async function DELETE(
   request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
@@ -59,9 +60,10 @@ export async function DELETE(
     }
     return NextResponse.json({ deleted: true });
   } catch (error) {
+    if (isAuthorizationError(error)) throw error;
     return NextResponse.json(
       { error: error instanceof Error && error.message === "FORBIDDEN" ? "Bạn không có quyền xóa yêu cầu chuyên gia." : "Không thể xóa yêu cầu chuyên gia." },
       { status: error instanceof Error && error.message === "FORBIDDEN" ? 403 : 500 },
     );
   }
-}
+});

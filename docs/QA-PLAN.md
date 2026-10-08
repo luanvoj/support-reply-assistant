@@ -38,9 +38,11 @@ Tài liệu này xác định mục tiêu, phạm vi, môi trường, rủi ro, 
 ### 2.2. Tài khoản kiểm thử (Test Roles)
 | Vai trò | Tài khoản kiểm thử | Quyền hạn chính |
 |---|---|---|
-| **Quản trị viên (`admin`)** | `admin@example.com` | Toàn quyền cấu hình AI, quản lý người dùng, nhật ký vận hành, kho tri thức, hàng đợi. |
-| **Chuyên gia (`technical`)** | `tech@example.com` | Xử lý hàng đợi chuyên gia, xuất bản/gộp tri thức, tra cứu trợ lý, xem nhật ký. |
-| **Tư vấn viên (`sales`)** | `sales@example.com` | Sử dụng Trợ lý hỏi đáp, xem hướng dẫn sử dụng, xem hội thoại của chính mình. |
+| **Quản trị viên (`admin`)** | `admin@example.local` | Toàn quyền cấu hình AI, quản lý người dùng, nhật ký vận hành, kho tri thức, hàng đợi. |
+| **Chuyên gia (`technical`)** | `technical@example.local` | Xử lý hàng đợi chuyên gia, xuất bản/gộp tri thức, tra cứu trợ lý, xem nhật ký. |
+| **Tư vấn viên (`sales`)** | `sales@example.local` | Sử dụng Trợ lý hỏi đáp, xem hướng dẫn sử dụng, xem hội thoại của chính mình. |
+
+Các tài khoản này do `npm run db:seed` tạo/cập nhật và cùng dùng giá trị `SEED_PASSWORD` do người chạy cung cấp; không có mật khẩu demo mặc định. Fixture gồm hai bài `[DEMO]` đã xuất bản, phục vụ câu hỏi grounded trong runbook.
 
 ### 2.3. Quy tắc dọn dẹp Fixture an toàn
 - Dữ liệu tạo phục vụ test (bài viết thử nghiệm, yêu cầu chuyên gia test, tài khoản test) phải sử dụng tiền tố rõ ràng (ví dụ: `[TEST] Quy trình bảo hành...`).

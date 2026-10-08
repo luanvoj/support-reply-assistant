@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 
 import { requirePermission } from "@/lib/auth/guard";
+import { withAuthorizationErrors, isAuthorizationError } from "@/lib/auth/guard";
 import { query } from "@/lib/db";
 
-export async function GET(request: Request) {
+export const GET = withAuthorizationErrors(async function GET(request: Request) {
   const session = await requirePermission("conversation:read");
   const requestedStatus = new URL(request.url).searchParams.get("status");
   const status = requestedStatus === "archived" ? "archived" : "active";
@@ -20,4 +21,4 @@ export async function GET(request: Request) {
     [session.userId, status],
   );
   return NextResponse.json({ conversations: result.rows });
-}
+});

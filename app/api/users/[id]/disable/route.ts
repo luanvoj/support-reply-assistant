@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 
 import { requireRole } from "@/lib/auth/guard";
+import { withAuthorizationErrors, isAuthorizationError } from "@/lib/auth/guard";
 import { withTransaction } from "@/lib/db";
 import { getUserLogSnapshot, writeOperationalLog } from "@/lib/operational-log";
 
-export async function POST(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+export const POST = withAuthorizationErrors(async function POST(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const actor = await requireRole("admin");
     const { id } = await params;
@@ -20,7 +21,8 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
     });
     return NextResponse.json({ ok: true });
   } catch (error) {
+    if (isAuthorizationError(error)) throw error;
     const forbidden = error instanceof Error && error.message === "FORBIDDEN";
     return NextResponse.json({ error: forbidden ? "Bạn không có quyền quản trị người dùng." : "Chỉ có thể vô hiệu hóa tài khoản đang hoạt động." }, { status: forbidden ? 403 : 400 });
   }
-}
+});

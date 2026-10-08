@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 
 import { requirePermission } from "@/lib/auth/guard";
+import { withAuthorizationErrors, isAuthorizationError } from "@/lib/auth/guard";
 import { query } from "@/lib/db";
 
-export async function GET() {
+export const GET = withAuthorizationErrors(async function GET() {
   await requirePermission("conversation:read");
   const result = await query(
     `SELECT
@@ -17,4 +18,4 @@ export async function GET() {
        (SELECT count(*)::int FROM retrieval_logs WHERE decision = 'fallback' AND created_at >= now() - interval '30 days') AS escalated_answers_30d`,
   );
   return NextResponse.json({ summary: result.rows[0] });
-}
+});

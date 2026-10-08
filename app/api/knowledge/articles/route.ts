@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 
 import { requirePermission } from "@/lib/auth/guard";
+import { withAuthorizationErrors, isAuthorizationError } from "@/lib/auth/guard";
 import { query, withTransaction } from "@/lib/db";
 import { articleSchema, containsUnsupportedMedia, replaceArticleChunks } from "@/lib/knowledge/article";
 
-export async function GET(request: Request) {
+export const GET = withAuthorizationErrors(async function GET(request: Request) {
   await requirePermission("knowledge:read");
   const status = new URL(request.url).searchParams.get("status");
   const params = new URL(request.url).searchParams; const page=Math.max(1,Number(params.get("page")??1)); const pageSize=Math.min(100,Math.max(10,Number(params.get("pageSize")??20)));
@@ -15,9 +16,9 @@ export async function GET(request: Request) {
   );
   const total=await query<{count:number}>("SELECT count(*)::int count FROM knowledge_articles WHERE ($1::text IS NULL OR status::text=$1)",[allowed.includes(status ?? "") ? status : null]);
   return NextResponse.json({ articles: result.rows, pagination:{page,pageSize,total:total.rows[0].count} });
-}
+});
 
-export async function POST(request: Request) {
+export const POST = withAuthorizationErrors(async function POST(request: Request) {
   const session = await requirePermission("knowledge:write");
   const parsed = articleSchema.safeParse(
     await request.json().catch(() => null),
@@ -85,4 +86,4 @@ export async function POST(request: Request) {
     return { id: inserted.rows[0].id };
   });
   return NextResponse.json({ article: result }, { status: 201 });
-}
+});

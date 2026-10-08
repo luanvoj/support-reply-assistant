@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/guard";
+import { withAuthorizationErrors, isAuthorizationError } from "@/lib/auth/guard";
 import { withTransaction } from "@/lib/db";
 import { insertImportedArticle, parseImportFile } from "@/lib/knowledge/import";
 
-export async function POST(request: Request) {
+export const POST = withAuthorizationErrors(async function POST(request: Request) {
   const session = await requirePermission("knowledge:write"); const form = await request.formData(); const file = form.get("file");
   if (!(file instanceof File) || file.size > 5 * 1024 * 1024) return NextResponse.json({ error: "Tệp CSV/XLSX tối đa 5 MB là bắt buộc." }, { status: 400 });
   try {
@@ -16,5 +17,6 @@ export async function POST(request: Request) {
       return { batchId: batch.rows[0].id, imported };
     });
     return NextResponse.json({ batchId: result.batchId, imported: result.imported.length, titles: result.imported.map((item) => item.title) }, { status: 201 });
-  } catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : "Không thể import tệp." }, { status: 400 }); }
-}
+  } catch (error) {
+    if (isAuthorizationError(error)) throw error; return NextResponse.json({ error: error instanceof Error ? error.message : "Không thể import tệp." }, { status: 400 }); }
+});

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getActiveRetrievalSettings } from "@/lib/retrieval/settings";
 import { requireRole } from "@/lib/auth/guard";
+import { withAuthorizationErrors, isAuthorizationError } from "@/lib/auth/guard";
 import { query, withTransaction } from "@/lib/db";
 
 const schema = z
@@ -32,12 +33,12 @@ const schema = z
     message: "Ngưỡng sàng lọc phải thấp hơn ngưỡng đề xuất gộp.",
   });
 
-export async function GET() {
+export const GET = withAuthorizationErrors(async function GET() {
   await requireRole("admin");
   const history = await query("SELECT id,top_k,max_articles,auto_answer_threshold,sensitive_threshold,shadow_mode,merge_prefilter_threshold,merge_suggestion_threshold,merge_unique_coverage_threshold,updated_at FROM retrieval_settings ORDER BY updated_at DESC LIMIT 10");
   return NextResponse.json({ settings: await getActiveRetrievalSettings(), history: history.rows });
-}
-export async function POST(request: Request) {
+});
+export const POST = withAuthorizationErrors(async function POST(request: Request) {
   const session = await requireRole("admin");
   const body = await request.json().catch(() => null) as { restoreId?: string } | null;
   if (!body?.restoreId || !z.string().uuid().safeParse(body.restoreId).success) return NextResponse.json({ error: "Bản cấu hình cần khôi phục không hợp lệ." }, { status: 400 });
@@ -49,8 +50,8 @@ export async function POST(request: Request) {
     await client.query(`INSERT INTO retrieval_settings (top_k,max_articles,keyword_weight,semantic_weight,diversity_weight,auto_answer_threshold,sensitive_threshold,sensitive_topics,verified_only,exclude_replaced,shadow_mode,merge_prefilter_threshold,merge_suggestion_threshold,merge_unique_coverage_threshold,merge_synonyms,is_active,created_by,updated_by) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,true,$16,$16)`, [row.top_k,row.max_articles,row.keyword_weight,row.semantic_weight,row.diversity_weight,row.auto_answer_threshold,row.sensitive_threshold,row.sensitive_topics,row.verified_only,row.exclude_replaced,row.shadow_mode,row.merge_prefilter_threshold,row.merge_suggestion_threshold,row.merge_unique_coverage_threshold,row.merge_synonyms,session.userId]);
   });
   return NextResponse.json({ settings: await getActiveRetrievalSettings() });
-}
-export async function PUT(request: Request) {
+});
+export const PUT = withAuthorizationErrors(async function PUT(request: Request) {
   const session = await requireRole("admin");
   const parsed = schema.safeParse(await request.json().catch(() => null));
   if (!parsed.success)
@@ -86,4 +87,4 @@ export async function PUT(request: Request) {
     );
   });
   return NextResponse.json({ settings: await getActiveRetrievalSettings() });
-}
+});

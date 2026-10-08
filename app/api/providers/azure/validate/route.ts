@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { requireRole } from "@/lib/auth/guard";
+import { withAuthorizationErrors, isAuthorizationError } from "@/lib/auth/guard";
 import { assertSafeProviderEndpoint } from "@/lib/ai/providers";
 
 const requestSchema = z.object({
@@ -22,7 +23,7 @@ type AzureModel = {
   capabilities?: { chat_completion?: unknown; inference?: unknown };
 };
 
-export async function POST(request: Request) {
+export const POST = withAuthorizationErrors(async function POST(request: Request) {
   await requireRole("admin");
   const parsed = requestSchema.safeParse(
     await request.json().catch(() => null),
@@ -37,7 +38,8 @@ export async function POST(request: Request) {
   const { endpoint, apiKey, deployment } = parsed.data;
   try {
     assertSafeProviderEndpoint(endpoint);
-  } catch {
+  } catch (error) {
+    if (isAuthorizationError(error)) throw error;
     return NextResponse.json(
       { error: "Endpoint phải dùng HTTPS công khai." },
       { status: 400 },
@@ -94,6 +96,7 @@ export async function POST(request: Request) {
         deploymentVerified: Boolean(deployment),
       });
     } catch (error) {
+    if (isAuthorizationError(error)) throw error;
       console.warn("[providers.azure.validate] provider request failed", {
         apiVersion,
         error: error instanceof Error ? error.message.slice(0, 240) : "unknown",
@@ -110,4 +113,4 @@ export async function POST(request: Request) {
     },
     { status: 502 },
   );
-}
+});

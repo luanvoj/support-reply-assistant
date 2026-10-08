@@ -2,12 +2,13 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { requireRole } from "@/lib/auth/guard";
+import { withAuthorizationErrors, isAuthorizationError } from "@/lib/auth/guard";
 import { sendSmtpTestEmail } from "@/lib/mailer";
 import { getUserLogSnapshot, writeOperationalLog } from "@/lib/operational-log";
 
 const schema = z.object({ to: z.string().trim().email().max(254) });
 
-export async function POST(request: Request) {
+export const POST = withAuthorizationErrors(async function POST(request: Request) {
   try {
     const actor = await requireRole("admin");
     const parsed = schema.safeParse(await request.json().catch(() => null));
@@ -24,7 +25,8 @@ export async function POST(request: Request) {
     });
     return NextResponse.json({ ok: true });
   } catch (error) {
+    if (isAuthorizationError(error)) throw error;
     const code = error instanceof Error ? error.message : "";
     return NextResponse.json({ error: code === "FORBIDDEN" ? "Bạn không có quyền gửi email test SMTP." : code === "SMTP_NOT_CONFIGURED" ? "Hãy lưu cấu hình SMTP trước khi gửi email test." : "Không thể gửi email test. Hãy kiểm tra cấu hình SMTP hoặc egress firewall." }, { status: code === "FORBIDDEN" ? 403 : code === "SMTP_NOT_CONFIGURED" ? 409 : 502 });
   }
-}
+});

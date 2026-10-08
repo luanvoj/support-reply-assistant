@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { requirePermission } from "@/lib/auth/guard";
+import { withAuthorizationErrors, isAuthorizationError } from "@/lib/auth/guard";
 import { withTransaction } from "@/lib/db";
 import { getUserLogSnapshot, writeOperationalLog } from "@/lib/operational-log";
 
@@ -26,7 +27,8 @@ function parseSources(value: unknown) {
   if (typeof candidate === "string") {
     try {
       candidate = JSON.parse(candidate) as unknown;
-    } catch {
+    } catch (error) {
+    if (isAuthorizationError(error)) throw error;
       return [];
     }
   }
@@ -34,7 +36,7 @@ function parseSources(value: unknown) {
   return parsed.success ? parsed.data : [];
 }
 
-export async function GET(
+export const GET = withAuthorizationErrors(async function GET(
   _request: Request,
   context: { params: Promise<{ id: string; messageId: string; articleId: string }> },
 ) {
@@ -115,4 +117,4 @@ export async function GET(
     );
   }
   return NextResponse.json({ source: result.source });
-}
+});

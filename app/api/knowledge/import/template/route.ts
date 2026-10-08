@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 
 import { requirePermission } from "@/lib/auth/guard";
+import { withAuthorizationErrors, isAuthorizationError } from "@/lib/auth/guard";
 import { IMPORT_COLUMNS, importContentType, templateBuffer } from "@/lib/knowledge/import";
 
-export async function GET(request: Request) {
+export const GET = withAuthorizationErrors(async function GET(request: Request) {
   await requirePermission("knowledge:read");
   const format = new URL(request.url).searchParams.get("format") === "xlsx" ? "xlsx" : "csv";
   const data = await templateBuffer(format);
@@ -14,4 +15,4 @@ export async function GET(request: Request) {
       "x-template-columns": IMPORT_COLUMNS.join(","),
     },
   });
-}
+});

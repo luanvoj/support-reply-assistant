@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 
 import { requireRole } from "@/lib/auth/guard";
+import { withAuthorizationErrors, isAuthorizationError } from "@/lib/auth/guard";
 import { withTransaction } from "@/lib/db";
 
-export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+export const DELETE = withAuthorizationErrors(async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const actor = await requireRole("admin");
     const { id } = await params;
@@ -18,7 +19,8 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     });
     return NextResponse.json({ ok: true });
   } catch (error) {
+    if (isAuthorizationError(error)) throw error;
     const code = error instanceof Error ? error.message : "";
     return NextResponse.json({ error: code === "MFA_NOT_ENABLED" ? "Tài khoản này chưa bật 2FA." : code === "TARGET_NOT_ACTIVE" ? "Chỉ có thể tắt 2FA cho tài khoản đang hoạt động." : code === "FORBIDDEN" ? "Bạn không có quyền quản trị người dùng." : "Không thể tắt 2FA." }, { status: code === "FORBIDDEN" ? 403 : 400 });
   }
-}
+});

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { requireRole } from "@/lib/auth/guard";
+import { withAuthorizationErrors, isAuthorizationError } from "@/lib/auth/guard";
 import { roleCodes, usernameSchema } from "@/lib/auth/users";
 import { query, withTransaction } from "@/lib/db";
 import { getUserLogSnapshot, writeOperationalLog } from "@/lib/operational-log";
@@ -16,7 +17,7 @@ type Role = "sales" | "technical" | "admin";
 type UserRow = { id: string; full_name: string; username: string; role: Role; status: string; avatar_key: string | null };
 const allowedSuccessors = (role: Role): Role[] => role === "sales" ? ["sales", "technical", "admin"] : role === "technical" ? ["technical", "admin"] : ["admin"];
 
-export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export const PATCH = withAuthorizationErrors(async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const actor = await requireRole("admin");
     const { id } = await params;
@@ -34,11 +35,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     await writeOperationalLog({ category: "account", action: "user_updated", summary: `${actorSnapshot.username} đã điều chỉnh tài khoản ${updated.rows[0].username}`, actorUserId: actor.userId, actorSnapshot, targetUserId: id, targetSnapshot: { fullName: updated.rows[0].full_name, username: updated.rows[0].username, role: updated.rows[0].role } });
     return NextResponse.json({ ok: true });
   } catch (error) {
+    if (isAuthorizationError(error)) throw error;
     return NextResponse.json({ error: error instanceof Error && error.message === "FORBIDDEN" ? "Bạn không có quyền quản trị người dùng." : "Không thể điều chỉnh người dùng." }, { status: error instanceof Error && error.message === "FORBIDDEN" ? 403 : 500 });
   }
-}
+});
 
-export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export const DELETE = withAuthorizationErrors(async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const actor = await requireRole("admin");
     const { id } = await params;
@@ -95,8 +97,9 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     if (avatarKey) await removeUserAvatar(id);
     return NextResponse.json({ ok: true });
   } catch (error) {
+    if (isAuthorizationError(error)) throw error;
     const code = error instanceof Error ? error.message : "";
     const message = code === "LAST_ADMIN" ? "Không thể xóa Quản trị viên đang hoạt động cuối cùng." : code === "SUCCESSOR" ? "Tài khoản kế thừa không đúng cấp hoặc không còn hoạt động." : code === "TARGET" ? "Tài khoản này không thể xóa." : code === "FORBIDDEN" ? "Bạn không có quyền quản trị người dùng." : "Không thể xóa tài khoản.";
     return NextResponse.json({ error: message }, { status: code === "FORBIDDEN" ? 403 : 400 });
   }
-}
+});

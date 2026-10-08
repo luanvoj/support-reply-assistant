@@ -433,6 +433,12 @@ export function KnowledgeScreen() {
     }
   };
 
+  useEffect(() => {
+    if (!mergeBatch || !["queued", "scanning", "generating"].includes(mergeBatch.status)) return;
+    const timer = window.setInterval(() => { void loadMergeBatch(mergeBatch.id); }, 3000);
+    return () => window.clearInterval(timer);
+  }, [mergeBatch?.id, mergeBatch?.status]);
+
   const startMergeBatch = async () => {
     setMergeConfigOpen(false);
     setMergeItems([]);
@@ -454,17 +460,7 @@ export function KnowledgeScreen() {
       return;
     }
     setMergeBatch(b.batch);
-    const scan = await fetch(
-      `/api/knowledge/merge/batches/${b.batch.id}/scan`,
-      { method: "POST" },
-    );
-    if (!scan.ok) {
-      const e = await scan.json().catch(() => ({}));
-      notify(
-        `${e.error ?? "Quét gộp không hoàn tất."}${e.code ? ` Mã: ${e.code}` : ""}`,
-        "error",
-      );
-    }
+    notify("Đợt quét đã vào hàng đợi. Hệ thống sẽ tự cập nhật khi worker xử lý xong.", "success");
     await loadMergeBatch(b.batch.id);
   };
 

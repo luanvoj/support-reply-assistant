@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { requirePermission } from "@/lib/auth/guard";
+import { withAuthorizationErrors, isAuthorizationError } from "@/lib/auth/guard";
 import { query, withTransaction } from "@/lib/db";
 import { chunkMarkdown } from "@/lib/retrieval/chunker";
 
@@ -17,7 +18,7 @@ const reviewSchema = z.object({
   categoryId: z.string().uuid().optional(),
 });
 
-export async function POST(
+export const POST = withAuthorizationErrors(async function POST(
   request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
@@ -103,4 +104,4 @@ export async function POST(
     return { reviewId: review.rows[0]?.id ?? null, articleId };
   });
   return NextResponse.json(result, { status: 201 });
-}
+});

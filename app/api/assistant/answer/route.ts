@@ -10,6 +10,7 @@ import {
   profilePrompt,
 } from "@/lib/ai/profile";
 import { requirePermission } from "@/lib/auth/guard";
+import { withAuthorizationErrors, isAuthorizationError } from "@/lib/auth/guard";
 import { query, withTransaction } from "@/lib/db";
 import {
   loadPublishedChunksByIds,
@@ -74,7 +75,8 @@ function citedChunkIds(value: unknown) {
       ? (() => {
           try {
             return JSON.parse(value) as unknown;
-          } catch {
+          } catch (error) {
+    if (isAuthorizationError(error)) throw error;
             return [];
           }
         })()
@@ -108,7 +110,7 @@ function contextOverlapsQuestion(
   return terms.some((term) => haystack.includes(term));
 }
 
-export async function POST(request: Request) {
+export const POST = withAuthorizationErrors(async function POST(request: Request) {
   const session = await requirePermission("chat:use");
   const parsed = requestSchema.safeParse(
     await request.json().catch(() => null),
@@ -346,6 +348,7 @@ export async function POST(request: Request) {
           break;
         }
       } catch (error) {
+    if (isAuthorizationError(error)) throw error;
         console.warn("[assistant.answer] social response generation failed", {
           providerType: row.provider_type,
           error: error instanceof Error ? error.message.slice(0, 240) : "unknown",
@@ -524,4 +527,4 @@ export async function POST(request: Request) {
       excerpt: source.content.slice(0, 260),
     })),
   });
-}
+});

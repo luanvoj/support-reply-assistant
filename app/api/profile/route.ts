@@ -3,12 +3,13 @@ import { z } from "zod";
 
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { requireRole } from "@/lib/auth/guard";
+import { withAuthorizationErrors, isAuthorizationError } from "@/lib/auth/guard";
 import { passwordSchema, passwordStrength, roleLabel } from "@/lib/auth/users";
 import { query } from "@/lib/db";
 
 type ProfileRow = { id: string; full_name: string; username: string; email: string; role: string; avatar_key: string | null; mfa_enabled_at: string | null };
 
-export async function GET() {
+export const GET = withAuthorizationErrors(async function GET() {
   try {
     const session = await requireRole("sales", "technical", "admin");
     const result = await query<ProfileRow>(
@@ -18,10 +19,11 @@ export async function GET() {
     const user = result.rows[0];
     if (!user) return NextResponse.json({ error: "Không tìm thấy tài khoản." }, { status: 404 });
     return NextResponse.json({ profile: { id: user.id, fullName: user.full_name, username: user.username, email: user.email, role: user.role, roleLabel: roleLabel(user.role), hasAvatar: Boolean(user.avatar_key), avatarUrl: user.avatar_key ? "/api/profile/avatar" : null, mfaEnabled: Boolean(user.mfa_enabled_at) } });
-  } catch {
+  } catch (error) {
+    if (isAuthorizationError(error)) throw error;
     return NextResponse.json({ error: "Bạn chưa đăng nhập." }, { status: 401 });
   }
-}
+});
 
 const passwordChangeSchema = z.object({
   currentPassword: z.string().min(1),
@@ -29,7 +31,7 @@ const passwordChangeSchema = z.object({
   passwordConfirmation: z.string(),
 }).refine((value) => value.password === value.passwordConfirmation, { path: ["passwordConfirmation"], message: "Hai mật khẩu chưa trùng khớp." });
 
-export async function PATCH(request: Request) {
+export const PATCH = withAuthorizationErrors(async function PATCH(request: Request) {
   try {
     const session = await requireRole("sales", "technical", "admin");
     const parsed = passwordChangeSchema.safeParse(await request.json().catch(() => null));
@@ -40,7 +42,8 @@ export async function PATCH(request: Request) {
     await query("UPDATE users SET password_hash = $1, session_version = session_version + 1, updated_at = now() WHERE id = $2", [await hashPassword(parsed.data.password), session.userId]);
     await query("INSERT INTO user_lifecycle_events(user_id, actor_id, event_type, details) VALUES ($1, $1, 'updated', $2::jsonb)", [session.userId, JSON.stringify({ passwordChanged: true })]);
     return NextResponse.json({ ok: true });
-  } catch {
+  } catch (error) {
+    if (isAuthorizationError(error)) throw error;
     return NextResponse.json({ error: "Không thể đổi mật khẩu." }, { status: 500 });
   }
-}
+});

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requirePermission } from "@/lib/auth/guard";
+import { withAuthorizationErrors, isAuthorizationError } from "@/lib/auth/guard";
 import { withTransaction } from "@/lib/db";
 
 const outcomeSchema = z.object({
@@ -23,7 +24,7 @@ const outcomes = {
   ATTACH_FAILED: { status: "failed", step: "attach_draft", message: "Đã tạo bản nháp nhưng chưa thể gắn vào nhóm gộp. Hãy thử lại." },
 } as const;
 
-export async function POST(request: Request, { params }: { params: Promise<{ id: string; itemId: string }> }) {
+export const POST = withAuthorizationErrors(async function POST(request: Request, { params }: { params: Promise<{ id: string; itemId: string }> }) {
   const session = await requirePermission("knowledge:write");
   const { id, itemId } = await params;
   const body = outcomeSchema.safeParse(await request.json().catch(() => null));
@@ -54,4 +55,4 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   return updated
     ? NextResponse.json({ status: outcome.status, code: body.data.code, message: outcome.message })
     : NextResponse.json({ error: "Không tìm thấy nhóm gộp." }, { status: 404 });
-}
+});

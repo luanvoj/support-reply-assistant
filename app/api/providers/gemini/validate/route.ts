@@ -2,10 +2,11 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { requireRole } from "@/lib/auth/guard";
+import { withAuthorizationErrors, isAuthorizationError } from "@/lib/auth/guard";
 
 const schema = z.object({ apiKey: z.string().trim().min(10).max(500) });
 
-export async function POST(request: Request) {
+export const POST = withAuthorizationErrors(async function POST(request: Request) {
   await requireRole("admin");
   const parsed = schema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "API key không hợp lệ." }, { status: 400 });
@@ -19,7 +20,8 @@ export async function POST(request: Request) {
       .map((item) => ({ id: item.name!.replace(/^models\//, ""), label: item.displayName ?? item.name!.replace(/^models\//, "") }));
     if (!models.length) return NextResponse.json({ error: "API key hợp lệ nhưng không có model tạo nội dung khả dụng." }, { status: 422 });
     return NextResponse.json({ models });
-  } catch {
+  } catch (error) {
+    if (isAuthorizationError(error)) throw error;
     return NextResponse.json({ error: "Không thể kiểm tra kết nối Gemini. Hãy thử lại." }, { status: 502 });
   }
-}
+});

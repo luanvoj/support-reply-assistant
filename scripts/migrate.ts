@@ -229,7 +229,8 @@ async function main() {
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(), status TEXT NOT NULL CHECK (status IN ('queued','scanning','review_ready','generating','completed','failed','cancelled')),
       scope JSONB NOT NULL DEFAULT '{}'::jsonb, total_articles INTEGER NOT NULL DEFAULT 0, scanned_articles INTEGER NOT NULL DEFAULT 0,
       proposed_groups INTEGER NOT NULL DEFAULT 0, completed_groups INTEGER NOT NULL DEFAULT 0, error_code TEXT, error_message TEXT,
-      created_by UUID REFERENCES users(id), created_at TIMESTAMPTZ NOT NULL DEFAULT now(), started_at TIMESTAMPTZ, completed_at TIMESTAMPTZ, cancelled_at TIMESTAMPTZ
+      created_by UUID REFERENCES users(id), created_at TIMESTAMPTZ NOT NULL DEFAULT now(), started_at TIMESTAMPTZ, completed_at TIMESTAMPTZ, cancelled_at TIMESTAMPTZ,
+      worker_id TEXT, lease_expires_at TIMESTAMPTZ, attempt_count INTEGER NOT NULL DEFAULT 0
     );
     CREATE TABLE IF NOT EXISTS knowledge_merge_batch_items (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(), batch_id UUID NOT NULL REFERENCES knowledge_merge_batches(id) ON DELETE CASCADE,
@@ -241,6 +242,10 @@ async function main() {
       item_id UUID REFERENCES knowledge_merge_batch_items(id) ON DELETE SET NULL, code TEXT NOT NULL, user_message TEXT NOT NULL, technical_context JSONB NOT NULL DEFAULT '{}'::jsonb, created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
     CREATE INDEX IF NOT EXISTS knowledge_merge_batches_status_idx ON knowledge_merge_batches(status,created_at DESC);
+    ALTER TABLE knowledge_merge_batches ADD COLUMN IF NOT EXISTS worker_id TEXT;
+    ALTER TABLE knowledge_merge_batches ADD COLUMN IF NOT EXISTS lease_expires_at TIMESTAMPTZ;
+    ALTER TABLE knowledge_merge_batches ADD COLUMN IF NOT EXISTS attempt_count INTEGER NOT NULL DEFAULT 0;
+    CREATE INDEX IF NOT EXISTS knowledge_merge_batches_lease_idx ON knowledge_merge_batches(status, lease_expires_at);
     CREATE INDEX IF NOT EXISTS knowledge_merge_batch_items_batch_idx ON knowledge_merge_batch_items(batch_id,status);
     CREATE TABLE IF NOT EXISTS knowledge_merge_pair_decisions (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

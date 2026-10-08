@@ -6,27 +6,52 @@ import { mergeCandidates } from "@/lib/knowledge/merge-retrieval";
 
 type Article = { id: string; title: string; summary: string | null; content_markdown: string; version: number; service_group: string | null; response_policy: "grounded" | "escalate" };
 type Scope = { limit: number; threshold: number; prefilterThreshold?: number; synonyms?: string[]; serviceGroup?: string; verifiedOnly: boolean };
+type Batch = { id: string; scope: Scope; status: string; worker_id: string | null; lease_expires_at: string | null };
 const pair = (a: string, b: string) => a < b ? [a, b] as const : [b, a] as const;
 
-async function failBatch(batchId: string, code: string) {
+async function failBatch(batchId: string, workerId: string, code: string) {
   const message = code === "MERGE_PROVIDER_NOT_CONFIGURED" ? "Chưa có Agent đang bật để quét gộp bài." : code === "MERGE_PROVIDER_UNAVAILABLE" ? "Agent đang tạm nghỉ. Hãy thử lại sau khi kết nối được khôi phục." : "Không thể hoàn tất quét gộp. Hãy thử lại.";
   await withTransaction(async (client) => {
-    await client.query("UPDATE knowledge_merge_batches SET status='failed',error_code=$2,error_message=$3,completed_at=now() WHERE id=$1", [batchId, code, message]);
+    const updated = await client.query("UPDATE knowledge_merge_batches SET status='failed',error_code=$3,error_message=$4,completed_at=now(),worker_id=NULL,lease_expires_at=NULL WHERE id=$1 AND status='scanning' AND worker_id=$2 RETURNING id", [batchId, workerId, code, message]);
+    if (!updated.rows[0]) return;
     await client.query("INSERT INTO knowledge_merge_errors(batch_id,code,user_message,technical_context) VALUES($1,$2,$3,$4)", [batchId, code, "Đợt gộp không hoàn tất. Hãy thử lại hoặc liên hệ quản trị viên.", JSON.stringify({ step: "scan" })]);
   });
 }
 
-export async function scanMergeBatch(batchId: string) {
-  const batch = await query<{ scope: Scope; status: string }>("SELECT scope,status FROM knowledge_merge_batches WHERE id=$1", [batchId]);
-  if (!batch.rows[0] || batch.rows[0].status !== "queued") throw new Error("MERGE_BATCH_NOT_READY");
+export async function claimNextMergeBatch(workerId: string): Promise<string | null> {
+  const claimed = await query<{ id: string }>(`
+    WITH next_batch AS (
+      SELECT id FROM knowledge_merge_batches
+      WHERE status = 'queued' OR (status = 'scanning' AND lease_expires_at < now())
+      ORDER BY created_at ASC
+      FOR UPDATE SKIP LOCKED
+      LIMIT 1
+    )
+    UPDATE knowledge_merge_batches AS batch
+    SET status='scanning', worker_id=$1, lease_expires_at=now() + interval '15 minutes',
+        attempt_count=attempt_count+1, started_at=COALESCE(started_at, now()),
+        error_code=NULL, error_message=NULL
+    FROM next_batch
+    WHERE batch.id=next_batch.id
+    RETURNING batch.id`, [workerId]);
+  return claimed.rows[0]?.id ?? null;
+}
+
+async function updateProgress(batchId: string, workerId: string, scanned: number, groups: number) {
+  const updated = await query("UPDATE knowledge_merge_batches SET scanned_articles=$3,proposed_groups=$4,lease_expires_at=now() + interval '15 minutes' WHERE id=$1 AND status='scanning' AND worker_id=$2 RETURNING id", [batchId, workerId, scanned, groups]);
+  if (!updated.rows[0]) throw new Error("MERGE_BATCH_CANCELLED");
+}
+
+export async function runClaimedMergeBatch(batchId: string, workerId: string) {
+  const batch = await query<Batch>("SELECT id,scope,status,worker_id,lease_expires_at FROM knowledge_merge_batches WHERE id=$1", [batchId]);
+  if (!batch.rows[0] || batch.rows[0].status !== "scanning" || batch.rows[0].worker_id !== workerId) throw new Error("MERGE_BATCH_NOT_CLAIMED");
   const providerRows = await query<Record<string, unknown>>("SELECT * FROM ai_provider_settings WHERE is_enabled=true ORDER BY is_default DESC LIMIT 1");
   const providerRow = providerRows.rows[0];
   const unavailableCode = !providerRow ? "MERGE_PROVIDER_NOT_CONFIGURED" : !await providerAvailableForOptionalWork(providerRow) ? "MERGE_PROVIDER_UNAVAILABLE" : null;
-  if (unavailableCode) { await failBatch(batchId, unavailableCode); throw new Error(unavailableCode); }
-  const provider = createProvider(providerConfigFromRow(providerRow));
+  if (unavailableCode) { await failBatch(batchId, workerId, unavailableCode); throw new Error(unavailableCode); }
   const scope = batch.rows[0].scope;
-  await query("UPDATE knowledge_merge_batches SET status='scanning',started_at=now() WHERE id=$1 AND status='queued'", [batchId]);
   try {
+    const provider = createProvider(providerConfigFromRow(providerRow));
     const articles = await query<Article>("SELECT id,title,summary,content_markdown,version,service_group,response_policy FROM knowledge_articles WHERE status='published' AND ($1::boolean=false OR is_verified=true) AND ($2::text IS NULL OR service_group=$2) ORDER BY updated_at DESC LIMIT $3", [scope.verifiedOnly, scope.serviceGroup ?? null, scope.limit]);
     const seen = new Set<string>(); let groups = 0; let skipped = 0;
     for (let index = 0; index < articles.rows.length; index += 1) {
@@ -42,18 +67,20 @@ export async function scanMergeBatch(batchId: string) {
       }
       const ranked = await rerankWithProvider(provider, `Đánh giá bài nào trùng nội dung với: ${source.title}`, allowed, .45);
       if (ranked.reason === "provider_unavailable") throw new Error("MERGE_PROVIDER_UNAVAILABLE");
-      if (ranked.reason === "no_match") { await query("UPDATE knowledge_merge_batches SET scanned_articles=$2,proposed_groups=$3 WHERE id=$1", [batchId, index + 1, groups]); continue; }
+      if (ranked.reason === "no_match") { await updateProgress(batchId, workerId, index + 1, groups); continue; }
       for (const selected of ranked.sources.filter((item) => item.score >= scope.threshold).slice(0, 2)) {
         await query("INSERT INTO knowledge_merge_batch_items(batch_id,status,article_ids,score,reason) VALUES($1,'candidate',$2,$3,$4)", [batchId, JSON.stringify([source.id, selected.articleId]), selected.score, `Cùng nhóm ${source.service_group ?? "chưa phân loại"}, cùng chính sách ${source.response_policy}; Agent rerank xác nhận nội dung gần nhau.`]);
         groups += 1;
       }
-      await query("UPDATE knowledge_merge_batches SET scanned_articles=$2,proposed_groups=$3 WHERE id=$1", [batchId, index + 1, groups]);
+      await updateProgress(batchId, workerId, index + 1, groups);
     }
-    await query("UPDATE knowledge_merge_batches SET status='review_ready',completed_at=now(),scope=scope || jsonb_build_object('skippedPreviouslyDecidedPairs',$2::integer) WHERE id=$1", [batchId, skipped]);
+    const completed = await query("UPDATE knowledge_merge_batches SET status='review_ready',completed_at=now(),scope=scope || jsonb_build_object('skippedPreviouslyDecidedPairs',$3::integer),worker_id=NULL,lease_expires_at=NULL WHERE id=$1 AND status='scanning' AND worker_id=$2 RETURNING id", [batchId, workerId, skipped]);
+    if (!completed.rows[0]) throw new Error("MERGE_BATCH_CANCELLED");
     return { scanned: articles.rows.length, groups, skipped };
   } catch (error) {
+    if (error instanceof Error && error.message === "MERGE_BATCH_CANCELLED") throw error;
     const code = error instanceof Error && error.message.startsWith("MERGE_") ? error.message : "MERGE_SCAN_FAILED";
-    await failBatch(batchId, code);
+    await failBatch(batchId, workerId, code);
     throw error;
   }
 }

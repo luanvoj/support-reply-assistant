@@ -3,6 +3,7 @@ import QRCode from "qrcode";
 import { z } from "zod";
 
 import { requireRole } from "@/lib/auth/guard";
+import { withAuthorizationErrors, isAuthorizationError } from "@/lib/auth/guard";
 import { createTotpSecret, enrollmentUri, verifyTotp } from "@/lib/auth/mfa";
 import { verifyPassword } from "@/lib/auth/password";
 import { query, withTransaction } from "@/lib/db";
@@ -13,7 +14,7 @@ const verifySchema = z.object({ action: z.literal("verify"), code: z.string().re
 const disableSchema = z.object({ action: z.literal("disable"), currentPassword: z.string().min(1) });
 const actionSchema = z.discriminatedUnion("action", [setupSchema, verifySchema, disableSchema]);
 
-export async function POST(request: Request) {
+export const POST = withAuthorizationErrors(async function POST(request: Request) {
   try {
     const session = await requireRole("sales", "technical", "admin");
     const parsed = actionSchema.safeParse(await request.json().catch(() => null));
@@ -58,8 +59,9 @@ export async function POST(request: Request) {
     });
     return NextResponse.json({ ok: true });
   } catch (error) {
+    if (isAuthorizationError(error)) throw error;
     const code = error instanceof Error ? error.message : "";
     const message = code === "TOO_MANY_ATTEMPTS" ? "Bạn đã nhập sai quá nhiều lần. Hãy bắt đầu thiết lập lại 2FA." : code === "MFA_SETUP_MISSING" ? "Phiên thiết lập đã hết hạn. Hãy bắt đầu lại." : code === "INVALID_CODE" ? "Mã xác thực không đúng hoặc đã được dùng." : "Không thể cập nhật xác thực hai bước.";
     return NextResponse.json({ error: message }, { status: code === "FORBIDDEN" ? 403 : 400 });
   }
-}
+});

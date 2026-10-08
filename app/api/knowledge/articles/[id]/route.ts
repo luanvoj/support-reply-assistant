@@ -2,21 +2,22 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { requirePermission } from "@/lib/auth/guard";
+import { withAuthorizationErrors, isAuthorizationError } from "@/lib/auth/guard";
 import { query, withTransaction } from "@/lib/db";
 import { articleSchema, containsUnsupportedMedia, replaceArticleChunks } from "@/lib/knowledge/article";
 import { getUserLogSnapshot, writeOperationalLog } from "@/lib/operational-log";
 
 const idSchema = z.string().uuid();
 
-export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
+export const GET = withAuthorizationErrors(async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
   await requirePermission("knowledge:read");
   const { id } = await params;
   if (!idSchema.safeParse(id).success) return NextResponse.json({ error: "ID bài viết không hợp lệ." }, { status: 400 });
   const result = await query("SELECT a.*, CASE WHEN a.response_policy = 'grounded' THEN 'grounded' ELSE 'escalate' END AS response_policy FROM knowledge_articles a WHERE id = $1", [id]);
   return result.rows[0] ? NextResponse.json({ article: result.rows[0] }) : NextResponse.json({ error: "Không tìm thấy bài viết." }, { status: 404 });
-}
+});
 
-export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export const PATCH = withAuthorizationErrors(async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await requirePermission("knowledge:write");
   const { id } = await params;
   if (!idSchema.safeParse(id).success) return NextResponse.json({ error: "ID bài viết không hợp lệ." }, { status: 400 });
@@ -34,9 +35,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return updated.rows[0];
   });
   return result ? NextResponse.json({ article: result }) : NextResponse.json({ error: "Không tìm thấy bài viết." }, { status: 404 });
-}
+});
 
-export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export const DELETE = withAuthorizationErrors(async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await requirePermission("knowledge:write");
   const { id } = await params;
   if (!idSchema.safeParse(id).success) return NextResponse.json({ error: "ID bài viết không hợp lệ." }, { status: 400 });
@@ -80,7 +81,8 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     if (result === "not_archived") return NextResponse.json({ error: "Hãy lưu trữ bài viết trước khi xóa vĩnh viễn." }, { status: 409 });
     return NextResponse.json({ status: "deleted" });
   } catch (error) {
+    if (isAuthorizationError(error)) throw error;
     console.error("[knowledge.article.delete]", error);
     return NextResponse.json({ error: "Không thể xóa bài viết. Vui lòng thử lại hoặc liên hệ quản trị viên." }, { status: 500 });
   }
-}
+});

@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/guard";
+import { withAuthorizationErrors, isAuthorizationError } from "@/lib/auth/guard";
 import { withTransaction } from "@/lib/db";
 
-export async function POST(_: Request, { params }: { params: Promise<{ id: string }> }) {
+export const POST = withAuthorizationErrors(async function POST(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await requirePermission("knowledge:write"); const { id } = await params;
   try {
     await withTransaction(async (client) => {
@@ -18,5 +19,6 @@ export async function POST(_: Request, { params }: { params: Promise<{ id: strin
       );
       await client.query("INSERT INTO knowledge_article_audits (article_id,actor_id,action,version,details) VALUES ($1,$2,'merge_published',1,$3)",[articleId,session.userId,JSON.stringify({mergeRunId:id,sources:sources.rows.map(row=>row.article_id)})]);
     }); return NextResponse.json({ status:"approved" });
-  } catch (error) { return NextResponse.json({ error:error instanceof Error?error.message:"Không thể duyệt bản gộp." },{status:400}); }
-}
+  } catch (error) {
+    if (isAuthorizationError(error)) throw error; return NextResponse.json({ error:error instanceof Error?error.message:"Không thể duyệt bản gộp." },{status:400}); }
+});

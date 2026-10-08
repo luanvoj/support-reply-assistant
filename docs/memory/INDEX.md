@@ -30,6 +30,8 @@
 
 ## Việc mở có hiệu lực
 
+- **Plan đang nghiệm thu**: [Tăng mức sẵn sàng dự thi](plans/2026-10-08-competition-readiness.md) — đã triển khai workflow bền vững, mobile, chuẩn hóa API/RBAC và demo lặp lại; còn browser QA, provider/cron production và deploy chờ quyết định hạ tầng.
+
 - Plan mới: [Xem căn cứ theo hội thoại cho nhân viên](plans/2026-10-03-conversation-scoped-evidence-viewer.md) — đã triển khai snapshot, API scoped, modal và tách quyền xem căn cứ khỏi quyền duyệt Kho tri thức; chờ nghiệm thu kiểm thử.
 
 - Plan: [Thay thế kho tri thức trên deploy bằng dữ liệu mô phỏng đã làm sạch](plans/2026-10-03-deploy-knowledge-library-replacement.md) — deploy đã được làm sạch và import lại; chờ checkpoint Git và luân chuyển credential deploy.

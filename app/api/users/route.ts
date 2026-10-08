@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { hashPassword } from "@/lib/auth/password";
 import { requireRole } from "@/lib/auth/guard";
+import { withAuthorizationErrors, isAuthorizationError } from "@/lib/auth/guard";
 import { passwordSchema, roleCodes, roleLabel, usernameSchema } from "@/lib/auth/users";
 import { query, withTransaction } from "@/lib/db";
 import { getUserLogSnapshot, writeOperationalLog } from "@/lib/operational-log";
@@ -27,7 +28,7 @@ function asUser(row: UserRow) {
 const selectUsers = `SELECT u.id, u.full_name, u.username, u.email, r.code AS role, u.status, u.mfa_enabled_at, u.last_login_at, u.disabled_at, u.purge_after, u.created_at
   FROM users u JOIN roles r ON r.id = u.role_id`;
 
-export async function GET(request: Request) {
+export const GET = withAuthorizationErrors(async function GET(request: Request) {
   try {
     await requireRole("admin");
     const params = new URL(request.url).searchParams;
@@ -46,12 +47,13 @@ export async function GET(request: Request) {
     const result = await query<UserRow>(`${selectUsers}${filters} ORDER BY CASE u.status WHEN 'active' THEN 0 WHEN 'disabled' THEN 1 ELSE 2 END, u.created_at DESC LIMIT $4 OFFSET $5`, [role, status, search, pageSize, (page - 1) * pageSize]);
     const total = await query<{ count: number }>(`SELECT count(*)::int AS count FROM users u JOIN roles r ON r.id = u.role_id${filters}`, [role, status, search]);
     return NextResponse.json({ users: result.rows.map(asUser), pagination: { page, pageSize, total: total.rows[0]?.count ?? 0 } });
-  } catch {
+  } catch (error) {
+    if (isAuthorizationError(error)) throw error;
     return NextResponse.json({ error: "Bạn không có quyền quản trị người dùng." }, { status: 403 });
   }
-}
+});
 
-export async function POST(request: Request) {
+export const POST = withAuthorizationErrors(async function POST(request: Request) {
   try {
     const actor = await requireRole("admin");
     const parsed = createSchema.safeParse(await request.json().catch(() => null));
@@ -80,8 +82,9 @@ export async function POST(request: Request) {
     });
     return NextResponse.json({ user: asUser({ ...created, role: input.role }) }, { status: 201 });
   } catch (error) {
+    if (isAuthorizationError(error)) throw error;
     if (error instanceof Error && error.message === "FORBIDDEN") return NextResponse.json({ error: "Bạn không có quyền quản trị người dùng." }, { status: 403 });
     if (String(error).includes("users_username_ci_idx") || String(error).includes("users_email_key")) return NextResponse.json({ error: "Email hoặc tên đăng nhập đã được sử dụng." }, { status: 409 });
     return NextResponse.json({ error: "Không thể tạo người dùng." }, { status: 500 });
   }
-}
+});

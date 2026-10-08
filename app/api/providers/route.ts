@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { requireRole } from "@/lib/auth/guard";
+import { withAuthorizationErrors, isAuthorizationError } from "@/lib/auth/guard";
 import { query, withTransaction } from "@/lib/db";
 import { encryptSecret } from "@/lib/security/secrets";
 
@@ -32,12 +33,13 @@ function isUnsafeEndpoint(value: string | undefined) {
       host.startsWith("192.168.") ||
       /^172\.(1[6-9]|2\d|3[0-1])\./.test(host)
     );
-  } catch {
+  } catch (error) {
+    if (isAuthorizationError(error)) throw error;
     return true;
   }
 }
 
-export async function GET() {
+export const GET = withAuthorizationErrors(async function GET() {
   await requireRole("admin");
   const result = await query(
     `SELECT p.id, p.provider_type, p.display_name, p.endpoint, p.deployment, p.model,
@@ -48,9 +50,9 @@ export async function GET() {
      ORDER BY p.is_enabled DESC, p.is_default DESC, p.updated_at DESC, p.fallback_priority NULLS LAST, p.display_name`,
   );
   return NextResponse.json({ providers: result.rows });
-}
+});
 
-export async function POST(request: Request) {
+export const POST = withAuthorizationErrors(async function POST(request: Request) {
   const session = await requireRole("admin");
   const parsed = providerSchema.safeParse(
     await request.json().catch(() => null),
@@ -118,9 +120,9 @@ export async function POST(request: Request) {
     return result.rows[0];
   });
   return NextResponse.json({ provider: savedProvider });
-}
+});
 
-export async function PATCH(request: Request) {
+export const PATCH = withAuthorizationErrors(async function PATCH(request: Request) {
   const session = await requireRole("admin");
   const parsed = providerActivationSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
@@ -152,4 +154,4 @@ export async function PATCH(request: Request) {
   if (result === "PROVIDER_NOT_FOUND") return NextResponse.json({ error: "Không tìm thấy Agent." }, { status: 404 });
   if (result === "PROVIDER_NOT_READY") return NextResponse.json({ error: "Cần lưu cấu hình Agent hợp lệ trước khi bật." }, { status: 409 });
   return NextResponse.json({ provider: result, isEnabled: parsed.data.isEnabled });
-}
+});

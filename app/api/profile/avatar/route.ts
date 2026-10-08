@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { requireRole } from "@/lib/auth/guard";
+import { withAuthorizationErrors, isAuthorizationError } from "@/lib/auth/guard";
 import { query } from "@/lib/db";
 import {
   AVATAR_CONTENT_TYPE,
@@ -15,7 +16,7 @@ export const runtime = "nodejs";
 
 const allowedClientTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
 
-export async function GET() {
+export const GET = withAuthorizationErrors(async function GET() {
   try {
     const session = await requireRole("sales", "technical", "admin");
     const result = await query<{ avatar_key: string | null }>("SELECT avatar_key FROM users WHERE id = $1", [session.userId]);
@@ -24,12 +25,13 @@ export async function GET() {
     return new NextResponse(new Uint8Array(image), {
       headers: { "content-type": AVATAR_CONTENT_TYPE, "cache-control": "private, no-store", "x-content-type-options": "nosniff" },
     });
-  } catch {
+  } catch (error) {
+    if (isAuthorizationError(error)) throw error;
     return new NextResponse(null, { status: 404 });
   }
-}
+});
 
-export async function POST(request: Request) {
+export const POST = withAuthorizationErrors(async function POST(request: Request) {
   try {
     const session = await requireRole("sales", "technical", "admin");
     const form = await request.formData();
@@ -50,14 +52,15 @@ export async function POST(request: Request) {
     );
     return NextResponse.json({ avatarUrl: "/api/profile/avatar" });
   } catch (error) {
+    if (isAuthorizationError(error)) throw error;
     const message = error instanceof Error && ["AVATAR_SIZE_INVALID", "AVATAR_TYPE_INVALID", "AVATAR_DIMENSIONS_INVALID"].includes(error.message)
       ? "Tệp tải lên không phải ảnh hợp lệ hoặc không đáp ứng giới hạn cho phép."
       : "Không thể cập nhật ảnh đại diện.";
     return NextResponse.json({ error: message }, { status: 400 });
   }
-}
+});
 
-export async function DELETE() {
+export const DELETE = withAuthorizationErrors(async function DELETE() {
   try {
     const session = await requireRole("sales", "technical", "admin");
     await query(
@@ -70,7 +73,8 @@ export async function DELETE() {
       [session.userId, JSON.stringify({ avatarRemoved: true })],
     );
     return NextResponse.json({ ok: true });
-  } catch {
+  } catch (error) {
+    if (isAuthorizationError(error)) throw error;
     return NextResponse.json({ error: "Không thể xóa ảnh đại diện." }, { status: 400 });
   }
-}
+});

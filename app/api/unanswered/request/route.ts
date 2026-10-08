@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { requirePermission } from "@/lib/auth/guard";
+import { withAuthorizationErrors, isAuthorizationError } from "@/lib/auth/guard";
 import { withTransaction } from "@/lib/db";
 
 const requestSchema = z.object({ sourceMessageId: z.string().uuid() });
 
-export async function POST(request: Request) {
+export const POST = withAuthorizationErrors(async function POST(request: Request) {
   const session = await requirePermission("ticket:write");
   const parsed = requestSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
@@ -57,4 +58,4 @@ export async function POST(request: Request) {
   });
 
   return NextResponse.json(result, { status: result.created ? 201 : 200 });
-}
+});

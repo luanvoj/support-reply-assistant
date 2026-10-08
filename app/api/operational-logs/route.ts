@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { requireRole } from "@/lib/auth/guard";
+import { withAuthorizationErrors, isAuthorizationError } from "@/lib/auth/guard";
 import { query } from "@/lib/db";
 import { operationalLogFilterSchema, operationalLogWhere, parseOperationalLogFilter } from "@/lib/operational-log-query";
 
@@ -10,7 +11,7 @@ const schema = operationalLogFilterSchema.extend({
   pageSize: z.coerce.number().int().min(10).max(100).default(30),
 });
 
-export async function GET(request: Request) {
+export const GET = withAuthorizationErrors(async function GET(request: Request) {
   try {
     await requireRole("admin");
     const params = Object.fromEntries(new URL(request.url).searchParams);
@@ -32,6 +33,7 @@ export async function GET(request: Request) {
     );
     return NextResponse.json({ logs: rows.rows, pagination: { page, pageSize, total: total.rows[0]?.count ?? 0 } });
   } catch (error) {
+    if (isAuthorizationError(error)) throw error;
     return NextResponse.json({ error: error instanceof Error && error.message === "FORBIDDEN" ? "Bạn không có quyền xem nhật ký vận hành." : "Không thể tải nhật ký vận hành." }, { status: error instanceof Error && error.message === "FORBIDDEN" ? 403 : 500 });
   }
-}
+});

@@ -2,13 +2,14 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { requirePermission } from "@/lib/auth/guard";
+import { withAuthorizationErrors, isAuthorizationError } from "@/lib/auth/guard";
 import { getActiveAssistantProfile } from "@/lib/ai/profile";
 import { query, withTransaction } from "@/lib/db";
 
 const statusSchema = z.object({ status: z.enum(["active", "archived"]) });
 const deleteSchema = z.object({ confirm: z.literal(true) });
 
-export async function GET(
+export const GET = withAuthorizationErrors(async function GET(
   _request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
@@ -38,9 +39,9 @@ export async function GET(
     messages: messages.rows,
     assistantName: (await getActiveAssistantProfile()).name,
   });
-}
+});
 
-export async function PATCH(
+export const PATCH = withAuthorizationErrors(async function PATCH(
   request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
@@ -66,9 +67,9 @@ export async function PATCH(
       { status: 404 },
     );
   return NextResponse.json({ conversation: result.rows[0] });
-}
+});
 
-export async function DELETE(
+export const DELETE = withAuthorizationErrors(async function DELETE(
   request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
@@ -109,4 +110,4 @@ export async function DELETE(
       { status: 404 },
     );
   return NextResponse.json({ archived: true });
-}
+});

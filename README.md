@@ -227,7 +227,7 @@ npm run db:up
 # Chạy di chuyển cấu trúc dữ liệu tự động (Idempotent Migration)
 npm run db:migrate
 
-# (Tùy chọn) Khởi tạo dữ liệu mẫu ban đầu để kiểm thử
+# (Tùy chọn) Khởi tạo fixture demo có thể lặp lại
 npm run db:seed
 ```
 
@@ -238,9 +238,15 @@ npm run dev
 ```
 Mở trình duyệt tại địa chỉ `http://localhost:3000`.
 
-Tài khoản quản trị mặc định (nếu chạy seed):
-- **Email:** `admin@support.local`
-- **Mật khẩu:** `Admin@123456` *(Bắt buộc đổi mật khẩu ngay sau lần đăng nhập đầu tiên)*
+Lệnh seed tạo hoặc cập nhật ba tài khoản demo và hai bài tri thức đã xác minh:
+
+- `sales@example.local` (`sales`)
+- `technical@example.local` (`technical`)
+- `admin@example.local` (`admin`)
+
+Mật khẩu của cả ba tài khoản chính là giá trị bạn tự đặt trong `SEED_PASSWORD`; ứng dụng không có mật khẩu demo mặc định. Sau khi seed, chạy `npm run demo:fixture-smoke` để xác nhận role, bài tri thức, index và truy hồi câu hỏi có căn cứ.
+
+Xem [runbook demo](docs/DEMO-RUNBOOK.md) để trình diễn luồng có căn cứ, escalation, xuất bản tri thức và kiểm tra Smart Merge. Không dùng fixture này trên môi trường có dữ liệu thật vì lệnh seed cập nhật các bản ghi mang `source_key` demo.
 
 ---
 

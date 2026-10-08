@@ -5,6 +5,8 @@ out/
 .env.*
 !.env.example
 coverage/
+playwright-report/
+test-results/
 *.log
 *.tsbuildinfo
 stitch.md

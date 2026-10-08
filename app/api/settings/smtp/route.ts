@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { requireRole } from "@/lib/auth/guard";
+import { withAuthorizationErrors, isAuthorizationError } from "@/lib/auth/guard";
 import { query } from "@/lib/db";
 import { getUserLogSnapshot, writeOperationalLog } from "@/lib/operational-log";
 import { encryptSecret } from "@/lib/security/secrets";
@@ -9,18 +10,19 @@ import { assertSafeSmtpHost } from "@/lib/security/smtp-host";
 
 const schema = z.object({ host: z.string().trim().min(1).max(253), port: z.coerce.number().int().min(1).max(65535), secure: z.boolean(), username: z.string().trim().min(1).max(254), password: z.string().max(1024).optional(), fromEmail: z.string().trim().email().max(254), fromName: z.string().trim().min(1).max(120) });
 
-export async function GET() {
+export const GET = withAuthorizationErrors(async function GET() {
   try {
     await requireRole("admin");
     const result = await query<{ host: string | null; port: number | null; secure: boolean; username: string | null; from_email: string | null; from_name: string | null; configured: boolean }>("SELECT host,port,secure,username,from_email,from_name,password_encrypted IS NOT NULL AS configured FROM smtp_settings WHERE id=true");
     const smtp = result.rows[0];
     return NextResponse.json({ smtp: smtp ? { host: smtp.host, port: smtp.port, secure: smtp.secure, username: smtp.username, fromEmail: smtp.from_email, fromName: smtp.from_name, configured: smtp.configured } : null });
-  } catch {
+  } catch (error) {
+    if (isAuthorizationError(error)) throw error;
     return NextResponse.json({ error: "Bạn không có quyền xem cấu hình SMTP." }, { status: 403 });
   }
-}
+});
 
-export async function PUT(request: Request) {
+export const PUT = withAuthorizationErrors(async function PUT(request: Request) {
   try {
     const actor = await requireRole("admin");
     const parsed = schema.safeParse(await request.json().catch(() => null));
@@ -35,7 +37,8 @@ export async function PUT(request: Request) {
     await writeOperationalLog({ category: "configuration", action: "smtp_settings_updated", summary: `${snapshot.username} đã cập nhật cấu hình SMTP`, actorUserId: actor.userId, actorSnapshot: snapshot, details: { host: input.host, port: input.port, secure: input.secure, fromEmail: input.fromEmail } });
     return NextResponse.json({ ok: true });
   } catch (error) {
+    if (isAuthorizationError(error)) throw error;
     const unsafe = error instanceof Error && error.message === "SMTP_UNSAFE_HOST";
     return NextResponse.json({ error: unsafe ? "SMTP chỉ hỗ trợ hostname public an toàn, không hỗ trợ localhost hoặc mạng nội bộ." : "Không thể lưu cấu hình SMTP." }, { status: unsafe ? 400 : 500 });
   }
-}
+});

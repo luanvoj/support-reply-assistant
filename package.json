@@ -20,7 +20,11 @@
     "retrieval:explain": "tsx scripts/retrieval-explain.ts",
     "knowledge:import-demo": "tsx scripts/import-knowledge-demo.ts",
     "knowledge:import-smoke": "tsx scripts/knowledge-import-smoke.ts",
+    "merge:worker": "tsx scripts/merge-worker.ts",
     "db:seed": "tsx scripts/seed.ts",
+    "demo:fixture-smoke": "tsx scripts/demo-fixture-smoke.ts",
+    "demo:verify": "npm run db:seed && npm run demo:fixture-smoke",
+    "test:e2e": "playwright test",
     "conversations:retention": "tsx scripts/retention.ts",
     "operational-logs:retention": "tsx scripts/operational-log-retention.ts",
     "auth-rate-limits:retention": "tsx scripts/auth-rate-limit-retention.ts",
@@ -44,6 +48,7 @@
     "zod": "^4.1.11"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.0",
     "@types/node": "^22.15.30",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19.1.2",

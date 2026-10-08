@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 
 import { requireRole } from "@/lib/auth/guard";
+import { withAuthorizationErrors, isAuthorizationError } from "@/lib/auth/guard";
 import { roleLabel } from "@/lib/auth/users";
 import { query } from "@/lib/db";
 
 type Role = "sales" | "technical" | "admin";
 const allowed = (role: Role) => role === "sales" ? ["sales", "technical", "admin"] : role === "technical" ? ["technical", "admin"] : ["admin"];
 
-export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+export const GET = withAuthorizationErrors(async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     await requireRole("admin");
     const { id } = await params;
@@ -35,6 +36,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       })),
     });
   } catch (error) {
+    if (isAuthorizationError(error)) throw error;
     return NextResponse.json({ error: error instanceof Error && error.message === "FORBIDDEN" ? "Bạn không có quyền quản trị người dùng." : "Không thể tải danh sách kế thừa." }, { status: error instanceof Error && error.message === "FORBIDDEN" ? 403 : 500 });
   }
-}
+});

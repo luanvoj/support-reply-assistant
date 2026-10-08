@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requirePermission } from "@/lib/auth/guard";
+import { withAuthorizationErrors, isAuthorizationError } from "@/lib/auth/guard";
 import { query } from "@/lib/db";
 
 const schema = z.object({ mergeRunId: z.string().uuid() });
 
-export async function POST(
+export const POST = withAuthorizationErrors(async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string; itemId: string }> },
 ) {
@@ -36,4 +37,4 @@ export async function POST(
         { error: "Nhóm gộp đã được xử lý hoặc không còn tồn tại." },
         { status: 409 },
       );
-}
+});

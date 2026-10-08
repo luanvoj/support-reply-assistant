@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 
 import { requireRole } from "@/lib/auth/guard";
+import { withAuthorizationErrors, isAuthorizationError } from "@/lib/auth/guard";
 import { query } from "@/lib/db";
 import { operationalLogExportBuffer, operationalLogExportContentType, type OperationalLogExportFormat, type OperationalLogExportRow } from "@/lib/operational-log-export";
 import { operationalLogWhere, parseOperationalLogFilter } from "@/lib/operational-log-query";
 
 const MAX_EXPORT_ROWS = 10_000;
 
-export async function GET(request: Request) {
+export const GET = withAuthorizationErrors(async function GET(request: Request) {
   try {
     await requireRole("admin");
     const searchParams = new URL(request.url).searchParams;
@@ -46,6 +47,7 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
+    if (isAuthorizationError(error)) throw error;
     return NextResponse.json({ error: error instanceof Error && error.message === "FORBIDDEN" ? "Bạn không có quyền xuất nhật ký vận hành." : "Không thể xuất nhật ký vận hành." }, { status: error instanceof Error && error.message === "FORBIDDEN" ? 403 : 500 });
   }
-}
+});

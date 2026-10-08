@@ -6,6 +6,7 @@ import {
   getActiveAssistantProfile,
 } from "@/lib/ai/profile";
 import { requireRole } from "@/lib/auth/guard";
+import { withAuthorizationErrors, isAuthorizationError } from "@/lib/auth/guard";
 import { query, withTransaction } from "@/lib/db";
 
 const profileSchema = z.object({
@@ -23,12 +24,12 @@ function unsafeInstruction(value: string) {
   );
 }
 
-export async function GET() {
+export const GET = withAuthorizationErrors(async function GET() {
   await requireRole("admin");
   return NextResponse.json({ profile: await getActiveAssistantProfile() });
-}
+});
 
-export async function PUT(request: Request) {
+export const PUT = withAuthorizationErrors(async function PUT(request: Request) {
   const session = await requireRole("admin");
   const parsed = profileSchema.safeParse(
     await request.json().catch(() => null),
@@ -68,9 +69,9 @@ export async function PUT(request: Request) {
     return result.rows[0];
   });
   return NextResponse.json({ profile });
-}
+});
 
-export async function POST(request: Request) {
+export const POST = withAuthorizationErrors(async function POST(request: Request) {
   await requireRole("admin");
   const parsed = profileSchema.safeParse(
     await request.json().catch(() => null),
@@ -84,4 +85,4 @@ export async function POST(request: Request) {
     profile: parsed.data,
     fallbackExample: `Chào bạn! Tôi là ${parsed.data.name}. Tôi sẵn sàng hỗ trợ tra cứu thông tin đã được xác minh.`,
   });
-}
+});

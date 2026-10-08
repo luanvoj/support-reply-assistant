@@ -2,13 +2,14 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { requireRole } from "@/lib/auth/guard";
+import { withAuthorizationErrors, isAuthorizationError } from "@/lib/auth/guard";
 import { hashPassword } from "@/lib/auth/password";
 import { passwordSchema, passwordStrength } from "@/lib/auth/users";
 import { withTransaction } from "@/lib/db";
 
 const schema = z.object({ password: passwordSchema, passwordConfirmation: z.string() }).refine((value) => value.password === value.passwordConfirmation, { path: ["passwordConfirmation"], message: "Hai mật khẩu chưa trùng khớp." });
 
-export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export const POST = withAuthorizationErrors(async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const actor = await requireRole("admin");
     const { id } = await params;
@@ -23,7 +24,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     });
     return NextResponse.json({ ok: true });
   } catch (error) {
+    if (isAuthorizationError(error)) throw error;
     const code = error instanceof Error ? error.message : "";
     return NextResponse.json({ error: code === "TARGET_NOT_ACTIVE" ? "Chỉ có thể đặt lại mật khẩu cho tài khoản đang hoạt động." : code === "FORBIDDEN" ? "Bạn không có quyền quản trị người dùng." : "Không thể đặt lại mật khẩu." }, { status: code === "FORBIDDEN" ? 403 : 400 });
   }
-}
+});

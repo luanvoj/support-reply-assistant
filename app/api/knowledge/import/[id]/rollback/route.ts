@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/guard";
+import { withAuthorizationErrors, isAuthorizationError } from "@/lib/auth/guard";
 import { withTransaction } from "@/lib/db";
 
-export async function POST(_: Request, { params }: { params: Promise<{ id: string }> }) {
+export const POST = withAuthorizationErrors(async function POST(_: Request, { params }: { params: Promise<{ id: string }> }) {
   await requirePermission("knowledge:write"); const { id } = await params;
   try {
     const result = await withTransaction(async (client) => {
@@ -16,5 +17,6 @@ export async function POST(_: Request, { params }: { params: Promise<{ id: strin
       await client.query("UPDATE knowledge_import_batches SET status='rolled_back',rolled_back_at=now() WHERE id=$1", [id]);
       return removed.rowCount ?? 0;
     }); return NextResponse.json({ rolledBack: result });
-  } catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : "Không thể hoàn tác batch." }, { status: 400 }); }
-}
+  } catch (error) {
+    if (isAuthorizationError(error)) throw error; return NextResponse.json({ error: error instanceof Error ? error.message : "Không thể hoàn tác batch." }, { status: 400 }); }
+});

@@ -52,6 +52,16 @@ Schedule the password-reset cleanup task daily as well. It removes only requests
 npm run password-resets:retention -- --apply
 ```
 
+## Smart Merge worker
+
+Smart Merge batches are persisted first, then claimed by a separate worker. The browser never executes the long-running scan. For local validation or a one-off demo, run one queued batch with:
+
+```sh
+npm run merge:worker
+```
+
+Use `npm run merge:worker -- --drain` to process up to ten queued batches. A production scheduler or worker service must invoke this command on the chosen platform; that platform-specific setup remains outside this repository contract.
+
 The application enforces login and MFA limits in PostgreSQL, so all web instances share the same counters. Without a verified proxy contract it deliberately skips app-level IP buckets, while retaining shared, identity and MFA-challenge limits; keep an edge/WAF IP limit as a second layer. Set `TRUST_PROXY=true` only after the proxy strips incoming forwarding headers and writes the client IP itself.
 
 ## Release checklist

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { requirePermission } from "@/lib/auth/guard";
+import { withAuthorizationErrors, isAuthorizationError } from "@/lib/auth/guard";
 import { query } from "@/lib/db";
 
 type TicketRow = {
@@ -28,7 +29,7 @@ function boundedNumber(value: string | null, fallback: number, minimum: number, 
   return Number.isFinite(parsed) ? Math.min(maximum, Math.max(minimum, Math.floor(parsed))) : fallback;
 }
 
-export async function GET(request: Request) {
+export const GET = withAuthorizationErrors(async function GET(request: Request) {
   await requirePermission("ticket:read");
   const params = new URL(request.url).searchParams;
   const page = boundedNumber(params.get("page"), 1, 1, 10_000);
@@ -60,4 +61,4 @@ export async function GET(request: Request) {
     selected: selected.rows[0] ?? null,
     pagination: { page, pageSize, total: total.rows[0]?.count ?? 0 },
   });
-}
+});
